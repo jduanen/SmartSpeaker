@@ -92,23 +92,26 @@ Applications for Smart Speakers
   - run shell in docker
     * 'docker run --rm -it -v $(pwd):/app arm32v7-cross-compiler /bin/bash'
   - compile in docker
-    * '${CC} ./src/helloworld.c -o ./helloworld'
+    * '${CC} --static ./src/helloworld.c -o ./build/helloworld'
+    * '${CC} --static ./src/glibcTest.c -o ./build/glibcTest'
   - load binaries from host to the speaker
     * push libraries
       - 'adb push ./lib/ /opt/ss/'
-    * push libraries
+    * push apps
       - 'adb push ./build/helloworld /opt/ss/build/'
-      - 
-  - TBD
-    * install qemu-arm?
-      - ????
-    * run arm stuff within the container
-      - 'qemu-arm <bin>'
-    * move files/directories from host to speaker
-      - 'adb push <local> <remote>'
-      - 'scp -r <local> root@<ipaddr>:<remote>'
-
-
+  - run arm stuff within the container
+    * '${QEMU} <bin>'
+  - build glib2.0 for cross-compilation on x86 platform for arm32v7 targets
+    * install meson
+      - apt-get update
+      - apt-get install meson
+    * wget https://download.gnome.org/sources/glib/2.68/glib-2.68.4.tar.xz
+    * tar xf glib-2.68.4.tar.xz
+    * cd glib-2.68.4
+    * export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig
+    * export CC=arm-linux-gnueabihf-gcc
+    * export CXX=arm-linux-gnueabihf-g++
+    * meson setup builddir --cross-file=./cross-file.txt
 
   - run docker
     * 'docker run --rm -it -v $(pwd):/out --security-opt label=disable arm32v7-cross-compiler /bin/bash'
@@ -116,4 +119,19 @@ Applications for Smart Speakers
   - load libraries from container to the host
     * from Dockerfile
       - COPY /usr/xcc/armv7-unknown-linux-gnueabi/armv7-unknown-linux-gnueabi/sysroot/lib/libc.so.6 /out/lib/
-      
+
+  - move files/directories from host to speaker
+    * 'adb push <local> <remote>'
+    * 'scp -r <local> root@<ipaddr>:<remote>'
+  
+Err:6 http://archive.ubuntu.com/ubuntu bionic/multiverse armhf Packages
+  404  Not Found [IP: 185.125.190.83 80]
+
+Err:10 http://security.ubuntu.com/ubuntu bionic-security/universe armhf Packages
+  404  Not Found [IP: 185.125.190.82 80]
+
+Err:15 http://archive.ubuntu.com/ubuntu bionic-updates/main armhf Packages
+  404  Not Found [IP: 185.125.190.83 80]
+
+Err:21 http://archive.ubuntu.com/ubuntu bionic-backports/universe armhf Packages
+  404  Not Found [IP: 185.125.190.83 80]
