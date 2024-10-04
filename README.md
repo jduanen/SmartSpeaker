@@ -100,11 +100,10 @@ Applications for Smart Speakers
     * push apps
       - 'adb push ./build/helloworld /opt/ss/build/'
   - run arm stuff within the container
+    * 'apt-get update && apt-get install -y qemu-user-static'
+    * 'export QEMU=/usr/bin/qemu-arm-static'
     * '${QEMU} <bin>'
   - build glib2.0 for cross-compilation on x86 platform for arm32v7 targets
-    * install meson
-      - apt-get update
-      - apt-get install meson
     * wget https://download.gnome.org/sources/glib/2.68/glib-2.68.4.tar.xz
     * tar xf glib-2.68.4.tar.xz
     * cd glib-2.68.4
@@ -123,6 +122,10 @@ Applications for Smart Speakers
   - move files/directories from host to speaker
     * 'adb push <local> <remote>'
     * 'scp -r <local> root@<ipaddr>:<remote>'
+
+  - install meson
+    * apt-get update
+    * apt-get install meson
   
 Err:6 http://archive.ubuntu.com/ubuntu bionic/multiverse armhf Packages
   404  Not Found [IP: 185.125.190.83 80]
