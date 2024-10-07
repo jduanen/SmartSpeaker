@@ -9,7 +9,10 @@ RUN apt-get update && apt-get install -y \
     curl \
     python3 \
     python3-pip \
-    python3-venv
+    python3-venv \
+    cmake \
+    pkg-config \
+    ninja-build
 
 # Set up environment variables for cross-compilation
 ENV CROSS_COMPILE=arm-linux-gnueabihf-
@@ -36,9 +39,17 @@ ENV PATH="/opt/venv/bin:${PATH}"
 RUN pip3 install wheel
 RUN pip3 install meson==0.54.0
 
+##RUN apt-get update && \
+##    apt-get install -y glib-2.0 gio-2.0
+
 # Copy your project files
 COPY . /app
 WORKDIR /app
+
+# build app with meson
+##RUN meson . build --cross-file scripts/cross_file.txt
+##RUN ninja -C build clean
+##RUN ninja -C build
 
 # Build command (replace with your actual build command)
 ##CMD ["make"]
