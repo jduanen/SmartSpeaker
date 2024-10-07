@@ -182,4 +182,4 @@ private:
   bool get_bool(const char *section, const char *key, const bool default_value);
 };
 
-}; // namespace smartspeaker
+} // namespace smartspeaker

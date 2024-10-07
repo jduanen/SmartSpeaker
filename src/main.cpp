@@ -9,4 +9,4 @@ int main(int argc, char *argv[]) {
   printf("SmartSpeaker App\n");
   App app;
   return app.exec(argc, argv);
-};
+}

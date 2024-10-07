@@ -27,4 +27,4 @@ private:
   std::unique_ptr<Leds> leds;
 };
 
-}; // namespace smartspeaker
+} // namespace smartspeaker
