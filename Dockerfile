@@ -6,13 +6,71 @@ RUN apt-get update && apt-get install -y \
     gcc-arm-linux-gnueabihf \
     g++-arm-linux-gnueabihf \
     wget \
-    curl \
+    curl
+
+# Install python3
+RUN apt-get update && apt-get install -y \
     python3 \
     python3-pip \
-    python3-venv \
+    python3-venv
+
+# Install build tools
+RUN apt-get update && apt-get install -y \
     cmake \
     pkg-config \
     ninja-build
+
+# Install the necessary build dependencies for glib
+RUN apt-get update && apt-get install -y \
+    autoconf \
+    automake \
+    libtool \
+    pkg-config \
+    gettext \
+    libffi-dev \
+    zlib1g-dev
+
+# Copy your project files (done before the continer is run)
+COPY . /app
+
+# Cross-compile and install the required dependencies for glib
+WORKDIR /app/lib/
+RUN wget https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.16.tar.gz
+RUN tar xzf libiconv-1.16.tar.gz
+WORKDIR /app/lib/libiconv-1.16/
+RUN ./configure --host=arm-linux-gnueabihf --prefix=/opt/arm-linux-gnueabihf && \
+    make && \
+    make install
+WORKDIR /app/
+
+WORKDIR /app/lib/
+RUN wget https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz
+RUN tar xzf libffi-3.3.tar.gz
+WORKDIR /app/lib/libffi-3.3/
+RUN ./configure --host=arm-linux-gnueabihf --prefix=/opt/arm-linux-gnueabihf && \
+    make && \
+    make install
+
+# Create a venv and install meson in it
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:${PATH}"
+RUN pip3 install wheel
+RUN pip3 install meson==0.54.0
+
+# Cross-compile glib-2
+WORKDIR /app/lib/
+ENV LD_LIBRARY_PATH="/opt/arm-linux-gnueabihf/lib/"
+RUN wget https://download.gnome.org/sources/glib/2.68/glib-2.68.3.tar.xz
+RUN tar xf glib-2.68.3.tar.xz
+WORKDIR /app/lib/glib-2.68.3/
+RUN meson setup --cross-file=/app/lib/arm-linux-gnueabihf.txt \
+    -Dprefix=/opt/arm-linux-gnueabihf \
+    -Dlibdir=lib \
+    -Dforce_fallback_for=libffi,libiconv \
+    builddir
+##RUN ninja -C builddir
+##RUN ninja -C builddir install
+##WORKDIR /app/
 
 # Set up environment variables for cross-compilation
 ENV CROSS_COMPILE=arm-linux-gnueabihf-
@@ -34,19 +92,8 @@ RUN dpkg --add-architecture armhf
 
 ##ENV QEMU=/usr/bin/qemu-arm-static
 
-RUN python3 -m venv /opt/venv
-ENV PATH="/opt/venv/bin:${PATH}"
-RUN pip3 install wheel
-RUN pip3 install meson==0.54.0
-
-##RUN apt-get update && \
-##    apt-get install -y glib-2.0 gio-2.0
-
-# Copy your project files
-COPY . /app
-WORKDIR /app
-
 # build app with meson
+##WORKDIR /app
 ##RUN meson . build --cross-file scripts/cross_file.txt
 ##RUN ninja -C build clean
 ##RUN ninja -C build
