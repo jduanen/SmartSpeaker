@@ -78,15 +78,8 @@ public:
   // General
   // -------------------------------------------------------------------------
 
-  gchar *smartspeaker_url;
   size_t retry_interval;
   size_t connect_timeout;
-  gchar *smartspeaker_access_token;
-  gchar *conversation_id;
-  gchar *nl_url;
-  gchar *locale;
-  gchar *asset_dir;
-  AuthMode auth_mode;
 
   // Buttons
   // -------------------------------------------------------------------------
@@ -119,53 +112,8 @@ public:
   gint leds_disabled_effect;
   gint leds_disabled_color;
 
-  // Network
-  // -------------------------------------------------------------------------
-  bool net_controller_enabled;
-  gchar *net_wlan_if;
-  gchar *net_wlan_ap_ctrl;
-  gchar *net_wlan_sta_ctrl;
-
-  // System
-  // -------------------------------------------------------------------------
-
-  bool dns_controller_enabled;
-  gchar *proxy;
-  bool ssl_strict;
-  gchar *ssl_ca_file;
-  gchar *cache_dir;
-
-  void set_smartspeaker_url(const char *url) {
-    char *old = smartspeaker_url;
-    smartspeaker_url = g_strdup(url);
-    g_free(old);
-    g_key_file_set_string(key_file, "general", "url", url);
-  }
-  void set_auth_mode(AuthMode mode) {
-    auth_mode = mode;
-    g_key_file_set_string(key_file, "general", "auth_mode",
-                          auth_mode_to_string(mode));
-  }
-  void set_smartspeaker_access_token(const char *access_token) {
-    char *old = smartspeaker_access_token;
-    smartspeaker_access_token = g_strdup(access_token);
-    g_free(old);
-    g_key_file_set_string(key_file, "general", "accessToken", access_token);
-  }
-  void set_conversation_id(const char *new_id) {
-    char *old = conversation_id;
-    conversation_id = g_strdup(new_id);
-    g_free(old);
-    g_key_file_set_string(key_file, "general", "conversationId", new_id);
-  }
-
-  static AuthMode parse_auth_mode(const char *auth_mode);
-  static const char *auth_mode_to_string(AuthMode mode);
-
 protected:
 private:
-  GKeyFile *key_file = nullptr;
-
   int get_leds_effect_string(const char *section, const char *key,
                              const gchar *default_value);
   int get_dec_color_from_hex_string(const char *section, const char *key,
@@ -183,6 +131,8 @@ private:
                             const double default_value, const double min,
                             const double max);
   bool get_bool(const char *section, const char *key, const bool default_value);
+  void save();
+  void load();
 };
 
 } // namespace smartspeaker

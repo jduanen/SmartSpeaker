@@ -26,7 +26,6 @@
 #include <string.h>
 
 #include "leds.hpp"
-//#include "utils/autoptrs.hpp"
 #include <memory>
 
 #undef G_LOG_DOMAIN
@@ -35,44 +34,14 @@
 smartspeaker::Config::Config() {}
 
 smartspeaker::Config::~Config() {
-  g_free(smartspeaker_access_token);
-  g_free(conversation_id);
-  g_free(locale);
-  g_free(asset_dir);
-  g_free(proxy);
-  g_free(ssl_ca_file);
   g_free(leds_path);
   g_free(leds_type);
-  g_free(cache_dir);
-  g_free(net_wlan_if);
-  g_free(net_wlan_ap_ctrl);
-  g_free(net_wlan_sta_ctrl);
-
-  g_key_file_unref(key_file);
 }
 
 static inline bool is_key_not_found_error(GError *error) {
   return error->domain == G_KEY_FILE_ERROR &&
          (error->code == G_KEY_FILE_ERROR_GROUP_NOT_FOUND ||
           error->code == G_KEY_FILE_ERROR_KEY_NOT_FOUND);
-}
-
-char *smartspeaker::Config::get_string(const char *section, const char *key,
-                                 const char *default_value) {
-  GError *error = NULL;
-  gchar *value = g_key_file_get_string(key_file, section, key, &error);
-  if (error != NULL) {
-    if (is_key_not_found_error(error)) {
-      g_message("Config key [%s] %s missing, using default '%s'", section, key,
-                default_value);
-    } else {
-      g_warning("Failed to load [%s] %s from config file, using default '%s'",
-                section, key, default_value);
-    }
-    g_error_free(error);
-    return strdup(default_value);
-  }
-  return value;
 }
 
 int smartspeaker::Config::get_leds_effect_string(const char *section, const char *key,
@@ -137,6 +106,24 @@ int smartspeaker::Config::get_dec_color_from_hex_string(const char *section,
   // g_debug("converted hex %s in %d\n", value, i);
   free(value);
   return i;
+}
+
+char *smartspeaker::Config::get_string(const char *section, const char *key,
+                                 const char *default_value) {
+  GError *error = NULL;
+  gchar *value = g_key_file_get_string(key_file, section, key, &error);
+  if (error != NULL) {
+    if (is_key_not_found_error(error)) {
+      g_message("Config key [%s] %s missing, using default '%s'", section, key,
+                default_value);
+    } else {
+      g_warning("Failed to load [%s] %s from config file, using default '%s'",
+                section, key, default_value);
+    }
+    g_error_free(error);
+    return strdup(default_value);
+  }
+  return value;
 }
 
 /**
@@ -263,62 +250,6 @@ bool smartspeaker::Config::get_bool(const char *section, const char *key,
   return static_cast<bool>(value);
 }
 
-smartspeaker::AuthMode smartspeaker::Config::parse_auth_mode(const char *auth_mode) {
-  if (strcmp(auth_mode, "none") == 0) {
-    return smartspeaker::AuthMode::NONE;
-  } else if (strcmp(auth_mode, "bearer") == 0) {
-    return smartspeaker::AuthMode::BEARER;
-  } else if (strcmp(auth_mode, "cookie") == 0) {
-    return smartspeaker::AuthMode::COOKIE;
-  } else if (strcmp(auth_mode, "home-assistant") == 0) {
-    return smartspeaker::AuthMode::HOME_ASSISTANT;
-  } else if (strcmp(auth_mode, "oauth2") == 0) {
-    return smartspeaker::AuthMode::OAUTH2;
-  } else {
-    g_warning("Invalid authentication mode %s, using default 'none'",
-              auth_mode);
-    return smartspeaker::AuthMode::NONE;
-  }
-}
-
-const char *smartspeaker::Config::auth_mode_to_string(smartspeaker::AuthMode mode) {
-  switch (mode) {
-    case smartspeaker::AuthMode::BEARER:
-      return "bearer";
-    case smartspeaker::AuthMode::COOKIE:
-      return "cookie";
-    case smartspeaker::AuthMode::HOME_ASSISTANT:
-      return "home-assistant";
-    case smartspeaker::AuthMode::OAUTH2:
-      return "oauth2";
-    case smartspeaker::AuthMode::NONE:
-    default:
-      return "none";
-  }
-}
-
-static smartspeaker::AuthMode get_auth_mode(GKeyFile *key_file) {
-  GError *error = nullptr;
-
-  char *value = g_key_file_get_string(key_file, "general", "auth_mode", &error);
-  if (value == nullptr) {
-    if (is_key_not_found_error(error)) {
-      g_message(
-          "Config key [general] auth_mode missing, using default 'oauth2'");
-    } else {
-      g_warning("Failed to load [general] auth_mode from config file, using "
-                "default 'oauth2'");
-    }
-    g_error_free(error);
-    return smartspeaker::Config::DEFAULT_AUTH_MODE;
-  }
-
-  auto parsed = smartspeaker::Config::parse_auth_mode(value);
-  g_free(value);
-
-  return parsed;
-}
-
 void smartspeaker::Config::save() {
   GError *error = NULL;
   g_key_file_save_to_file(key_file, "config.ini", &error);
@@ -343,12 +274,6 @@ void smartspeaker::Config::load() {
   }
 
   asset_dir = get_string("general", "assets_dir", pkglibdir "/assets");
-
-  retry_interval =
-      get_size("general", "retry_interval", DEFAULT_WS_RETRY_INTERVAL);
-
-  connect_timeout =
-      get_size("general", "connect_timeout", DEFAULT_CONNECT_TIMEOUT);
 
   auth_mode = get_auth_mode(key_file);
   if (auth_mode != AuthMode::NONE) {
