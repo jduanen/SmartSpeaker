@@ -273,8 +273,6 @@ void smartspeaker::Config::load() {
     g_clear_error(&error);
   }
 
-  asset_dir = get_string("general", "assets_dir", pkglibdir "/assets");
-
   // Buttons
   // =========================================================================
   buttons_enabled =
