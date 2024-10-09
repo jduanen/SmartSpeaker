@@ -1,13 +1,13 @@
 cpp = meson.get_compiler('cpp')
 
 # base deps
-_baseDeps = [ ]
+_baseDeps = [ 'glib-2.0', 'gobject-2.0' ]
 
 # shared only deps
 _onlySharedDeps = [ ]
 
 # always use as shared deps
-_alwaysSharedDeps = [ ]
+_alwaysSharedDeps = [ 'gio-2.0' ]
 
 _linkArgs = []
 _incDirs = []
