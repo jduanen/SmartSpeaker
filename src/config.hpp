@@ -114,6 +114,8 @@ public:
 
 protected:
 private:
+  GKeyFile *key_file = nullptr;
+
   int get_leds_effect_string(const char *section, const char *key,
                              const gchar *default_value);
   int get_dec_color_from_hex_string(const char *section, const char *key,
@@ -131,8 +133,6 @@ private:
                             const double default_value, const double min,
                             const double max);
   bool get_bool(const char *section, const char *key, const bool default_value);
-  void save();
-  void load();
 };
 
 } // namespace smartspeaker

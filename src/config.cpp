@@ -275,40 +275,6 @@ void smartspeaker::Config::load() {
 
   asset_dir = get_string("general", "assets_dir", pkglibdir "/assets");
 
-  auth_mode = get_auth_mode(key_file);
-  if (auth_mode != AuthMode::NONE) {
-    smartspeaker_access_token =
-        g_key_file_get_string(key_file, "general", "accessToken", &error);
-    if (error) {
-      g_warning("Missing access token in config file");
-      g_clear_error(&error);
-    }
-  } else {
-    smartspeaker_access_token = nullptr;
-  }
-
-  locale = g_key_file_get_string(key_file, "general", "locale", &error);
-  if (error) {
-    locale = g_strdup(DEFAULT_LOCALE);
-    g_clear_error(&error);
-  }
-
-  locale = g_key_file_get_string(key_file, "general", "locale", &error);
-  if (error) {
-    locale = g_strdup(DEFAULT_LOCALE);
-    g_clear_error(&error);
-  }
-
-  conversation_id =
-      g_key_file_get_string(key_file, "general", "conversationId", &error);
-  if (error) {
-    g_message("No conversation ID in config file, using smartspeaker-client");
-    conversation_id = g_strdup("smartspeaker-client");
-    g_clear_error(&error);
-  } else {
-    g_debug("conversationId: %s\n", conversation_id);
-  }
-
   // Buttons
   // =========================================================================
   buttons_enabled =
@@ -384,65 +350,5 @@ void smartspeaker::Config::load() {
   } else {
     leds_type = nullptr;
     leds_path = nullptr;
-  }
-
-  // Network
-  // =========================================================================
-
-  net_controller_enabled =
-      g_key_file_get_boolean(key_file, "net", "enabled", &error);
-  if (error) {
-    net_controller_enabled = false;
-    g_clear_error(&error);
-  }
-
-  if (net_controller_enabled) {
-    net_wlan_if = get_string("net", "wlan_if", DEFAULT_NET_WLAN_IF);
-    net_wlan_ap_ctrl = get_string("net", "ap_ctrl", g_strdup(""));
-    net_wlan_sta_ctrl = get_string("net", "sta_ctrl", g_strdup(""));
-  } else {
-    net_wlan_if = nullptr;
-    net_wlan_ap_ctrl = nullptr;
-    net_wlan_sta_ctrl = nullptr;
-  }
-
-  // System
-  // =========================================================================
-
-  dns_controller_enabled =
-      g_key_file_get_boolean(key_file, "system", "dns", nullptr);
-
-  proxy = g_key_file_get_string(key_file, "system", "proxy", nullptr);
-  if (!proxy) {
-    // use system-wide proxy if available
-    proxy = g_strdup(g_getenv("http_proxy"));
-  }
-  if (proxy) {
-    g_print("Proxy enabled: %s\n", proxy);
-  }
-
-  ssl_strict = g_key_file_get_boolean(key_file, "system", "ssl_strict", &error);
-  if (error) {
-    ssl_strict = true;
-    g_clear_error(&error);
-  }
-  if (!ssl_strict) {
-    g_warning("SSL strict validation disabled");
-  }
-
-  ssl_ca_file =
-      g_key_file_get_string(key_file, "system", "ssl_ca_file", nullptr);
-
-  cache_dir = g_key_file_get_string(key_file, "system", "cache_dir", &error);
-  if (error) {
-    g_clear_error(&error);
-    cache_dir = g_strdup_printf("%s/smartspeaker", g_get_user_cache_dir());
-  }
-
-  if (!g_file_test(cache_dir, G_FILE_TEST_IS_DIR)) {
-    if (!g_mkdir_with_parents(cache_dir, 0755)) {
-      g_printerr("failed to create cache_dir %s, errno = %d\n", cache_dir,
-                 errno);
-    }
   }
 }
