@@ -150,7 +150,7 @@ void smartspeaker::Leds::animate_internal(LedsAnimation_t style, int color,
   }
 }
 
-bool smartspeaker::Leds::set_user(bool enabled) {
+gboolean smartspeaker::Leds::set_user(bool enabled) {
   char path[256];
   snprintf(path, sizeof(path) - 1, "%s/user_space", ctrl_path_base);
   int fd = open(path, O_WRONLY);
@@ -163,7 +163,7 @@ bool smartspeaker::Leds::set_user(bool enabled) {
   return true;
 }
 
-bool smartspeaker::Leds::set_brightness(int level) {
+gboolean smartspeaker::Leds::set_brightness(int level) {
   if (level > max_brightness)
     return false;
 
@@ -226,7 +226,7 @@ bool smartspeaker::Leds::set_leds() {
   return true;
 }
 
-bool smartspeaker::Leds::update_circular(void* data) {
+gboolean smartspeaker::Leds::update_circular(void* data) {
   Leds *obj = (Leds *)data;
 
   if (!obj->update_timer_circular)
@@ -244,7 +244,7 @@ bool smartspeaker::Leds::update_circular(void* data) {
   return obj->update_timer_circular;
 }
 
-bool smartspeaker::Leds::update_pulse(gpointer data) {
+gboolean smartspeaker::Leds::update_pulse(gpointer data) {
   Leds *obj = (Leds *)data;
 
   if (!obj->update_timer_pulse) {
