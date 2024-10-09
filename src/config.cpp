@@ -35,37 +35,15 @@
 smartspeaker::Config::Config() {}
 
 smartspeaker::Config::~Config() {
-  g_free(smartspeaker_url);
   g_free(smartspeaker_access_token);
   g_free(conversation_id);
-  g_free(nl_url);
   g_free(locale);
   g_free(asset_dir);
-  g_free(audio_input_device);
-  g_free(audio_sink);
-  g_free(audio_output_device);
-  g_free(audio_output_device_music);
-  g_free(audio_output_device_voice);
-  g_free(audio_output_device_alerts);
-  g_free(audio_volume_control);
-  g_free(audio_voice);
-  g_free(sound_wake);
-  g_free(sound_no_input);
-  g_free(sound_too_much_input);
-  g_free(sound_news_intro);
-  g_free(sound_alarm_clock_elapsed);
-  g_free(sound_working);
-  g_free(sound_stt_error);
-  g_free(pv_model_path);
-  g_free(pv_keyword_path);
-  g_free(pv_wake_word_pattern);
   g_free(proxy);
   g_free(ssl_ca_file);
-  g_free(evinput_device);
   g_free(leds_path);
   g_free(leds_type);
   g_free(cache_dir);
-  g_free(hacks_dns_server);
   g_free(net_wlan_if);
   g_free(net_wlan_ap_ctrl);
   g_free(net_wlan_sta_ctrl);
@@ -341,36 +319,6 @@ static smartspeaker::AuthMode get_auth_mode(GKeyFile *key_file) {
   return parsed;
 }
 
-smartspeaker::AudioDriverType smartspeaker::Config::get_audio_backend() {
-  GError *error = nullptr;
-
-  char *value = g_key_file_get_string(key_file, "audio", "backend", &error);
-  if (value == nullptr) {
-    if (is_key_not_found_error(error)) {
-      g_message(
-          "Config key [audio] backend missing, using default 'pulseaudio'");
-    } else {
-      g_warning("Failed to load [audio] backend from config file, using "
-                "default 'pulseaudio'");
-    }
-    g_error_free(error);
-    return AudioDriverType::PULSEAUDIO;
-  }
-
-  AudioDriverType backend;
-  if (strcmp(value, "alsa") == 0) {
-    backend = AudioDriverType::ALSA;
-  } else if (strcmp(value, "pulse") == 0 || strcmp(value, "pulseaudio") == 0) {
-    backend = AudioDriverType::PULSEAUDIO;
-  } else {
-    g_warning("Invalid audio backend %s, using default 'pulseaudio'", value);
-    backend = AudioDriverType::PULSEAUDIO;
-  }
-
-  g_free(value);
-  return backend;
-}
-
 void smartspeaker::Config::save() {
   GError *error = NULL;
   g_key_file_save_to_file(key_file, "config.ini", &error);
@@ -396,12 +344,6 @@ void smartspeaker::Config::load() {
 
   asset_dir = get_string("general", "assets_dir", pkglibdir "/assets");
 
-  smartspeaker_url = g_key_file_get_string(key_file, "general", "url", &error);
-  if (error || !smartspeaker_url || strlen(smartspeaker_url) == 0) {
-    smartspeaker_url = g_strdup(DEFAULT_smartspeaker_URL);
-  }
-  g_clear_error(&error);
-
   retry_interval =
       get_size("general", "retry_interval", DEFAULT_WS_RETRY_INTERVAL);
 
@@ -420,9 +362,9 @@ void smartspeaker::Config::load() {
     smartspeaker_access_token = nullptr;
   }
 
-  nl_url = g_key_file_get_string(key_file, "general", "nlUrl", &error);
+  locale = g_key_file_get_string(key_file, "general", "locale", &error);
   if (error) {
-    nl_url = g_strdup(DEFAULT_NLP_URL);
+    locale = g_strdup(DEFAULT_LOCALE);
     g_clear_error(&error);
   }
 
@@ -431,18 +373,6 @@ void smartspeaker::Config::load() {
     locale = g_strdup(DEFAULT_LOCALE);
     g_clear_error(&error);
   }
-
-  g_debug("smartspeakerURL: %s\nsmartspeakerAccessToken: %s\nnlURL: %s\nlocale: %s\n",
-          smartspeaker_url, smartspeaker_access_token, nl_url, locale);
-
-  locale = g_key_file_get_string(key_file, "general", "locale", &error);
-  if (error) {
-    locale = g_strdup(DEFAULT_LOCALE);
-    g_clear_error(&error);
-  }
-
-  g_debug("smartspeakerURL: %s\nsmartspeakerAccessToken: %s\nnlURL: %s\nlocale: %s\n",
-          smartspeaker_url, smartspeaker_access_token, nl_url, locale);
 
   conversation_id =
       g_key_file_get_string(key_file, "general", "conversationId", &error);
@@ -454,135 +384,6 @@ void smartspeaker::Config::load() {
     g_debug("conversationId: %s\n", conversation_id);
   }
 
-  // Audio
-  // =========================================================================
-
-  audio_backend = get_audio_backend();
-  if (audio_backend == AudioDriverType::PULSEAUDIO) {
-    audio_input_device = nullptr;
-    audio_volume_control = nullptr;
-    audio_output_fifo = nullptr;
-    audio_input_stereo2mono = false;
-    audio_sink = g_strdup("pulsesink");
-
-    audio_output_device =
-        get_string("audio", "output", DEFAULT_PULSE_AUDIO_OUTPUT_DEVICE);
-    audio_output_device_music = g_strdup(audio_output_device);
-    audio_output_device_voice = g_strdup(audio_output_device);
-    audio_output_device_alerts = g_strdup(audio_output_device);
-  } else if (audio_backend == AudioDriverType::ALSA) {
-    audio_input_device =
-        g_key_file_get_string(key_file, "audio", "input", &error);
-    if (error) {
-      g_warning("Missing audio input device in configuration file");
-      audio_input_device = g_strdup("hw:0,0");
-      g_clear_error(&error);
-    }
-
-    audio_sink = g_strdup("alsasink");
-    audio_output_device =
-        get_string("audio", "output", DEFAULT_ALSA_AUDIO_OUTPUT_DEVICE);
-
-    audio_volume_control =
-        get_string("audio", "volume", DEFAULT_ALSA_AUDIO_VOLUME_CONTROL);
-
-    audio_output_device_music =
-        g_key_file_get_string(key_file, "audio", "music_output", &error);
-    if (error) {
-      g_clear_error(&error);
-      audio_output_device_music = g_strdup(audio_output_device);
-    }
-
-    audio_output_device_voice =
-        g_key_file_get_string(key_file, "audio", "voice_output", &error);
-    if (error) {
-      g_clear_error(&error);
-      audio_output_device_voice = g_strdup(audio_output_device);
-    }
-
-    audio_output_device_alerts =
-        g_key_file_get_string(key_file, "audio", "alert_output", &error);
-    if (error) {
-      g_clear_error(&error);
-      audio_output_device_alerts = g_strdup(audio_output_device);
-    }
-
-    audio_output_fifo =
-        g_key_file_get_string(key_file, "audio", "output_fifo", &error);
-    if (error) {
-      g_clear_error(&error);
-      audio_output_fifo = g_strdup("/tmp/playback.fifo");
-    }
-
-    audio_input_stereo2mono =
-        g_key_file_get_boolean(key_file, "audio", "stereo2mono", &error);
-    if (error) {
-      g_clear_error(&error);
-      audio_input_stereo2mono = false;
-    }
-  } else {
-    g_assert_not_reached();
-    return;
-  }
-
-  audio_voice = get_string("audio", "voice", DEFAULT_VOICE);
-
-  // Echo Cancellation
-  // =========================================================================
-
-  audio_ec_enabled = g_key_file_get_boolean(key_file, "ec", "enabled", &error);
-  if (error) {
-    g_clear_error(&error);
-    audio_ec_enabled = false;
-  }
-
-  audio_ec_loopback =
-      g_key_file_get_boolean(key_file, "ec", "loopback", &error);
-  if (error) {
-    g_clear_error(&error);
-    audio_ec_loopback = false;
-  }
-
-  // Hacks
-  // =========================================================================
-
-  hacks_wake_word_verification = get_bool("hacks", "wake_word_verification",
-                                          DEFAULT_HACKS_WAKE_WORD_VERIFICATION);
-
-  hacks_surpress_repeated_notifs =
-      get_bool("hacks", "surpress_repeated_notifs",
-               DEFAULT_HACKS_SURPRESS_REPEATED_NOTIFS);
-
-  hacks_dns_server =
-      get_string("hacks", "dns_server", DEFAULT_HACKS_DNS_SERVER);
-
-  // Picovoice
-  // =========================================================================
-
-  pv_model_path = get_string("picovoice", "model", DEFAULT_PV_MODEL_PATH);
-
-  pv_keyword_path = get_string("picovoice", "keyword", DEFAULT_PV_KEYWORD_PATH);
-
-  pv_sensitivity = (float)get_bounded_double("picovoice", "sensitivity",
-                                             DEFAULT_PV_SENSITIVITY, 0, 1);
-
-  pv_wake_word_pattern = get_string("picovoice", "wake_word_pattern",
-                                    DEFAULT_PV_WAKE_WORD_PATTERN);
-
-  // Sounds
-  // =========================================================================
-
-  sound_wake = get_string("sound", "wake", DEFAULT_SOUND_WAKE);
-  sound_no_input = get_string("sound", "no_input", DEFAULT_SOUND_NO_INPUT);
-  sound_too_much_input =
-      get_string("sound", "too_much_input", DEFAULT_SOUND_TOO_MUCH_INPUT);
-  sound_news_intro =
-      get_string("sound", "news_intro", DEFAULT_SOUND_NEWS_INTRO);
-  sound_alarm_clock_elapsed = get_string("sound", "alarm_clock_elapsed",
-                                         DEFAULT_SOUND_ALARM_CLOCK_ELAPSED);
-  sound_working = get_string("sound", "working", DEFAULT_SOUND_WORKING);
-  sound_stt_error = get_string("sound", "stt_error", DEFAULT_SOUND_STT_ERROR);
-
   // Buttons
   // =========================================================================
   buttons_enabled =
@@ -592,11 +393,13 @@ void smartspeaker::Config::load() {
     g_clear_error(&error);
   }
 
+  /*
   if (buttons_enabled) {
     evinput_device = get_string("buttons", "evinput_dev", DEFAULT_EVINPUT_DEV);
   } else {
     evinput_device = nullptr;
   }
+  */
 
   // Leds
   // =========================================================================
@@ -717,28 +520,4 @@ void smartspeaker::Config::load() {
                  errno);
     }
   }
-
-  // Voice Activity Detection (VAD)
-  // =========================================================================
-
-  vad_start_speaking_ms =
-      get_bounded_size("vad", "start_speaking_ms",
-                       DEFAULT_VAD_START_SPEAKING_MS, VAD_MIN_MS, VAD_MAX_MS);
-
-  vad_done_speaking_ms =
-      get_bounded_size("vad", "done_speaking_ms", DEFAULT_VAD_DONE_SPEAKING_MS,
-                       VAD_MIN_MS, VAD_MAX_MS);
-
-  vad_input_detected_noise_ms = get_bounded_size(
-      "vad", "input_detected_noise_ms", DEFAULT_VAD_INPUT_DETECTED_NOISE_MS,
-      VAD_MIN_MS, VAD_MAX_MS);
-
-  vad_listen_timeout_ms = get_bounded_size(
-      "vad", "listen_timeout_ms", DEFAULT_VAD_LISTEN_TIMEOUT_MS,
-      VAD_LISTEN_TIMEOUT_MIN_MS, VAD_LISTEN_TIMEOUT_MAX_MS);
-
-  // Web UI
-  // =========================================================================
-  webui_port =
-      get_bounded_size("webui", "port", DEFAULT_WEBUI_PORT, 1024, 65535);
 }
