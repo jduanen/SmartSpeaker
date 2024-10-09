@@ -6,7 +6,8 @@ RUN apt-get update && apt-get install -y \
     gcc-arm-linux-gnueabihf \
     g++-arm-linux-gnueabihf \
     wget \
-    curl
+    curl \
+    git
 
 # Install python3
 RUN apt-get update && apt-get install -y \
@@ -25,50 +26,48 @@ RUN apt-get update && apt-get install -y \
     autoconf \
     automake \
     libtool \
-    pkg-config \
+    libmount-dev \
     gettext \
-    libffi-dev \
     zlib1g-dev
 
 # Copy your project files (done before the continer is run)
 COPY . /app
+ENV LD_LIBRARY_PATH="/opt/arm-linux-gnueabihf/lib/"
 
 # Cross-compile and install the required dependencies for glib
-WORKDIR /app/lib/
-RUN wget https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.16.tar.gz
-RUN tar xzf libiconv-1.16.tar.gz
-WORKDIR /app/lib/libiconv-1.16/
-RUN ./configure --host=arm-linux-gnueabihf --prefix=/opt/arm-linux-gnueabihf && \
-    make && \
-    make install
-WORKDIR /app/
+#WORKDIR /app/lib/
+#RUN wget https://ftp.gnu.org/pub/gnu/libiconv/libiconv-1.17.tar.gz
+#RUN tar xzf libiconv-1.17.tar.gz
+#WORKDIR /app/lib/libiconv-1.17/
+#RUN ./configure --host=arm-linux-gnueabihf --prefix=/opt/arm-linux-gnueabihf && \
+#    make && \
+#    make install
+#WORKDIR /app/
 
-WORKDIR /app/lib/
-RUN wget https://github.com/libffi/libffi/releases/download/v3.3/libffi-3.3.tar.gz
-RUN tar xzf libffi-3.3.tar.gz
-WORKDIR /app/lib/libffi-3.3/
-RUN ./configure --host=arm-linux-gnueabihf --prefix=/opt/arm-linux-gnueabihf && \
-    make && \
-    make install
+#WORKDIR /app/lib/
+#RUN wget https://github.com/libffi/libffi/releases/download/v3.4.4/libffi-3.4.4.tar.gz
+#RUN tar xzf libffi-3.4.4.tar.gz
+#WORKDIR /app/lib/libffi-3.4.4/
+#RUN ./configure --host=arm-linux-gnueabihf --prefix=/opt/arm-linux-gnueabihf && \
+#    make && \
+#    make install
 
 # Create a venv and install meson in it
 RUN python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:${PATH}"
 RUN pip3 install wheel
-RUN pip3 install meson==0.54.0
+RUN pip3 install meson
 
 # Cross-compile glib-2
 WORKDIR /app/lib/
-ENV LD_LIBRARY_PATH="/opt/arm-linux-gnueabihf/lib/"
-RUN wget https://download.gnome.org/sources/glib/2.68/glib-2.68.3.tar.xz
-RUN tar xf glib-2.68.3.tar.xz
-WORKDIR /app/lib/glib-2.68.3/
+RUN wget https://download.gnome.org/sources/glib/2.67/glib-2.67.3.tar.xz
+RUN tar xf glib-2.67.3.tar.xz
+WORKDIR /app/lib/glib-2.67.3/
 RUN meson setup --cross-file=/app/lib/arm-linux-gnueabihf.txt \
     -Dprefix=/opt/arm-linux-gnueabihf \
     -Dlibdir=lib \
-    -Dforce_fallback_for=libffi,libiconv \
     builddir
-##RUN ninja -C builddir
+#RUN ninja -C builddir
 ##RUN ninja -C builddir install
 ##WORKDIR /app/
 
