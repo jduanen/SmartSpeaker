@@ -10,7 +10,7 @@ sudo apt-get update && sudo apt-get install -y \
     meson
 
 # install glib-2
-sudo apt install libglib2.0-dev
+sudo apt-get install libglib2.0-dev
 
 # pkg-config --cflags --libs glib-2.0
 
