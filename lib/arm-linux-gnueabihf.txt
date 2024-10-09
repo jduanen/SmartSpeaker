@@ -1,0 +1,16 @@
+[binaries]
+c = 'arm-linux-gnueabihf-gcc'
+cpp = 'arm-linux-gnueabihf-g++'
+ar = 'arm-linux-gnueabihf-ar'
+strip = 'arm-linux-gnueabihf-strip'
+pkgconfig = 'pkg-config'
+
+[host_machine]
+system = 'linux'
+cpu_family = 'arm'
+cpu = 'armv7'
+endian = 'little'
+
+[properties]
+c_args = [ '-I/opt/arm-linux-gnueabihf/include', '-L/opt/arm-linux-gnueabihf/lib' ]
+cpp_args = [ '-I/opt/arm-linux-gnueabihf/include', '-L/opt/arm-linux-gnueabihf/lib' ]
