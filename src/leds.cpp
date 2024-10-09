@@ -150,7 +150,7 @@ void smartspeaker::Leds::animate_internal(LedsAnimation_t style, int color,
   }
 }
 
-gboolean smartspeaker::Leds::set_user(bool enabled) {
+bool smartspeaker::Leds::set_user(bool enabled) {
   char path[256];
   snprintf(path, sizeof(path) - 1, "%s/user_space", ctrl_path_base);
   int fd = open(path, O_WRONLY);
@@ -163,7 +163,7 @@ gboolean smartspeaker::Leds::set_user(bool enabled) {
   return true;
 }
 
-gboolean smartspeaker::Leds::set_brightness(int level) {
+bool smartspeaker::Leds::set_brightness(int level) {
   if (level > max_brightness)
     return false;
 
