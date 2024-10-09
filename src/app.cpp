@@ -26,5 +26,6 @@ namespace smartspeaker {
     leds->animate(LedsState_t::Listening);
     printf("Processing\n");
     leds->animate(LedsState_t::Processing);
+    return 0;
   }
 }
