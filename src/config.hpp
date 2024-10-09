@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <cstddef>
+#include <glib.h>
+
 namespace smartspeaker {
 
 enum class AuthMode { NONE, BEARER, COOKIE, HOME_ASSISTANT, OAUTH2 };
