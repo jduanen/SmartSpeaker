@@ -83,4 +83,4 @@ private:
   bool update_timer_pulse;
 };
 
-}; // namespace smartspeaker
+} // namespace smartspeaker
