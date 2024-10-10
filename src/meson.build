@@ -24,14 +24,11 @@ endforeach
 
 if get_option('static') == true
   # static only deps
+  _deps = [  ]
   _onlyStaticDeps = [  ]
-  #'libmount', 'blkid', 'uuid', 'z', 'semanage', 'selinux', 'gmodule-2.0', 'pthread', 'pcre' ]
   _onlyStaticUseShared = [  ]
-  #'resolv', 'ogg', 'vorbis', 'libpulse', 'mpg123', 'ffi' ]
   _gstStaticDeps = [  ]
-  # 'gstreamer-full-1.0', 'gstbase-1.0', 'gstriff-1.0', 'gstaudio-1.0', 'gsttag-1.0' ]
   _gstStaticPlugins = [  ]
-  #  'gstcoreelements', 'gstwavparse', 'gstpbutils-1.0', 'gstvideo-1.0', 'gstalsa', 'gstautodetect', 'gstplayback', 'gsttypefindfunctions', 'gstmpg123', 'gstsoup', 'gstpulseaudio', 'gstogg', 'gstvolume' ]
 
   foreach d : _onlyStaticDeps
     _deps += dependency(d, static : true)
@@ -46,7 +43,7 @@ if get_option('static') == true
     _deps += dependency(d, static : true)
   endforeach
 
-  #_linkArgs = [ '-static' ]
+  _linkArgs = [ '-static' ]
 else
   foreach d : _onlySharedDeps
     _deps += dependency(d)
