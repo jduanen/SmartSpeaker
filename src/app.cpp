@@ -5,8 +5,8 @@
 #include <glib-unix.h>
 #include <glib.h>
 
-#include "app.hpp"
 #include "config.hpp"
+#include "app.hpp"
 #include "leds.hpp"
 
 namespace smartspeaker {
@@ -15,6 +15,7 @@ namespace smartspeaker {
   App::~App() { printf("APP Remove"); }
 
   int smartspeaker::App::exec(int argc, char *argv[]) {
+//    config->leds_enabled = true;
     config = std::make_unique<Config>();
     config->load();
 
