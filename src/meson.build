@@ -25,7 +25,7 @@ endforeach
 if get_option('static') == true
   # static only deps
   _deps = [  ]
-  _onlyStaticDeps = ['glib-2.0', 'gobject-2.0' ]
+  _onlyStaticDeps = [ 'libmount', 'glib-2.0', 'gobject-2.0' ]
   _onlyStaticUseShared = [ 'gio-2.0' ]
   _gstStaticDeps = [  ]
   _gstStaticPlugins = [  ]
