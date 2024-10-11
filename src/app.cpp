@@ -15,8 +15,8 @@ namespace smartspeaker {
   App::~App() { printf("APP Remove"); }
 
   int smartspeaker::App::exec(int argc, char *argv[]) {
-//    config->leds_enabled = true;
     config = std::make_unique<Config>();
+//    config->leds_enabled = true;
     config->load();
 
     leds = std::make_unique<Leds>(this);
