@@ -21,12 +21,16 @@ Applications for Smart Speakers
   - high-power IR emitter?
   - IR receiver?
   - Wifi antenna and connector
+  - 128MB DRAM
+  - ?~256MB storage?
 
 * Main Semiconductors
   - AD52058 (ESMT): Class D audio amp, 2x15W
   - RTL8723DS (Realtek): 802.11bgn, SDIO, BTLE
   - R328-S3 (Allwinner): mutli-microphone audio processor
-    * R328-S3
+    * CPUs
+      - dual-core ARMv7, BogoMIPS: 57.14
+    * IO
       - interfaces
         * 8x PDM
         * 16x I2S
@@ -62,9 +66,9 @@ Applications for Smart Speakers
 ### Software Development
 
 * get console
-  - plug in microUSB connector
-  - plug in 12V PSU
-  - 'adb shell'
+  - connect device to host with microUSB connector
+  - plug device into 12V PSU
+  - on host: 'adb shell'
 
 * set up device
   - cp /data/wifi/wpa_supplicant.conf /data/wifi/wpa_supplicant.conf.orig
@@ -72,7 +76,7 @@ Applications for Smart Speakers
     * network={
         scan_ssid=1
         key_mgmt=WPA-PSK
-        ssid="Linksys49812"
+        ssid="<ssid>"
         psk="<pwd>"
     }
   - echo "nameserver 192.168.166.1" > /data/wifi/resolve.conf
@@ -85,56 +89,3 @@ Applications for Smart Speakers
   - enable ssh access
     * ????
   - reboot
-
-* building apps
-  - build docker image with cross-compilation tools for arm32v7
-    * 'docker build -t arm32v7-cross-compiler .'
-  - run shell in docker
-    * 'docker run --rm -it -v $(pwd):/app arm32v7-cross-compiler /bin/bash'
-  - compile in docker
-    * '${CC} --static ./src/helloworld.c -o ./build/helloworld'
-    * '${CC} --static ./src/glibcTest.c -o ./build/glibcTest'
-  - load binaries from host to the speaker
-    * push libraries
-      - 'adb push ./lib/ /opt/ss/'
-    * push apps
-      - 'adb push ./build/helloworld /opt/ss/build/'
-  - run arm stuff within the container
-    * 'apt-get update && apt-get install -y qemu-user-static'
-    * 'export QEMU=/usr/bin/qemu-arm-static'
-    * '${QEMU} <bin>'
-  - build glib2.0 for cross-compilation on x86 platform for arm32v7 targets
-    * wget https://download.gnome.org/sources/glib/2.68/glib-2.68.4.tar.xz
-    * tar xf glib-2.68.4.tar.xz
-    * cd glib-2.68.4
-    * export PKG_CONFIG_PATH=/usr/lib/arm-linux-gnueabihf/pkgconfig
-    * export CC=arm-linux-gnueabihf-gcc
-    * export CXX=arm-linux-gnueabihf-g++
-    * meson setup builddir --cross-file=./cross-file.txt
-
-  - run docker
-    * 'docker run --rm -it -v $(pwd):/out --security-opt label=disable arm32v7-cross-compiler /bin/bash'
-    * docker run --rm -v $(pwd):/app arm32v7-cross-compiler <cmd>
-  - load libraries from container to the host
-    * from Dockerfile
-      - COPY /usr/xcc/armv7-unknown-linux-gnueabi/armv7-unknown-linux-gnueabi/sysroot/lib/libc.so.6 /out/lib/
-
-  - move files/directories from host to speaker
-    * 'adb push <local> <remote>'
-    * 'scp -r <local> root@<ipaddr>:<remote>'
-
-  - install meson
-    * apt-get update
-    * apt-get install meson
-  
-Err:6 http://archive.ubuntu.com/ubuntu bionic/multiverse armhf Packages
-  404  Not Found [IP: 185.125.190.83 80]
-
-Err:10 http://security.ubuntu.com/ubuntu bionic-security/universe armhf Packages
-  404  Not Found [IP: 185.125.190.82 80]
-
-Err:15 http://archive.ubuntu.com/ubuntu bionic-updates/main armhf Packages
-  404  Not Found [IP: 185.125.190.83 80]
-
-Err:21 http://archive.ubuntu.com/ubuntu bionic-backports/universe armhf Packages
-  404  Not Found [IP: 185.125.190.83 80]
