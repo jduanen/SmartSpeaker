@@ -18,11 +18,12 @@ OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=%.o)
 # Executable name
 TARGET = smartspeaker
 
-# Include path
-INCLUDES = -I$(INC_DIR)
+# Include paths
+LIB_INCS = -I/usr/include/glib-2.0 -I/usr/include/glib-2.0/include -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include
+INCLUDES = -I$(INC_DIR) -I$(LIB_INCS)
 
 # Libraries to link
-LIBS = -llibc
+LIBS = -lglib-2.0
 
 # Library path
 LDFLAGS = -L$(LIB_DIR)
