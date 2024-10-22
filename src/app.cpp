@@ -25,15 +25,15 @@ namespace smartspeaker {
     leds->init();
     printf("Starting\n");
     leds->animate(LedsState_t::Starting);
-    usleep(10000000);  // Delay for 10 secs
+    usleep(5000000);  // Delay for 5 secs
 
     printf("Listening\n");
     leds->animate(LedsState_t::Listening);
-    usleep(10000000);  // Delay for 10 secs
+    usleep(5000000);  // Delay for 5 secs
 
     printf("Processing\n");
     leds->animate(LedsState_t::Processing);
-    usleep(10000000);  // Delay for 10 secs
+    usleep(5000000);  // Delay for 5 secs
     return 0;
   }
 }
