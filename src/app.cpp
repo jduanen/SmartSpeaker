@@ -19,7 +19,7 @@ namespace smartspeaker {
     config = std::make_unique<Config>();
     config->load();
 
-    printf("LEDs enabled: %d\n", config->leds_enabled);
+    printf("LEDs enabled: %d, path: %s\n", config->leds_enabled, config->leds_path);
 
     leds = std::make_unique<Leds>(this);
     leds->init();
