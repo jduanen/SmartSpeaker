@@ -44,7 +44,8 @@ clean:
 	rm -f $(OBJECTS) $(TARGET)
 
 # Install on connected target
-adb push ./smartspeaker /opt/ss/
+install:
+	adb push ./smartspeaker /opt/ss/
 
 # Phony targets
 .PHONY: all clean
