@@ -45,7 +45,7 @@ clean:
 
 # Install on connected target
 install:
-	adb push ./smartspeaker /opt/ss/
+	adb push ./config.ini ./smartspeaker /opt/ss/
 
 # Phony targets
 .PHONY: all clean
