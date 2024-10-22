@@ -44,7 +44,7 @@ clean:
 	rm -f $(OBJECTS) $(TARGET)
 
 # Install on connected target
-install:
+install: $(TARGET) config.ini
 	adb push ./config.ini ./smartspeaker /opt/ss/
 
 # Phony targets
