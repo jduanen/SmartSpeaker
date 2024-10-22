@@ -1,58 +1,45 @@
-project('smartspeaker', 'cpp', 'c',
-  version : '0.1.0',
-  default_options : [ 'warning_level=3', 'cpp_std=c++14' ]
+project('your_project_name', 'cpp',
+        version: '0.1',
+        default_options: [ 'warning_level=3', 'cpp_std=c++14' ]
 )
 
 app_command = 'smartspeaker'
 app_id = meson.project_name()
 
-if [ 'x86_64' ].contains(host_machine.cpu_family())
-  searchArch = 'x86_64-linux-gnu'
-  arch = 'x86_64'
-elif [ 'arm' ].contains(host_machine.cpu_family())
-  searchArch = 'arm-linux-gnueabihf'
-  arch = 'armhf'
-elif [ 'aarch64' ].contains(host_machine.cpu_family())
-  searchArch = 'aarch64-linux-gnu'
-  arch = 'arm64'
-else
-  error('Unknown architecture @0@. Patches accepted to fix this.' . format(host_machine.cpu_family()))
-endif
+lib_dir = '/home/jdn/Code/ss/lib'
+libGenie = compiler.find_library('libc.so.6', dirs: lib_dir)
 
-config_h = configuration_data()
+src_files = [
+  'src/main.cpp',
+]
 
-config_h.set_quoted('PACKAGE_NAME', app_id)
-config_h.set_quoted('PACKAGE_VERSION', meson.project_version())
-config_h.set_quoted('PREFIX', get_option('prefix'))
+#  'src/app.cpp',
+#  'src/config.cpp',
+#  'src/leds.cpp',
 
-pkgdatadir = join_paths(get_option('prefix'), get_option('datadir'), app_id)
-pkglibdir = join_paths(get_option('prefix'), 'lib', app_id)
-bindir = join_paths(get_option('prefix'), get_option('bindir'))
-config_h.set_quoted('bindir', bindir)
-config_h.set_quoted('libdir', join_paths(get_option('prefix'), get_option('libdir')))
-config_h.set_quoted('pkglibdir', pkglibdir)
-config_h.set_quoted('pkgdatadir', pkgdatadir)
-config_h.set('STATIC', get_option('static'))
-config_h.set('ARCH', arch)
+inc_dirs = include_directories('include')
 
-configure_file(
-  output : 'config.h',
-  configuration : config_h,
+#deps = [
+#  dependency('libc.so.6'),
+#  dependency('lib/libffi.so.6'),
+#  dependency('libgcc_s.so.1'),
+#  dependency('lib/libgio-2.0.so.0'),
+#  dependency('lib/libgobject-2.0.so.0'),
+#  dependency('lib/libm.so.6'),
+#  dependency('lib/libmount.so.1'),
+#  dependency('lib/libpcre.so.3'),
+#  dependency('lib/libpthread.so.0'),
+#  dependency('lib/libstdc++.so.6'),
+#]
+
+executable(
+  app_command,
+  src_files,
+  include_directories: inc_dirs,
+  dependencies: [ libGenie ],
 )
-add_global_arguments([
-  '-DHAVE_CONFIG_H',
-  '-I' + meson.build_root(),
-  '-Wno-unused',
-], language : 'cpp')
 
-add_global_arguments([
-  '-DHAVE_CONFIG_H',
-  '-I' + meson.build_root(),
-  '-Wno-unused',
-], language : 'c')
+#
+#  link_args: [ '-L' + lib_dir ],
+#  link_with: [ 'libc.so.6' ]
 
-subdir('src')
-install_subdir('assets', install_dir: pkglibdir)
-
-unitconf = configuration_data()
-unitconf.set('bindir', bindir)
