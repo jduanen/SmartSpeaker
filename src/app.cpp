@@ -29,7 +29,7 @@ namespace smartspeaker {
     for (auto s : EnumIterator<LedsState_t>()) {
       printf("> %d\n", i++);
       leds->animate(s);
-      usleep(5000000);  // Delay for 5 secs
+      usleep(10 * 1000000);  // Delay for 10 secs
     }
     return 0;
   }
