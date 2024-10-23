@@ -344,7 +344,7 @@ void smartspeaker::Config::load() {
     leds_disabled_effect = get_leds_effect_string("leds", "disabled_effect",
                                                   DEFAULT_LEDS_DISABLED_EFFECT);
     leds_disabled_color = get_dec_color_from_hex_string(
-        "leds", "diabled_color", DEFAULT_LEDS_DISABLED_COLOR);
+        "leds", "disabled_color", DEFAULT_LEDS_DISABLED_COLOR);
   } else {
     leds_type = nullptr;
     leds_path = nullptr;
