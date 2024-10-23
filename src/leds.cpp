@@ -167,15 +167,20 @@ bool smartspeaker::Leds::set_user(bool enabled) {
 }
 
 bool smartspeaker::Leds::set_brightness(int level) {
-  if (level > max_brightness)
-    return false;
+  g_debug("set_brightness: level=%d\n", level);  // TMP TMP TMP
+  if (level > max_brightness) {
+      g_debug("set_brightness: > max=%d\n", max_brightness);  // TMP TMP TMP
+      return false;
+  }
 
   char buffer[16];
   snprintf(buffer, sizeof(buffer) - 1, "%d", level);
   int fd = open(ctrl_path_brightness, O_WRONLY);
   if (fd > 0) {
     write(fd, buffer, strlen(buffer));
+    g_debug("set_brightness: %s\n", buffer);  // TMP TMP TMP
   } else {
+    g_debug("set_brightness::");  // TMP TMP TMP
     return false;
   }
   close(fd);

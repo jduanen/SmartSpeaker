@@ -30,7 +30,7 @@
 
     leds = std::make_unique<Leds>(this);
     leds->init();
-    leds->animate(LedsState_t::Processing);
+    leds->animate(LedsState_t::Starting);
 
 /*
   this->current_state = new state::Sleeping(this);
