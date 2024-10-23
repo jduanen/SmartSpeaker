@@ -119,7 +119,7 @@ void smartspeaker::Leds::animate(LedsState_t state) {
                        app->config->leds_error_color);
       break;
     case LedsState_t::NetError:
-      g_debug("leds error\n");
+      g_debug("leds net error\n");
       animate_internal((LedsAnimation_t)app->config->leds_net_error_effect,
                        app->config->leds_net_error_color);
       break;
@@ -249,6 +249,7 @@ gboolean smartspeaker::Leds::update_pulse(gpointer data) {
 
   if (!obj->update_timer_pulse) {
     obj->set_brightness(obj->brightness);
+    g_debug("update_pulse: %d\n", obj->brightness);  // TMP TMP TMP
     return false;
   }
 
@@ -268,6 +269,7 @@ gboolean smartspeaker::Leds::update_pulse(gpointer data) {
     }
   }
   obj->set_brightness(obj->step_bright);
+  g_debug("update_pulse: %d\n", obj->step_bright);  // TMP TMP TMP
 
   return obj->update_timer_pulse;
 }
@@ -301,4 +303,5 @@ void smartspeaker::Leds::pulse() {
   set_brightness(0);
   update_timer_pulse = true;
   g_timeout_add(50, update_pulse, this);
+  g_debug("pulse\n");  // TMP TMP TMP
 }
