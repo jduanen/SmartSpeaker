@@ -281,7 +281,7 @@ gboolean smartspeaker::Leds::update_pulse(gpointer data) {
     }
   }
   obj->set_brightness(obj->step_bright);
-  g_debug("update_pulse: %d\n", obj->step_bright);  // TMP TMP TMP
+  g_debug("update_pulse:: step=%d\n", obj->step_bright);  // TMP TMP TMP
 
   return obj->update_timer_pulse;
 }
