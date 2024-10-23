@@ -24,9 +24,6 @@
 
 namespace smartspeaker {
 
-#define ENUM_RANGE(T) \
-    (T)(0), (T)(static_cast<std::underlying_type_t<T>>((T::Last)) - 1)
-
 enum class LedsState_t {
   Starting,
   Sleeping,
@@ -36,7 +33,13 @@ enum class LedsState_t {
   Config,
   Error,
   NetError,
-  Disabled
+  Disabled,
+
+  static constexpr LedsState_t begin() { return Starting; },
+  static constexpr LedsState_t end() { return Disabled; },
+  static constexpr LedsState_t operator++(LedsState_t& s) {
+    return s = static_cast<LedsState_t>(static_cast<int>(s) + 1);
+  }
 };
 
 enum class LedsAnimation_t { None, Solid, Circular, Pulse };
