@@ -23,17 +23,12 @@ namespace smartspeaker {
 
     leds = std::make_unique<Leds>(this);
     leds->init();
-    printf("Starting\n");
-    leds->animate(LedsState_t::Starting);
-    usleep(5000000);  // Delay for 5 secs
 
-    printf("Listening\n");
-    leds->animate(LedsState_t::Listening);
-    usleep(5000000);  // Delay for 5 secs
-
-    printf("Processing\n");
-    leds->animate(LedsState_t::Processing);
-    usleep(5000000);  // Delay for 5 secs
+    for (LedsState_t s = ENUM_RANGE(LedsState_t)) {
+      printf("> %s\n", s);
+      leds->animate(s);
+      usleep(5000000);  // Delay for 5 secs
+    }
     return 0;
   }
 }
