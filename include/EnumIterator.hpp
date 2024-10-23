@@ -7,6 +7,8 @@ namespace smartspeaker {
     int_type value;
 
   public:
+    EnumIterator() : value(0) {}
+
     explicit EnumIterator(const E& f) : value(static_cast<int_type>(f)) {}
     void operator++() { ++value; }
     E operator*() const { return static_cast<E>(value); }
