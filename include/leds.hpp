@@ -22,10 +22,10 @@
 
 #include "app.hpp"
 
-#define ENUM_RANGE(T) \
-    static_cast<T>(0), static_cast<T>(static_cast<int>(T::LastValue) - 1)
-
 namespace smartspeaker {
+
+#define ENUM_RANGE(T) \
+    (T)(0), (T)(static_cast<std::underlying_type_t<T>>((T::Last)) - 1)
 
 enum class LedsState_t {
   Starting,
