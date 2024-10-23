@@ -9,6 +9,7 @@ int main(int argc, char *argv[]) {
   printf("SmartSpeaker App\n");
   App app;
   printf("...\n");
+  g_debug("Starting App\n");
   return app.exec(argc, argv);
-  printf("DONE");
+  g_debug("App Done\n");
 }
