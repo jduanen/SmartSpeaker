@@ -30,7 +30,7 @@
 
     leds = std::make_unique<Leds>(this);
     leds->init();
-    leds->animate(LedsState_t::Starting);
+    leds->animate(LedsState_t::Processing);
 
 /*
   this->current_state = new state::Sleeping(this);
@@ -40,6 +40,8 @@
   g_debug("start main loop\n");
   g_main_loop_run(main_loop);
   g_debug("main loop returned\n");
+
+  //// TODO clean up before exiting
 
   return EXIT_SUCCESS;
   }

@@ -289,12 +289,13 @@ void smartspeaker::Leds::circular(int color) {
     update_timer_pulse = false;
     clear(base_color);
   }
+  g_debug("circular:: \n");
 
   step_circular = 0;
   color_circular = color;
   update_timer_circular = true;
   g_timeout_add(100, update_circular, this);
-  g_debug("circular: \n");  // TMP TMP TMP
+  g_debug("circular::: \n");  // TMP TMP TMP
 }
 
 void smartspeaker::Leds::pulse() {
