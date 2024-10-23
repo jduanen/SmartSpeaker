@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <memory>
+#include <thread>
 
 namespace smartspeaker {
 

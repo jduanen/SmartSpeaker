@@ -32,8 +32,10 @@
     leds->init();
     leds->animate(LedsState_t::Starting);
 
+/*
   this->current_state = new state::Sleeping(this);
   this->current_state->enter();
+*/
 
   g_debug("start main loop\n");
   g_main_loop_run(main_loop);
