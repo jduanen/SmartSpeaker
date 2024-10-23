@@ -33,7 +33,8 @@ enum class LedsState_t {
   Config,
   Error,
   NetError,
-  Disabled
+  Disabled,
+  Last
 };
 
 enum class LedsAnimation_t { None, Solid, Circular, Pulse };
