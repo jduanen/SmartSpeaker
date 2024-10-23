@@ -9,6 +9,7 @@
 #include "config.hpp"
 #include "app.hpp"
 #include "leds.hpp"
+#include "EnumIterator.hpp"
 
 namespace smartspeaker {
   App::App() { printf("APP Create"); }
