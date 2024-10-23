@@ -24,13 +24,6 @@ namespace smartspeaker {
     leds = std::make_unique<Leds>(this);
     leds->init();
 
-
-// Usage
-for (auto color : EnumIterator<Color>()) {
-    // Use color
-}
-
-
     int i = 0;
     for (auto s : EnumIterator<LedsState_t>()) {
       printf("> %d\n", i++);
