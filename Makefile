@@ -38,7 +38,7 @@ $(BUILD_DIR):
 
 # Linking the program
 $(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) $^ -o $@ $(LDFLAGS) $(LIBS)
+	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS) $(LIBS)
 
 # Compiling source files
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
