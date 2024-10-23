@@ -24,8 +24,9 @@ namespace smartspeaker {
     leds = std::make_unique<Leds>(this);
     leds->init();
 
+    int i = 0;
     for (LedsState_t s = ENUM_RANGE(LedsState_t)) {
-      printf("> %s\n", s);
+      printf("> %d\n", i++);
       leds->animate(s);
       usleep(5000000);  // Delay for 5 secs
     }
