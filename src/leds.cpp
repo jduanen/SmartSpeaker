@@ -153,10 +153,13 @@ void smartspeaker::Leds::animate_internal(LedsAnimation_t style, int color,
 bool smartspeaker::Leds::set_user(bool enabled) {
   char path[256];
   snprintf(path, sizeof(path) - 1, "%s/user_space", ctrl_path_base);
+  g_debug("set_user: %s\n", path);  // TMP TMP TMP
   int fd = open(path, O_WRONLY);
   if (fd > 0) {
     write(fd, enabled ? "1" : "0", 1);
+    g_debug("set_user: enabled=%d\n", enabled);  // TMP TMP TMP
   } else {
+    g_debug("set_user: failed to open\n");  // TMP TMP TMP
     return false;
   }
   close(fd);
@@ -218,7 +221,7 @@ bool smartspeaker::Leds::set_leds() {
   int fd = open(ctrl_path_all, O_WRONLY);
   if (fd > 0) {
     write(fd, buffer, strlen(buffer));
-    // g_debug("write-set-leds %s\n", buffer);
+    g_debug("write-set-leds %s\n", buffer);  // TMP TMP TMP
   } else {
     return false;
   }
@@ -230,6 +233,7 @@ gboolean smartspeaker::Leds::update_circular(void* data) {
   Leds *obj = (Leds *)data;
 
   if (!obj->update_timer_circular)
+    g_debug("update_circular:\n");  // TMP TMP TMP
     return false;
 
   obj->leds[obj->step_circular] = obj->base_color;
@@ -240,6 +244,7 @@ gboolean smartspeaker::Leds::update_circular(void* data) {
   obj->leds[obj->step_circular] = obj->color_circular;
 
   obj->set_leds();
+  g_debug("update_circular::\n");  // TMP TMP TMP
 
   return obj->update_timer_circular;
 }
@@ -277,6 +282,7 @@ gboolean smartspeaker::Leds::update_pulse(gpointer data) {
 void smartspeaker::Leds::circular(int color) {
   if (update_timer_circular) {
     color_circular = color;
+    g_debug("circular: %d\n", color);  // TMP TMP TMP
     return;
   }
   if (update_timer_pulse) {
@@ -288,14 +294,17 @@ void smartspeaker::Leds::circular(int color) {
   color_circular = color;
   update_timer_circular = true;
   g_timeout_add(100, update_circular, this);
+  g_debug("circular: \n");  // TMP TMP TMP
 }
 
 void smartspeaker::Leds::pulse() {
   if (update_timer_pulse)
+    g_debug("pulse:\n");  // TMP TMP TMP
     return;
   if (update_timer_circular) {
     update_timer_circular = false;
     usleep(100);
+    g_debug("pulse: sleep\n");  // TMP TMP TMP
   }
 
   step_bright = brightness;
