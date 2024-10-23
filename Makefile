@@ -13,10 +13,12 @@ LIB_DIR = lib
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
 
 # Object files
-OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=%.o)
+OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
 
 # Executable name
 TARGET = smartspeaker
+
+BUILD_DIR = build
 
 # Include paths
 LIB_INCS = -I/usr/include/glib-2.0 -I/usr/include/glib-2.0/include -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include
@@ -29,14 +31,17 @@ LIBS = -lglib-2.0
 LDFLAGS = -L$(LIB_DIR)
 
 # Default target
-all: $(TARGET)
+all: $(BUILD_DIR) $(TARGET)
+
+$(BUILD_DIR):
+	mkdir -p $@
 
 # Linking the program
 $(TARGET): $(OBJECTS)
-	$(CXX) $(OBJECTS) -o $@ $(LDFLAGS) $(LIBS)
+	$(CXX) $(OBJECTS) $^ -o $@ $(LDFLAGS) $(LIBS)
 
 # Compiling source files
-%.o: $(SRC_DIR)/%.cpp
+$(BUILD_DIR)/%.o: $(SRC_DIR)/%.cpp
 	$(CXX) $(CXXFLAGS) $(INCLUDES) -c $< -o $@
 
 # Clean up
