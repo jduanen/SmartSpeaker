@@ -233,9 +233,10 @@ gboolean smartspeaker::Leds::update_circular(void* data) {
   Leds *obj = (Leds *)data;
   g_debug("update_circular:\n");  // TMP TMP TMP
 
-  if (!obj->update_timer_circular)
+  if (!obj->update_timer_circular) {
     g_debug("update_circular::\n");  // TMP TMP TMP
     return false;
+  }
 
   obj->leds[obj->step_circular] = obj->base_color;
   obj->step_circular++;
@@ -300,9 +301,10 @@ void smartspeaker::Leds::circular(int color) {
 }
 
 void smartspeaker::Leds::pulse() {
-  if (update_timer_pulse)
+  if (update_timer_pulse) {
     g_debug("pulse:\n");  // TMP TMP TMP
     return;
+  }
   if (update_timer_circular) {
     update_timer_circular = false;
     usleep(100);
