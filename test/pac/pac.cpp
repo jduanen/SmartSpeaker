@@ -37,7 +37,7 @@ void printUsage(const char* programName) {
 
 int main(int argc, char* argv[]) {
     std::string outputFile = "output.wav";
-    const int duration = 10; // 10 seconds
+    int duration = 10; // 10 seconds
 
     static struct option long_options[] = {
         {"output",   required_argument, 0, 'o'},
