@@ -21,7 +21,7 @@ int main() {
     // Set up PulseAudio
     pa_sample_spec ss;
     ss.format = PA_SAMPLE_S16LE;
-    ss.channels = 2;
+    ss.channels = 1;
     ss.rate = 44100;
 
     pa_simple *s = nullptr;
