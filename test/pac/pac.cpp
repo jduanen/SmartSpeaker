@@ -1,9 +1,14 @@
+/*
+* Simple audio capture program
+*/
+
 #include <pulse/simple.h>
 #include <pulse/error.h>
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <cstring>
+#include <getopt.h>
 
 // WAV header structure
 struct WAVHeader {
@@ -22,7 +27,45 @@ struct WAVHeader {
     uint32_t data_size;
 };
 
+void printUsage(const char* programName) {
+    std::cout << "Usage: " << programName << " [options]\n"
+              << "Options:\n"
+              << "  -o, --output FILE    Output WAV file name (default: output.wav)\n"
+              << "  -d, --duration SECS  Recording duration in seconds (default: 10)\n"
+              << "  -h, --help           Show this help message\n";
+}
+
 int main() {
+    std::string outputFile = "output.wav";
+    const int duration = 10; // 10 seconds
+
+    static struct option long_options[] = {
+        {"output",   required_argument, 0, 'o'},
+        {"duration", required_argument, 0, 'd'},
+        {"help",     no_argument,       0, 'h'},
+        {0, 0, 0, 0}
+    };
+
+    int opt;
+    while ((opt = getopt_long(argc, argv, "o:d:h", long_options, nullptr)) != -1) {
+        switch (opt) {
+            case 'o':
+                outputFile = optarg;
+                break;
+            case 'd':
+                duration = std::stoi(optarg);
+                break;
+            case 'h':
+                printUsage(argv[0]);
+                return 0;
+            default:
+                printUsage(argv[0]);
+                return 1;
+        }
+    }
+
+    std::cout << "Recording to " << outputFile << " for " << duration << " seconds\n";
+
     pa_sample_spec ss;
     ss.format = PA_SAMPLE_S16LE;
     ss.channels = 1;
@@ -31,6 +74,7 @@ int main() {
     pa_simple *s = nullptr;
     int error;
 
+    //// TODO make the input source be a cli arg
     s = pa_simple_new(NULL, "AudioCapture", PA_STREAM_RECORD, NULL, "record", &ss, NULL, NULL, &error);
 
     if (!s) {
@@ -38,7 +82,6 @@ int main() {
         return 1;
     }
 
-    const int duration = 10; // 10 seconds
     const int buffer_size = ss.rate * ss.channels * duration * sizeof(int16_t);
     std::vector<char> buffer(buffer_size);
 
@@ -61,12 +104,12 @@ int main() {
     header.overall_size = header.data_size + sizeof(WAVHeader) - 8;
 
     // Write WAV file
-    std::ofstream outfile("output.wav", std::ios::binary);
+    std::ofstream outfile(outputFile, std::ios::binary);
     outfile.write(reinterpret_cast<const char*>(&header), sizeof(WAVHeader));
     outfile.write(buffer.data(), buffer.size());
     outfile.close();
 
-    std::cout << "Audio captured and saved to output.wav" << std::endl;
+    std::cout << "Audio captured and saved to " << outputFile << std::endl;
 
     return 0;
 }
