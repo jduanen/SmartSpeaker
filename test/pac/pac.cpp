@@ -35,7 +35,7 @@ void printUsage(const char* programName) {
               << "  -h, --help           Show this help message\n";
 }
 
-int main() {
+int main(int argc, char* argv[]) {
     std::string outputFile = "output.wav";
     const int duration = 10; // 10 seconds
 
