@@ -6,7 +6,7 @@
 
 int main() {
     // Open and read WAV file
-    std::ifstream file("tone.wav", std::ios::binary);
+    std::ifstream file("input.wav", std::ios::binary);
     if (!file) {
         std::cerr << "Failed to open file" << std::endl;
         return 1;
