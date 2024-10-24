@@ -176,7 +176,7 @@ bool smartspeaker::Leds::set_brightness(int level) {
   char buffer[16];
   snprintf(buffer, sizeof(buffer) - 1, "%d", level);
   int fd = open(ctrl_path_brightness, O_WRONLY);
-  g_debug("set_brightness:: path=%s\n", ctrl_path_brightness);
+  g_debug("set_brightness:: path=%s\n", ctrl_path_brightness);  // TMP TMP TMP
   if (fd > 0) {
     write(fd, buffer, strlen(buffer));
     g_debug("set_brightness::: %s\n", buffer);  // TMP TMP TMP
