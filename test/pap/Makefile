@@ -45,7 +45,7 @@ clean:
 	rm -f $(OBJECTS) $(TARGET)
 
 # Install on connected target
-install: $(TARGET) config.ini
+install: $(TARGET)
 	adb push $(TARGET) /opt/ss/
 
 # Phony targets
