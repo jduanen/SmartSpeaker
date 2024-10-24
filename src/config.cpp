@@ -1,10 +1,10 @@
 /*
-*
+* SmartSpeaker derived from Genie
 */
 
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
-// This file is part of smartspeaker
+// This file is part of Genie
 //
 // Copyright 2021 The Board of Trustees of the Leland Stanford Junior University
 //
@@ -282,13 +282,11 @@ void smartspeaker::Config::load() {
     g_clear_error(&error);
   }
 
-  /*
   if (buttons_enabled) {
     evinput_device = get_string("buttons", "evinput_dev", DEFAULT_EVINPUT_DEV);
   } else {
     evinput_device = nullptr;
   }
-  */
 
   // Leds
   // =========================================================================

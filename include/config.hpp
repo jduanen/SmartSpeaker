@@ -1,5 +1,5 @@
 /*
-*
+* SmartSpeaker derived from Genie
 */
 
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
@@ -41,6 +41,10 @@ public:
   static const constexpr char *DEFAULT_LOCALE = "en-US";
   static const constexpr char *DEFAULT_VOICE = "male";
   static const constexpr char *DEFAULT_NET_WLAN_IF = "wlan0";
+
+  // Buttons Defaults
+  // -------------------------------------------------------------------------
+  static const constexpr char *DEFAULT_EVINPUT_DEV = "/dev/input/event0";
 
   // Leds Defaults
   // -------------------------------------------------------------------------

@@ -1,13 +1,14 @@
 /*
-*
+* SmartSpeaker derived from Genie
 */
 
 #include <glib-unix.h>
 #include <glib.h>
 #include <unistd.h>
 
-#include "config.hpp"
 #include "app.hpp"
+#include "config.hpp"
+#include "evinput.hpp"
 #include "leds.hpp"
 #include "EnumIterator.hpp"
 
@@ -31,6 +32,9 @@
     leds = std::make_unique<Leds>(this);
     leds->init();
     leds->animate(LedsState_t::Starting);
+
+    ev_input = std::make_unique<EVInput>(this);
+    ev_input->init();
 
 /*
   this->current_state = new state::Sleeping(this);
@@ -57,6 +61,79 @@
     // that could cause us to restart
     exit(0);
   }
+
+/*
+ * @brief Track an event that is part of a turn's remote processing.
+ *
+ * We want to keep a close eye the performance of our
+ *
+ * @param event_type
+ */
+void genie::App::track_processing_event(ProcessingEventType event_type) {
+  // Unless we are starting a turn or already in a turn just bail out. This
+  // avoids tracking the "Hi..." and any other messages at connect.
+  if (!(event_type == ProcessingEventType::START_STT || is_processing)) {
+    return;
+  }
+
+  switch (event_type) {
+    case ProcessingEventType::START_STT:
+      gettimeofday(&start_stt, NULL);
+      is_processing = true;
+      break;
+    case ProcessingEventType::END_STT:
+      gettimeofday(&end_stt, NULL);
+      break;
+    case ProcessingEventType::START_GENIE:
+      gettimeofday(&start_genie, NULL);
+      break;
+    case ProcessingEventType::END_GENIE:
+      gettimeofday(&end_genie, NULL);
+      break;
+    case ProcessingEventType::START_TTS:
+      gettimeofday(&start_tts, NULL);
+      break;
+    case ProcessingEventType::END_TTS:
+      gettimeofday(&end_tts, NULL);
+      break;
+    case ProcessingEventType::DONE:
+      int total_ms = time_diff_ms(start_stt, end_tts);
+
+      g_print("############# Processing Performance #################\n");
+      print_processing_entry("STT", time_diff_ms(start_stt, end_stt), total_ms);
+      print_processing_entry("STT->Genie", time_diff_ms(end_stt, start_genie),
+                             total_ms);
+      print_processing_entry("Genie", time_diff_ms(start_genie, end_genie),
+                             total_ms);
+      print_processing_entry("Genie->TTS", time_diff_ms(end_genie, start_tts),
+                             total_ms);
+      print_processing_entry("TTS", time_diff_ms(start_tts, end_tts), total_ms);
+      g_print("------------------------------------------------------\n");
+      print_processing_entry("Total", total_ms, total_ms);
+      g_print("######################################################\n");
+
+      is_processing = false;
+      break;
+  }
+}
+
+void genie::App::replay_deferred_events() {
+  // steal all the deferred events
+  // this is necessary because handling the event
+  // might queue more deferred events
+  std::queue<DeferredEvent> copy;
+  std::swap(copy, deferred_events);
+
+  // replay the events
+  while (!copy.empty()) {
+    auto &defer = copy.front();
+    current_event = defer.event;
+    defer.dispatch(current_state);
+    delete current_event;
+    current_event = nullptr;
+    copy.pop();
+  }
+}
 
 
 /*
