@@ -22,7 +22,7 @@ int main(int argc, char* argv[]) {
     };
 
     int opt;
-    while ((opt = getopt_long(argc, argv, "o:d:h", long_options, nullptr)) != -1) {
+    while ((opt = getopt_long(argc, argv, "i:h", long_options, nullptr)) != -1) {
         switch (opt) {
             case 'i':
                 inputFile = optarg;
