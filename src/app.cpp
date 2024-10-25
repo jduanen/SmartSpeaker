@@ -36,18 +36,16 @@
     ev_input = std::make_unique<EVInput>(this);
     ev_input->init();
 
-/*
-  this->current_state = new state::Sleeping(this);
-  this->current_state->enter();
-*/
+    this->current_state = new state::Sleeping(this);
+    this->current_state->enter();
 
-  g_debug("start main loop\n");
-  g_main_loop_run(main_loop);
-  g_debug("main loop returned\n");
+    g_debug("start main loop\n");
+    g_main_loop_run(main_loop);
+    g_debug("main loop returned\n");
 
-  //// TODO clean up before exiting
+    //// TODO clean up before exiting
 
-  return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
   }
 
   gboolean smartspeaker::App::sigint_handler(gpointer data) {
