@@ -22,7 +22,7 @@ BUILD_DIR = build
 
 # Include paths
 LIB_INCS = -I/usr/include/glib-2.0 -I/usr/include/glib-2.0/include -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include
-INCLUDES = -I$(INC_DIR) -I$(LIB_INCS) -I$(SRC_DIR)/state
+INCLUDES = -I$(INC_DIR) -I$(LIB_INCS)
 
 # Libraries to link
 LIBS = -lglib-2.0
