@@ -1,5 +1,5 @@
 /*
-* SmartSpeaker derived from Genie
+*
 */
 
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
