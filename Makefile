@@ -10,7 +10,7 @@ INC_DIR = include
 LIB_DIR = lib
 
 # Source files
-SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
+SOURCES = $(wildcard $(SRC_DIR)/*.cpp) $(wildcard $(SRC_DIR)/state/*.cpp)
 
 # Object files
 OBJECTS = $(SOURCES:$(SRC_DIR)/%.cpp=$(BUILD_DIR)/%.o)
@@ -22,7 +22,7 @@ BUILD_DIR = build
 
 # Include paths
 LIB_INCS = -I/usr/include/glib-2.0 -I/usr/include/glib-2.0/include -I/usr/lib/arm-linux-gnueabihf/glib-2.0/include
-INCLUDES = -I$(INC_DIR) -I$(LIB_INCS)
+INCLUDES = -I$(INC_DIR) -I$(LIB_INCS) -I$(SRC_DIR)/state
 
 # Libraries to link
 LIBS = -lglib-2.0
