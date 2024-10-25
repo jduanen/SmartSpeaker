@@ -3,10 +3,43 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <getopt.h>
 
-int main() {
+void printUsage(const char* programName) {
+    std::cout << "Usage: " << programName << " [options]\n"
+              << "Options:\n"
+              << "  -i, --input FILE    Output WAV file name (default: output.wav)\n"
+              << "  -h, --help           Show this help message\n";
+}
+
+int main(int argc, char* argv[]) {
+    std::string inputFile = "input.wav";
+
+    static struct option long_options[] = {
+        {"input",   required_argument, 0, 'i'},
+        {"help",     no_argument,       0, 'h'},
+        {0, 0, 0, 0}
+    };
+
+    int opt;
+    while ((opt = getopt_long(argc, argv, "o:d:h", long_options, nullptr)) != -1) {
+        switch (opt) {
+            case 'i':
+                inputFile = optarg;
+                break;
+            case 'h':
+                printUsage(argv[0]);
+                return 0;
+            default:
+                printUsage(argv[0]);
+                return 1;
+        }
+    }
+
+    std::cout << "Playing from " << inputFile << "\n";
+
     // Open and read WAV file
-    std::ifstream file("input.wav", std::ios::binary);
+    std::ifstream file(inputFile, std::ios::binary);
     if (!file) {
         std::cerr << "Failed to open file" << std::endl;
         return 1;
@@ -18,6 +51,7 @@ int main() {
     // Read audio data
     std::vector<char> buffer(std::istreambuf_iterator<char>(file), {});
 
+    //// TODO make data format and data rate cli args
     // Set up PulseAudio
     pa_sample_spec ss;
     ss.format = PA_SAMPLE_S16LE;
@@ -27,6 +61,7 @@ int main() {
     pa_simple *s = nullptr;
     int error;
 
+    //// TODO make output device be a cli arg
     s = pa_simple_new(NULL, "WAV Player", PA_STREAM_PLAYBACK, NULL, "Music", &ss, NULL, NULL, &error);
 
     if (!s) {
