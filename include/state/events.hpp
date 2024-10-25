@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -18,13 +22,12 @@
 
 #pragma once
 
-#include "../audio/audio.hpp"
 #include <glib.h>
 #include <memory>
 #include <string>
 #include <vector>
 
-namespace genie {
+namespace smartspeaker {
 namespace state {
 namespace events {
 
@@ -79,27 +82,6 @@ private:
   std::unique_ptr<Request<void>> request;
 };
 
-// Audio Input Events
-// ===========================================================================
-
-struct Wake : Event {};
-
-struct InputFrame : Event {
-  AudioFrame frame;
-
-  InputFrame(AudioFrame frame) : frame(std::move(frame)) {}
-};
-
-struct InputDone : Event {
-  bool vad_detected;
-
-  InputDone(bool vad_detected) : vad_detected(vad_detected) {}
-};
-
-struct InputNotDetected : Event {};
-
-struct InputTimeout : Event {};
-
 // Conversation Events
 // ===========================================================================
 
@@ -108,12 +90,6 @@ struct TextMessage : Event {
   std::string text;
 
   TextMessage(gint64 id, const gchar *text) : id(id), text(text) {}
-};
-
-struct AudioMessage : Event {
-  std::string url;
-
-  AudioMessage(const gchar *url) : url(url) {}
 };
 
 struct SoundMessage : Event {
@@ -135,15 +111,6 @@ struct AskSpecialMessage : Event {
       : ask(ask == nullptr ? "" : ask), text_id(text_id) {}
 };
 
-struct SpotifyCredentials : Event {
-  std::string access_token;
-  std::string username;
-
-  SpotifyCredentials(const gchar *username, const gchar *access_token)
-      : access_token(access_token == nullptr ? "" : access_token),
-        username(username == nullptr ? "" : username) {}
-};
-
 // Button Events
 // ===========================================================================
 
@@ -160,25 +127,6 @@ struct Panic : Event {};
 struct ToggleDisabled : Event {};
 
 struct ToggleConfigMode : Event {};
-
-// Audio Player Events
-// ===========================================================================
-
-struct PlayerStreamEnter : Event {
-  AudioTaskType type;
-  gint64 ref_id;
-
-  PlayerStreamEnter(AudioTaskType type, gint64 ref_id)
-      : type(type), ref_id(ref_id) {}
-};
-
-struct PlayerStreamEnd : Event {
-  AudioTaskType type;
-  gint64 ref_id;
-
-  PlayerStreamEnd(AudioTaskType type, gint64 ref_id)
-      : type(type), ref_id(ref_id) {}
-};
 
 // Speech-To-Text (STT) Events
 // ===========================================================================
@@ -200,64 +148,6 @@ struct ErrorResponse : Event {
 
 } // namespace stt
 
-// Audio Control Protocol Events
-
-namespace audio {
-
-using CheckResponse = std::pair<bool, std::string>;
-
-struct CheckSpotifyEvent : public RequestEvent<CheckResponse> {
-  CheckSpotifyEvent(std::unique_ptr<Request<CheckResponse>> &&req,
-                    const char *username, const char *access_token)
-      : RequestEvent<CheckResponse>(std::move(req)), username(username),
-        access_token(access_token) {}
-
-  const std::string username;
-  const std::string access_token;
-};
-
-struct PrepareEvent : public RequestEvent<void> {
-  PrepareEvent(std::unique_ptr<Request<void>> &&req)
-      : RequestEvent<void>(std::move(req)) {}
-};
-
-struct StopEvent : public RequestEvent<void> {
-  StopEvent(std::unique_ptr<Request<void>> &&req)
-      : RequestEvent<void>(std::move(req)) {}
-};
-
-struct PlayURLsEvent : public RequestEvent<void> {
-  PlayURLsEvent(std::unique_ptr<Request<void>> &&req,
-                std::vector<std::string> urls)
-      : RequestEvent<void>(std::move(req)), urls(std::move(urls)) {}
-
-  const std::vector<std::string> urls;
-};
-
-struct SetVolumeEvent : public RequestEvent<void> {
-  SetVolumeEvent(std::unique_ptr<Request<void>> &&req, int volume)
-      : RequestEvent<void>(std::move(req)), volume(volume) {}
-
-  const int volume;
-};
-
-struct AdjVolumeEvent : public RequestEvent<void> {
-  AdjVolumeEvent(std::unique_ptr<Request<void>> &&req,
-                 int delta /* a value between -100 and +100 */)
-      : RequestEvent<void>(std::move(req)), delta(delta) {}
-
-  const int delta;
-};
-
-struct SetMuteEvent : public RequestEvent<void> {
-  SetMuteEvent(std::unique_ptr<Request<void>> &&req, bool mute)
-      : RequestEvent<void>(std::move(req)), mute(mute) {}
-
-  const bool mute;
-};
-
-} // namespace audio
-
 } // namespace events
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker
