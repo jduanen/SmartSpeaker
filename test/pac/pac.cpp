@@ -66,6 +66,7 @@ int main(int argc, char* argv[]) {
 
     std::cout << "Recording to " << outputFile << " for " << duration << " seconds\n";
 
+    //// TODO make data format and data rate cli args
     pa_sample_spec ss;
     ss.format = PA_SAMPLE_S16LE;
     ss.channels = 1;
