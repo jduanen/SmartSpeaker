@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <glib-unix.h>
 #include <glib.h>
 #include <memory>
 #include <string>
@@ -88,7 +89,7 @@ private:
 struct Wake : Event {};
 
 struct InputFrame : Event {
-  g_debug("InputFrame Event");
+  g_debug("InputFrame Event\n");
   /*
   AudioFrame frame;
 
