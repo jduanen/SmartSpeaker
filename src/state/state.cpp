@@ -45,12 +45,6 @@ void State::exit() {
 // Event Handling Methods
 // ===========================================================================
 
-void State::react(events::Wake *) {
-  // Normally when we wake we start listening. The exception is the Listen
-  // state itself.
-  app->transit(new Listening(app));
-}
-
 void State::react(events::InputFrame *input_frame) {
   g_debug("FIXME received InputFrame when not in Listen state, discarding.");
 }

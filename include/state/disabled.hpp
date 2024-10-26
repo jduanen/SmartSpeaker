@@ -43,7 +43,6 @@ public:
   void react(events::Panic *) override;
 
   // Events that state::State handles that we want to ignore
-  void react(events::Wake *) override {}
   void react(events::TextMessage *) override {}
 };
 

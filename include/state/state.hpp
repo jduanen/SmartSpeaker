@@ -53,7 +53,6 @@ public:
   // note: you must not define a react for the base Event class
   // otherwise you won't get any error when you add new event classes
   // and forget to declare them here
-  virtual void react(events::Wake *);
   virtual void react(events::InputFrame *input_frame);
   virtual void react(events::InputDone *);
   virtual void react(events::InputNotDetected *);
