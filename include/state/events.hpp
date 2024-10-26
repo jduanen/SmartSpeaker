@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <glib-unix.h>
+#include "../audio/audio.hpp"
 #include <glib.h>
 #include <memory>
 #include <string>
