@@ -89,12 +89,9 @@ private:
 struct Wake : Event {};
 
 struct InputFrame : Event {
-  g_debug("InputFrame Event\n");
-  /*
   AudioFrame frame;
 
   InputFrame(AudioFrame frame) : frame(std::move(frame)) {}
-  */
 };
 
 struct InputDone : Event {
