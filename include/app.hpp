@@ -5,7 +5,6 @@
 #pragma once
 
 #include "config.hpp"
-#include "evinput.hpp"
 
 #include <stdio.h>
 #include <memory>
