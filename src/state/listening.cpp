@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -18,16 +22,13 @@
 
 #include "state/listening.hpp"
 #include "app.hpp"
-#include "audio/audioinput.hpp"
-#include "audio/audioplayer.hpp"
-#include "audio/audiovolume.hpp"
 #include "leds.hpp"
 #include "stt.hpp"
 
 #undef G_LOG_DOMAIN
-#define G_LOG_DOMAIN "genie::state::Listening"
+#define G_LOG_DOMAIN "smartspeaker::state::Listening"
 
-namespace genie {
+namespace smartspeaker {
 namespace state {
 
 void Listening::enter() {
@@ -81,4 +82,4 @@ void Listening::react(events::InputTimeout *) {
 }
 
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker

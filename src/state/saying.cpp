@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -22,9 +26,9 @@
 #include "leds.hpp"
 
 #undef G_LOG_DOMAIN
-#define G_LOG_DOMAIN "genie::state::Saying"
+#define G_LOG_DOMAIN "smartspeaker::state::Saying"
 
-namespace genie {
+namespace smartspeaker {
 namespace state {
 
 void Saying::enter() {
@@ -48,22 +52,5 @@ void Saying::react(events::AskSpecialMessage *ask_special_message) {
   }
 }
 
-void Saying::react(events::PlayerStreamEnter *player_stream_enter) {
-  if (player_stream_enter->ref_id == text_id) {
-    app->track_processing_event(ProcessingEventType::END_TTS);
-  }
-}
-
-void Saying::react(events::PlayerStreamEnd *player_stream_end) {
-  if (player_stream_end->ref_id == text_id) {
-    app->track_processing_event(ProcessingEventType::DONE);
-    if (follow_up) {
-      app->transit(new Listening(app, true));
-    } else {
-      app->transit(new Sleeping(app));
-    }
-  }
-}
-
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker

@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -21,7 +25,7 @@
 #include "events.hpp"
 #include <chrono>
 
-namespace genie {
+namespace smartspeaker {
 
 class App;
 
@@ -55,27 +59,21 @@ public:
   virtual void react(events::InputNotDetected *);
   virtual void react(events::InputTimeout *);
   virtual void react(events::TextMessage *text_message);
-  virtual void react(events::AudioMessage *audio_message);
-  virtual void react(events::SoundMessage *sound_message);
   virtual void react(events::AskSpecialMessage *ask_special_message);
-  virtual void react(events::SpotifyCredentials *spotify_credentials);
   virtual void react(events::AdjustVolume *adjust_volume);
   virtual void react(events::TogglePlayback *);
   virtual void react(events::Panic *);
   virtual void react(events::ToggleDisabled *);
-  virtual void react(events::PlayerStreamEnter *player_stream_enter);
-  virtual void react(events::PlayerStreamEnd *player_stream_end);
+  virtual void react(events::ToggleConfigMode *);
   virtual void react(events::stt::TextResponse *response);
   virtual void react(events::stt::ErrorResponse *response);
-  virtual void react(events::audio::CheckSpotifyEvent *check_spotify);
   virtual void react(events::audio::PrepareEvent *prepare);
   virtual void react(events::audio::PlayURLsEvent *play_urls);
   virtual void react(events::audio::StopEvent *stop);
   virtual void react(events::audio::SetMuteEvent *set_mute);
   virtual void react(events::audio::SetVolumeEvent *set_volume);
   virtual void react(events::audio::AdjVolumeEvent *adj_volume);
-  virtual void react(events::ToggleConfigMode *);
 };
 
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker

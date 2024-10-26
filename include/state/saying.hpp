@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -21,7 +25,7 @@
 #include "events.hpp"
 #include "state.hpp"
 
-namespace genie {
+namespace smartspeaker {
 namespace state {
 
 class Saying : public State {
@@ -35,8 +39,6 @@ public:
   const char *name() override { return NAME; };
 
   void react(events::AskSpecialMessage *ask_special_message) override;
-  void react(events::PlayerStreamEnter *player_stream_enter) override;
-  void react(events::PlayerStreamEnd *player_stream_end) override;
 
 private:
   gint64 text_id;
@@ -45,4 +47,4 @@ private:
 };
 
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker

@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -23,9 +27,9 @@
 #include "ws-protocol/client.hpp"
 
 #undef G_LOG_DOMAIN
-#define G_LOG_DOMAIN "genie::state::Processing"
+#define G_LOG_DOMAIN "smartspeaker::state::Processing"
 
-namespace genie {
+namespace smartspeaker {
 namespace state {
 
 void Processing::enter() {
@@ -36,7 +40,7 @@ void Processing::enter() {
 }
 
 void Processing::react(events::TextMessage *text_message) {
-  app->track_processing_event(ProcessingEventType::END_GENIE);
+  app->track_processing_event(ProcessingEventType::END_SMARTSPEAKER);
   if (preparing_audio) {
     g_message("Received TextMessage, skipping 'cause of prepare audio: %s",
               text_message->text.c_str());
@@ -51,7 +55,7 @@ void Processing::react(events::TextMessage *text_message) {
 void Processing::react(events::stt::TextResponse *response) {
   app->track_processing_event(ProcessingEventType::END_STT);
   app->audio_player.get()->clean_queue();
-  app->track_processing_event(ProcessingEventType::START_GENIE);
+  app->track_processing_event(ProcessingEventType::START_SMARTSPEAKER);
   app->conversation_client.get()->send_command(response->text);
 }
 
@@ -67,7 +71,7 @@ void Processing::react(events::stt::ErrorResponse *response) {
 }
 
 void Processing::react(events::AskSpecialMessage *ask_special_message) {
-  app->track_processing_event(ProcessingEventType::END_GENIE);
+  app->track_processing_event(ProcessingEventType::END_SMARTSPEAKER);
   g_message("Received AskSpecialMessage (before TextMessage), "
             "turn done.");
   app->transit(new Sleeping(app));
@@ -81,4 +85,4 @@ void Processing::react(events::audio::PrepareEvent *prepare) {
 }
 
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker

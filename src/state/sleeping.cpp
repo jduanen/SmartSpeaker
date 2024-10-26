@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -23,9 +27,9 @@
 #include "leds.hpp"
 
 #undef G_LOG_DOMAIN
-#define G_LOG_DOMAIN "genie::state::Sleeping"
+#define G_LOG_DOMAIN "smartspeaker::state::Sleeping"
 
-namespace genie {
+namespace smartspeaker {
 namespace state {
 
 void Sleeping::enter() {
@@ -51,4 +55,4 @@ void Sleeping::react(events::audio::PlayURLsEvent *play_urls) {
 }
 
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker

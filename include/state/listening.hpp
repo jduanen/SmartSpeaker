@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -21,7 +25,7 @@
 #include "events.hpp"
 #include "state.hpp"
 
-namespace genie {
+namespace smartspeaker {
 namespace state {
 
 class Listening : public State {
@@ -46,4 +50,4 @@ private:
 };
 
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker

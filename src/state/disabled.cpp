@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -26,9 +30,9 @@
 #include "ws-protocol/client.hpp"
 
 #undef G_LOG_DOMAIN
-#define G_LOG_DOMAIN "genie::state::Disabled"
+#define G_LOG_DOMAIN "smartspeaker::state::Disabled"
 
-namespace genie {
+namespace smartspeaker {
 namespace state {
 
 void Disabled::enter() {
@@ -55,4 +59,4 @@ void Disabled::react(events::audio::StopEvent *event) {
 }
 
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker

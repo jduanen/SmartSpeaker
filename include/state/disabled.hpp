@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -21,7 +25,7 @@
 #include "events.hpp"
 #include "state.hpp"
 
-namespace genie {
+namespace smartspeaker {
 namespace state {
 
 class Disabled : public State {
@@ -37,29 +41,11 @@ public:
   // The "actual" handlers that do things
   void react(events::ToggleDisabled *) override;
   void react(events::Panic *) override;
-  void react(events::audio::StopEvent *event) override;
 
   // Events that state::State handles that we want to ignore
   void react(events::Wake *) override {}
   void react(events::TextMessage *) override {}
-  void react(events::AudioMessage *) override {}
-  void react(events::SoundMessage *) override {}
-  void react(events::AdjustVolume *) override {}
-  void react(events::PlayerStreamEnter *) override {}
-  void react(events::PlayerStreamEnd *) override {}
-
-  // Audio Control Protocol events that we want to just resolve "so the server
-  // doesn't block on the client" (- Gio)
-  void react(events::audio::PrepareEvent *event) override { event->resolve(); }
-  void react(events::audio::PlayURLsEvent *event) override { event->resolve(); }
-  void react(events::audio::SetMuteEvent *event) override { event->resolve(); }
-  void react(events::audio::SetVolumeEvent *event) override {
-    event->resolve();
-  }
-  void react(events::audio::AdjVolumeEvent *event) override {
-    event->resolve();
-  }
 };
 
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker

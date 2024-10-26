@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -18,15 +22,11 @@
 
 #include "state/state.hpp"
 #include "app.hpp"
-#include "audio/audioplayer.hpp"
-#include "audio/audiovolume.hpp"
-#include "spotifyd.hpp"
-#include "ws-protocol/client.hpp"
 
 #undef G_LOG_DOMAIN
-#define G_LOG_DOMAIN "genie::state::State"
+#define G_LOG_DOMAIN "smartspeaker::state::State"
 
-namespace genie {
+namespace smartspeaker {
 namespace state {
 
 void State::enter() {
@@ -68,37 +68,17 @@ void State::react(events::InputTimeout *) {
   g_debug("FIXME received InputTimeout when not in Listen state, ignoring.");
 }
 
-// Genie Server Message Events
+// SmartSpeaker Server Message Events
 // ---------------------------------------------------------------------------
 //
-// Dispatched when `genie::conversation::ConversationProtocol` receives a
-// message on the websocket from the Genie server.
+// Dispatched when `smartspeaker::conversation::ConversationProtocol` receives a
+// message on the websocket from the SmartSpeaker server.
 //
 
 void State::react(events::TextMessage *text_message) {
   g_message("Received TextMessage, saying text: %s\n",
             text_message->text.c_str());
   app->transit(new Saying(app, text_message->id, text_message->text));
-}
-
-void State::react(events::AudioMessage *audio_message) {
-  // TODO this should be deferred to the sleeping state
-
-  g_message("Received AudioMessage, playing URL: %s\n",
-            audio_message->url.c_str());
-  app->audio_player->play_url(audio_message->url.c_str(),
-                              AudioDestination::MUSIC);
-}
-
-void State::react(events::SoundMessage *sound_message) {
-  // TODO this should look at the "exclusive" flag, and
-  // either handle it immediately (queued with other text)
-  // or defer to the sleeping state (queued with other music)
-
-  g_message("Received SoundMessage, playing sound ID: %d\n",
-            (int)sound_message->sound_id);
-  app->audio_player->play_sound(sound_message->sound_id,
-                                AudioDestination::ALERT);
 }
 
 void State::react(events::AskSpecialMessage *ask_special_message) {}
@@ -134,18 +114,6 @@ void State::react(events::ToggleConfigMode *) {
   app->transit(new Config(app));
 }
 
-void State::react(events::PlayerStreamEnter *player_stream_enter) {
-  g_message("Received PlayerStreamEnter with type=%d ref_id=%" G_GINT64_FORMAT
-            ", ignoring.",
-            (int)player_stream_enter->type, player_stream_enter->ref_id);
-}
-
-void State::react(events::PlayerStreamEnd *player_stream_end) {
-  g_message("Received PlayerStreamEnd with type=%d ref_id=%" G_GINT64_FORMAT
-            ", ignoring.",
-            (int)player_stream_end->type, player_stream_end->ref_id);
-}
-
 // Speech-To-Text (STT)
 // ---------------------------------------------------------------------------
 
@@ -159,12 +127,6 @@ void State::react(events::stt::ErrorResponse *response) {
 
 // Audio Control Protocol
 // ---------------------------------------------------------------------------
-
-void State::react(events::audio::CheckSpotifyEvent *check_spotify) {
-  app->spotifyd->set_credentials(check_spotify->username,
-                                 check_spotify->access_token);
-  check_spotify->resolve(std::make_pair(true, ""));
-}
 
 void State::react(events::audio::PrepareEvent *prepare) {
   // defer this event to the next state
@@ -199,4 +161,4 @@ void State::react(events::audio::AdjVolumeEvent *adj_volume) {
 }
 
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker

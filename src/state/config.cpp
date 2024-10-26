@@ -1,3 +1,7 @@
+/*
+* SmartSpeaker derived from Genie
+*/
+
 // -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
 //
 // This file is part of Genie
@@ -23,9 +27,9 @@
 #include "app.hpp"
 
 #undef G_LOG_DOMAIN
-#define G_LOG_DOMAIN "genie::state::Config"
+#define G_LOG_DOMAIN "smartspeaker::state::Config"
 
-namespace genie {
+namespace smartspeaker {
 namespace state {
 
 void Config::enter() {
@@ -48,4 +52,4 @@ void Config::react(events::ToggleConfigMode *) {
 }
 
 } // namespace state
-} // namespace genie
+} // namespace smartspeaker
