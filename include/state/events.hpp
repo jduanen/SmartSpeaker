@@ -92,12 +92,6 @@ struct TextMessage : Event {
   TextMessage(gint64 id, const gchar *text) : id(id), text(text) {}
 };
 
-struct SoundMessage : Event {
-  Sound_t sound_id;
-
-  SoundMessage(Sound_t sound_id) : sound_id(sound_id) {}
-};
-
 struct AskSpecialMessage : Event {
   std::string ask;
   gint64 text_id;
