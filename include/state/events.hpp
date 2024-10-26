@@ -82,6 +82,27 @@ private:
   std::unique_ptr<Request<void>> request;
 };
 
+// Audio Input Events
+// ===========================================================================
+
+struct Wake : Event {};
+
+struct InputFrame : Event {
+  AudioFrame frame;
+
+  InputFrame(AudioFrame frame) : frame(std::move(frame)) {}
+};
+
+struct InputDone : Event {
+  bool vad_detected;
+
+  InputDone(bool vad_detected) : vad_detected(vad_detected) {}
+};
+
+struct InputNotDetected : Event {};
+
+struct InputTimeout : Event {};
+
 // Conversation Events
 // ===========================================================================
 
