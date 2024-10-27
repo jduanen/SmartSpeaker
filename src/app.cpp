@@ -7,58 +7,83 @@
 #include <unistd.h>
 
 #include "app.hpp"
+#include "audio/audioinput.hpp"
+#include "audio/audioplayer.hpp"
+#include "audio/audiovolume.hpp"
 #include "config.hpp"
+#include "utils/net.hpp"
 #include "evinput.hpp"
 #include "leds.hpp"
+#include "stt.hpp"
+
 #include "EnumIterator.hpp"
 
-  smartspeaker::App::App() {
-    main_thread = std::this_thread::get_id();
-  }
+double time_diff(struct timeval x, struct timeval y) {
+  return (((double)y.tv_sec * 1000000 + (double)y.tv_usec) -
+          ((double)x.tv_sec * 1000000 + (double)x.tv_usec));
+}
 
-  smartspeaker::App::~App() { g_main_loop_unref(main_loop); }
+double time_diff_ms(struct timeval x, struct timeval y) {
+  return time_diff(x, y) / 1000;
+}
 
-  int smartspeaker::App::exec(int argc, char *argv[]) {
-    main_loop = g_main_loop_new(NULL, FALSE);
+smartspeaker::App::App() {
+  main_thread = std::this_thread::get_id();
+  is_processing = FALSE;
+}
 
-    g_unix_signal_add(SIGINT, sigint_handler, main_loop);
-    g_unix_signal_add(SIGTERM, sigterm_handler, main_loop);
+smartspeaker::App::~App() { g_main_loop_unref(main_loop); }
 
-    config = std::make_unique<Config>();
-    config->load();
+int smartspeaker::App::exec(int argc, char *argv[]) {
+  main_loop = g_main_loop_new(NULL, FALSE);
 
-    g_debug("LEDs enabled: %d, path: %s\n", config->leds_enabled, config->leds_path);  // TMP TMP TMP
+  g_unix_signal_add(SIGINT, sigint_handler, main_loop);
+  g_unix_signal_add(SIGTERM, sigterm_handler, main_loop);
 
-    leds = std::make_unique<Leds>(this);
-    leds->init();
-    leds->animate(LedsState_t::Starting);
+  config = std::make_unique<Config>();
+  config->load();
 
-    ev_input = std::make_unique<EVInput>(this);
-    ev_input->init();
+  g_debug("LEDs enabled: %d, path: %s\n", config->leds_enabled, config->leds_path);  // TMP TMP TMP
 
-    this->current_state = new state::Sleeping(this);
-    this->current_state->enter();
+  leds = std::make_unique<Leds>(this);
+  leds->init();
+  leds->animate(LedsState_t::Starting);
 
-    g_debug("start main loop\n");
-    g_main_loop_run(main_loop);
-    g_debug("main loop returned\n");
+  audio_volume_controller = std::make_unique<AudioVolumeController>(this);
 
-    //// TODO clean up before exiting
+  audio_player = std::make_unique<AudioPlayer>(this);
 
-    return EXIT_SUCCESS;
-  }
+  stt = std::make_unique<STT>(this);
 
-  gboolean smartspeaker::App::sigint_handler(gpointer data) {
-    GMainLoop *loop = static_cast<GMainLoop *>(data);
-    g_main_loop_quit(loop);
-    return G_SOURCE_REMOVE;
-  }
+  audio_input = std::make_unique<AudioInput>(this);
 
-  gboolean smartspeaker::App::sigterm_handler(gpointer data) {
-    // exit the process directly, to avoid any crash on termination
-    // that could cause us to restart
-    exit(0);
-  }
+  ev_input = std::make_unique<EVInput>(this);
+  ev_input->init();
+
+  this->current_state = new state::Sleeping(this);
+  this->current_state->enter();
+
+  //// TODO clean up before exiting
+  g_debug("start main loop\n");
+  g_main_loop_run(main_loop);
+  g_debug("main loop returned\n");
+
+  audio_input->close();
+
+  return EXIT_SUCCESS;
+}
+
+gboolean smartspeaker::App::sigint_handler(gpointer data) {
+  GMainLoop *loop = static_cast<GMainLoop *>(data);
+  g_main_loop_quit(loop);
+  return G_SOURCE_REMOVE;
+}
+
+gboolean smartspeaker::App::sigterm_handler(gpointer data) {
+  // exit the process directly, to avoid any crash on termination
+  // that could cause us to restart
+  exit(0);
+}
 
 /*
  * @brief Track an event that is part of a turn's remote processing.

@@ -6,9 +6,13 @@
 
 #include "config.hpp"
 
+#include <glib.h>
 #include <stdio.h>
 #include <memory>
+#include <queue>
 #include <thread>
+
+#include "audio/audio.hpp"
 
 #include "state/disabled.hpp"
 #include "state/events.hpp"
@@ -22,8 +26,14 @@
 namespace smartspeaker {
 
 class Config;
+class AudioInput;
+class AudioFIFO;
+class AudioPlayer;
+class AudioVolumeController;
 class EVInput;
 class Leds;
+class STT;
+class TTS;
 
 enum class ProcessingEventType {
   START_STT,
@@ -54,8 +64,9 @@ public:
   std::unique_ptr<Config> config;
 
   int exec(int argc, char *argv[]);
+  void track_processing_event(ProcessingEventType eventType);
 
-  /*
+  /*  
    * @brief Dispatch a state `event`. This method is _thread-safe_
    *
    * When called it queues handling of the `event` on the main thread via
