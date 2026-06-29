@@ -4,13 +4,50 @@ cpu_family = 'arm'
 cpu = 'armv7'
 endian = 'little'
 
-[properties]
-c_args = ['-march=armv7-a', '-mfloat-abi=hard', '-mfpu=neon']
-cpp_args = ['-march=armv7-a', '-mfloat-abi=hard', '-mfpu=neon']
-
 [binaries]
 c = 'arm-linux-gnueabihf-gcc'
 cpp = 'arm-linux-gnueabihf-g++'
 ar = 'arm-linux-gnueabihf-ar'
 strip = 'arm-linux-gnueabihf-strip'
-pkgconfig = 'pkg-config'
+pkg-config = 'pkg-config'
+
+[properties]
+# Xenial (Ubuntu 16.04, GLIBC 2.23) armhf sysroot populated during the Docker
+# multi-stage build.  meson passes --sysroot=/sysroot to the compiler and
+# linker, so the CRT objects and shared libraries used at link time are the
+# Xenial versions — keeping the GLIBC requirement at ≤2.23.
+sys_root = '/sysroot'
+pkg_config_libdir = '/sysroot/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/usr/share/pkgconfig'
+
+[built-in options]
+# Problem: arm-linux-gnueabihf-g++ from Ubuntu 22.04 has a built-in search
+# path /usr/arm-linux-gnueabihf/include/ (Ubuntu 22.04 headers) that comes
+# BEFORE the sysroot's /sysroot/usr/include/ in the search list, even with
+# --sysroot=/sysroot.  The Ubuntu 22.04 headers declare pthread_create with
+# an @@GLIBC_2.34 version alias, causing the binary to require GLIBC_2.34.
+#
+# Fix for headers: explicit -isystem flags put the xenial sysroot headers
+# BEFORE the compiler's built-in system paths.  Using -isystem (not -I)
+# treats them as system headers (suppresses their warnings).
+#
+# Fix for libraries: explicit -L flags put the sysroot lib dirs before
+# /usr/arm-linux-gnueabihf/lib/ (which has libpthread.a from Ubuntu 22.04
+# that exports GLIBC_2.34 versioned symbols).
+c_args   = ['-march=armv7-a', '-mfloat-abi=hard', '-mfpu=neon', '--sysroot=/sysroot']
+cpp_args = ['-march=armv7-a', '-mfloat-abi=hard', '-mfpu=neon', '--sysroot=/sysroot']
+
+# -B/sysroot/usr/lib/arm-linux-gnueabihf: makes GCC use the xenial CRT
+# objects (Scrt1.o, crti.o, crtn.o) instead of the cross-compiler's Ubuntu
+# 22.04 versions.  Without -B, GCC hardcodes /usr/arm-linux-gnueabihf/lib/
+# CRT paths by absolute path, bypassing --sysroot entirely.
+#
+# -L flags: put xenial sysroot lib dirs before /usr/arm-linux-gnueabihf/lib/
+# so the linker picks up xenial's versioned symbols instead of 22.04's.
+#
+# -static-libgcc / -static-libstdc++: embed the C++ runtime so the device
+# doesn't need the GCC 11 shared runtime (which needs GLIBCXX_3.4.29).
+#
+# --allow-shlib-undefined: GLIBC_PRIVATE inter-library symbols between
+# libpthread/libdl/libc resolve at runtime; don't error at static link time.
+c_link_args   = ['-B/sysroot/usr/lib/arm-linux-gnueabihf', '-L/sysroot/usr/lib/arm-linux-gnueabihf', '-L/sysroot/lib/arm-linux-gnueabihf', '--sysroot=/sysroot', '-static-libgcc', '-Wl,--allow-shlib-undefined']
+cpp_link_args = ['-B/sysroot/usr/lib/arm-linux-gnueabihf', '-L/sysroot/usr/lib/arm-linux-gnueabihf', '-L/sysroot/lib/arm-linux-gnueabihf', '--sysroot=/sysroot', '-static-libgcc', '-static-libstdc++', '-Wl,--allow-shlib-undefined']
