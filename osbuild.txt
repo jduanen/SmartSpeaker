@@ -1,0 +1,330 @@
+Notes on how to build OpenWRT for the Baidu smartspeaker
+
+* Stock device info
+  - ?
+
+* Modified stock device info
+  - /opt/
+    * ss/
+      - bin/: executables for the speaker
+        * glibcTest  # 2.23
+        * helloworld  # Hello World!
+        * ldd: tool I needed
+        * smartspeaker: my first attempt at a stripped down genie app
+
+* Genie-installed device info
+  - <see TinaLinux.txt>
+
+--------------------------------------------------------------------
+* Updating the OpenWRT OS
+  - shipped in mid-2021 with TinaLinux
+  - look for SOC in OpenWRT Table of Hardware
+    * https://openwrt.org/toh/start
+    * https://d1.docs.aw-ol.com/en/study/study_1tina/
+      - Tina Linux is an embedded software system for intelligent hardware products developed by Allwinner Technology based on the Linux kernel. Tina Linux is based on the OpenWrt-14.07 version of the software development kit, which contains the kernel source code, drivers, tools, system middleware, and application packages used in Linux system development.
+      - The Linux Kernel of the Tina platform uses Linux3.4, Linux3.10, Linux4.4, Linux4.9, Linux5.4, and other kernels.
+      -- The baidu SmartSpeaker uses a Linux4.9 kernel
+  - OpenWrt Wiki
+    * https://oldwiki.archive.openwrt.org/doc/howto/buildroot.exigence
+    * 14.07 branch (Barrier Breaker)
+      - git clone -b barrier_breaker git://github.com/openwrt/archive.git
+  - backup current firmware and configuration
+    * dd if=/dev/nand0 of=/tmp/backup_firmware.bin
+      - 93,614,080 Bytes (93.6MB)
+  - mount unused rootfs
+    * mkdir /tmp/mnt
+    * mount -r -t squashfs /dev/nand0p7 /tmp/mnt  # mount B, use nand0p5 to mount A
+    * mount -r -t squashfs /dev/by-name/rootfs{A,B} /tmp/mnt  # better way to identify which to use
+    * to update rootfs:
+      - put the new rootfs into the mounted (unused) partition: e.g., /tmp/mnt/sysupgrade
+      - copy new kernel image into the partition: e.g., /tmp/mnt/sysupgrade/vmlinuz
+      - extract backup to mounted partition to preserve settings
+    * update u-boot environement to boot from the new partition
+      - fw_setenv boot_partition <new_partition>
+      - fw_setenv bootcmd 'run boot_<new_partition>'
+      --> start with existing env and modify the necessary bits
+
+* Linux on Allwinner Sunxi architecture
+  - https://linux-sunxi.org/Main_Page
+    * Allwinner A23 Tablets
+      - "Like all things A23, this HW is not supported."
+    * .fex files ????
+      - https://github.com/linux-sunxi/sunxi-boards/tree/master/sys_config/a23
+    * Allwinner A23
+      - https://linux-sunxi.org/A23
+      - low-power, cut-down version of A20
+      - SDK
+        * http://dl.linux-sunxi.org/SDK/A23-v1.0/
+        * contains customized sources for: U-boot, Android, and buildroot
+        * also includes gnueabi cross compile toolchain
+        * A23/lichee/linux-3.4
+        * A23/lichee/buildroot
+        * A23/lichee/brandy/u-boot-2011.09
+        * ARM gnueabi cross compile toolchain: A23/lichee/brandy/gcc-linaro/
+        * A23/android
+        * Various Allwinner tools: A23/lichee/tools
+        * 'pack': script under "A23/lichee/tools/pack" to build image (not tested)
+      - Boot0
+        * Boot0 initializes the DRAM, basic clocks and loads U-boot from NAND or MMC
+          - there is no boot1 on A23 -- Boot0 directly loads U-boot
+        * Allwinner has published the source code for boot0 in their github repository
+        * binaries of boot0 can be found in the SDK:
+          - A23/lichee/tools/pack/chips/sun8iw3p1/bin
+        * fes1_sun8iw3p1.bin is for FEL mode
+    * Allwinner R329 EVB5 dev board (10Apr21)
+      - no support yet
+      - documentation
+        * https://r329.docs.allwinnertech.com/zh_CN/latest/
+        * https://r329.docs.aw-ol.com/
+        * 
+    * Manual build howto
+      - https://linux-sunxi.org/Manual_build_howto
+      - ????
+  - Baidu Smart Speaker
+    * sun8i
+    * xiaodu-A23
+    * R328-S3
+    * dual-core ARMv7
+
+* Notes on the Allwinner R329?
+  - R328?
+    * https://www.cnx-software.com/2019/08/19/allwinner-r328-smart-speaker-system-on-module/
+  - CPU – Dual-core Cortex-A53 @ up to 1.5 GHz
+  - DSP- Dual-core HIFI4 DSP @ 400 MHz
+  - AI Accelerator – Arm China AIPU with 0.256 TOPS
+  - Built-in DDR RAM
+  - Audio
+    * Embedded second-generation VAD hardware
+    * 5x audio ADCs
+    * 2x audio DACs with 100dB SNR
+    * I2S and DMIC controller
+    * 5-1-channel and 7.1 channel support
+  - Integrated dual LDO
+
+* N.B. Don't build OpenWRT for devices with 64MB of DRAM and 8MB Flash
+  - not enough resources to run the current releases
+  - Biadu SS has 128MB DRAM and 256MB of Flash
+
+--------------------------------------------------------------------------
+
+* notes from https://www.cnx-software.com/2019/08/19/allwinner-r328-smart-speaker-system-on-module/
+  - > But they are all ARM9.
+    That means the are probably on pre-DT 3.x kernels and makes getting them running with a mainline kernel a massive pain. Cortex A means if you have a working u-boot you can probably get from no kernel support to booting a buildroot initramfs in about 3 changes (a new arm/mach- dir and skeleton machine file, a device tree with the memory, gic and arch timer and some config options to enable a debug uart) to the latest upstream kernel
+  - multi-mic beamforming in pulse audio
+    * AFAIK libwebrtc-audio-processing is going to keep the beamforming code
+    * Pulse audio uses libwebrtc-audio-processing.
+    * https://freedesktop.org/software/pulseaudio/webrtc-audio-processing/
+  - PlayStation Eye mic-array is supported in linux
+    * not a good choice, not fully supported as of 2020
+
+* build OpenWRT from sources (assuming build on same arch)
+  - clone repo from github
+    * git clone https://github.com/openwrt/openwrt.git
+    * cd openwrt
+  - update and install package feeds
+    * ./scripts/feeds update -a
+    * ./scripts/feeds install -a
+  - get device tree from source device
+    * ????
+  - configure the kernel
+    * make menuconfig
+    * select Target System (e.g., Allwinner (sunxi))
+    * choose Subtarget and Board
+    * select desired packages or kernel modules
+  - build
+    * make -j${nproc}
+  - flash the firmware
+    * sudo dd if=path/to/openwrt.img of=/dev/sdX bs=1M
+
+* get device tree out of the device
+  - 'dtc -I fs -O dts /proc/device-tree > extracted.dts'
+    * 'dtc' doesn't exist on the stock device
+  - all nodes/properties in /proc/device-tree
+    * /proc/device-tree is a symlink to /sys/firmware/devicetree/base
+    * use /proc/device-tree as recommended by kernel documentation
+  - copy /proc/device-tree
+    * on <host>
+      - 'adb pull -a /proc/device-tree <dstPath>'
+      - 'dtc -I fs -O dts <dstPath> > device-tree.dts'
+
+* Build OpenWRT for allwinner R328-S3 (sun8i) for Baidu SmartSpeaker
+  - set up cross-compilation docker
+    ==> not necessary, the build system installs the necessary cross-compilation tool chain
+    * get docker with build env and put it in ~/bin
+      - 'docker run --rm dockcross/linux-armv7 > ./dockcross-linux-armv7'
+      - 'chmod +x ./dockcross-linux-armv7'
+      - 'mv ./dockcross-linux-armv7 ~/bin/'
+  - get the device-tree from the device
+    * all nodes/properties in /proc/device-tree
+      - /proc/device-tree is a symlink to /sys/firmware/devicetree/base
+      - use /proc/device-tree as recommended by kernel documentation
+    * 'dtc -I fs -O dts /proc/device-tree > extracted.dts'
+      ==> 'dtc' doesn't exist on the stock device, so use alternate approach
+    * copy /proc/device-tree onto the host and generate the corresponding .dts file
+      - on <host>
+        * 'adb pull -a /proc/device-tree <dstPath>'
+        * 'dtc -I fs -O dts <dstPath> > device-tree.dts'
+  - clone repo
+    * mkdir ~/Code2/OpenWRT && cd ~/Code/OpenWRT
+      - git clone https://git.openwrt.org/openwrt/openwrt.git
+      - cd openwrt
+        * git checkout -b barrier_breaker  # 14.07
+  - update and install the feeds
+    * ./scripts/feeds update -a
+    * ./scripts/feeds install -a
+  - create a new board type for the Baidu SmartSpeaker
+    * ????
+    * put device tree file into OpenWRT build tree
+      - 'cp ./device-tree.dts <target/linux/<arch_name>/files-*/arch/arm/boot/dts/>' ????
+    * ????
+      - ~/Code2/OpenWRT/openwrt/target/linux/sunxi/????
+    * ????
+      - compile the dts
+        * the build system will automatically compile the .dts file to a .dtb (Device Tree Blob) during the build process
+  - configure and build for the device
+    * 'make menuconfig'
+      - select the appropriate target system for Allwinner devices
+        * likely under the "Sunxi (A1x/A20/A3x)" category
+        * enable peripherals?
+        * ?
+      - remove as much stuff as possible to trim down the image size
+      ==> try first with no changes
+        * remove firewall
+        * 
+  - build the image
+    * make
+      - '~/bin/dockcross-linux-armv7 make -j$(nproc)'
+      ==> failed -- missing some requirements
+      - 'docker run --rm -v "$(pwd)"/bin/:/builder/bin -it openwrt/imagebuilder'
+        * './setup.sh'
+        * 'make image PROFILE=generic PACKAGES=tmate'
+      ==> just compile directly, it pulls in the cross-compilation tools
+      - pre-fetch for parallel make
+        * 'make download'
+      - build in parallel
+        * 'make -j$(nproc)'
+        * to debug: 'make -j1 V=s'
+
+    * put image in bin dir
+      - ????
+  - install on storage
+    * example for SD card
+      - dd if=bin/sunxi/<openwrt-sunxi-your_device-sdcard-vfat-ext4>.img of=/dev/<sdX>
+
+* TODO
+  - go back and read:
+    * osbuild.txt
+    * TinaLinux.txt
+    * buildNotes.txt
+  - build openwrt for the device
+    * figure out how to add a new board type to the allwinner group
+      - copy something like orangepi-zero or lichee and add new device tree
+    * build the new board as target
+    * find the parts that match the two partions on the device
+      - boot{A,B}
+      - rootfs{A,B}
+  - figure out how to install the new OS
+    * determine which is the active partition set -- A or B
+    * mount the two unused partitions
+    * copy the new parts into the proper partitions
+    * switch to the new partition set
+    * reboot
+
+
+* Notes on OpenWRT build outputs
+  - ~/Code2/OpenWRT/openwrt/
+    * bin/
+      - packages/arm_cortex-a7_neon-vfpv4/base/
+        * "*.apk": apk format packages
+      - targets/sunxi/cortexa7/
+        * config.buildinfo: ?
+        * openwrt-sunxi-cortexa7-<board>-ext4-sdcard.img.gz: ?
+        * openwrt-sunxi-cortexa7-<board>-squashfs-sdcard.img.gz: ?
+        * openwrt-sunxi-cortexa7-default.manifest: ?
+        * profiles.json: ?
+        * packages/
+          - *.apk: ?
+    * build_dir/
+      - host/
+        * module sources
+      - hostpkg/
+        * package sources
+      - target-arm_cortex-a7+neon-vfpv4_musl_eabi/
+        * json_info_files/
+          - json metadata for each of the image files
+        * linux-sunxi_cortexa7/
+          - all of the linux files, including 
+            * zImage: ?
+            * vmlinux-initramfs: ?
+            * vmlinux: ?
+            * root.ext4: ?
+            * root.squashfs: ?
+            * <device>-kernel.bin: ?
+      - root-sunxi/
+        * looks like the base rootfs
+      - u-boot-<device>/u-boot-2024.01/: ?
+    * scripts/
+      - diffconfig.sh: ?
+      - dump-target-info.pl: ?
+      - flashing/
+        * ?
+      - sysupgrade-tar.sh: ?
+      - ubinize-image.sh: ?
+    * target/
+      - linux/sunxi/image/
+        * gen_sunxi_sdcard_img.sh: ?
+    * ?
+-------------------------------------------------
+* Tina Linux OTA
+  - https://cloud.tencent.com/developer/article/2225252
+  - components
+    * Boot0
+      - main function is to initialize the dram and load the run uboot
+      - generally do not need to be modified
+    * Uboot
+      - full of features, supports burning writing, starting kernel, burning key and some other customized functions
+    * sys_config
+      - for platforms that use linxu3.4/uboot2011, sys_config is spliced with uboot after packaging
+      - for platforms that use linux3.10/uboot2014 and later, sys_config merges with the configuration of the device tree during the packaging phase to generate the final dtb
+      - Linux 5.4 is no longer integrated into dtb.
+    * DTB
+      - the device tree is aggregated by the dts configuration and the sys_config configuration
+    * u-boot.fex
+      - final uboot for the platform using linxu3.4/uboot2011 is actually uboot+sys_config
+    * boot_package.fex
+      - uboot that is used in the platform using linux3.10/uboot2014 and later
+        * contains files determined by the configuration file boot_package.cfg
+      - generally at least contains uboot and dtb
+      - security scheme will contain some security-required file files
+      - may also have bootlogo and other files
+    * toc0.fex
+      - Boot0 is used in the security scheme
+    * toc1.fex
+      - uboot used by the security scheme is similar to the boot_package.fex description
+        * which actually contains multiple files such as dts
+
+===================================================================================================
+* Allwinner OpenWRT Links
+  - https://forum.archive.openwrt.org/viewtopic.php?id=40428
+  - https://rhombus-tech.net/allwinner_a10/kernel_compile/
+  - https://linux-sunxi.org/Allwinner_R329_EVB5_Development_Board
+  - https://linux-sunxi.org/A23
+  - https://linux-sunxi.org/Manual_build_howto
+  - https://github.com/jduanen/SmartSpeaker
+  - https://openwrt.org/supported_devices
+  - https://www.google.com/search?q=tinalinux&client=firefox-b-1-d&sca_esv=e4a529db535589d2&sxsrf=AHTn8zquQxLCVG-HWrsamMuSN6uikI9Nng%3A1746569857030&ei=gYoaaPfQAYik0PEPu-Hc4QU&ved=0ahUKEwi3lZ3f74-NAxUIEjQIHbswN1wQ4dUDCBI&uact=5&oq=tinalinux&gs_lp=Egxnd3Mtd2l6LXNlcnAiCXRpbmFsaW51eDILEAAYgAQYkQIYigUyBRAAGO8FMggQABiABBiiBEjyCVC2Bli2BnABeACQAQCYAXKgAcgBqgEDMS4xuAEDyAEA-AEBmAICoAKfAcICChAAGLADGNYEGEeYAwCIBgGQBgiSBwMxLjGgB_cFsgcDMC4xuAeOAQ&sclient=gws-wiz-serp
+  - https://www.cnx-software.com/2019/08/19/allwinner-r328-smart-speaker-system-on-module/
+  - https://lists.infradead.org/pipermail/lede-commits/2023-September/019332.html
+  - https://linux-sunxi.org/Allwinner_SoC_Family
+  - https://forum.armbian.com/topic/33256-x96q-h313/
+  - https://git.openwrt.org/?p=openwrt%2Fopenwrt.git%3Ba%3Dblob%3Bf%3Dtarget%2Flinux%2Fd1%2Fpatches-6.1%2F0060-pwm-sunxi-Add-Allwinner-SoC-PWM-controller-driver.patch%3Bh%3D8c5d290c49c23c694d02c6de6a37b53b2da97198%3Bhb%3D6510eb3b5d612ea7a70c4a8d9b83639e3b46e221
+  - https://git.archive.openwrt.org/?p=15.05%2Fopenwrt.git%3Ba%3Dblob%3Bf%3Dtarget%2Flinux%2Fsunxi%2Fpatches-3.18%2F110-input-add-sun4i-lradc.patch%3Bhb%3Dd9d14f267c54d1015ef292a97403b4cd623b9b76
+  - https://openwrt.org/merchandise
+  - https://hg.sr.ht/~joerg/src/rev/e098e2bc66e93eaceb22d5900a41f2ce8820d51f.patch
+  - https://www.scribd.com/doc/267841762/Table-of-Hardware-Compatibility-OpenWrt
+  - https://github.com/YuzukiHD/YuzukiRosetta
+  - https://github.com/openwrt/openwrt
+  - https://github.com/ophub/amlogic-s9xxx-openwrt%5Bweb
+
+
+
