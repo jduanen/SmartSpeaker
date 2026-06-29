@@ -101,81 +101,72 @@ touching the root FS.
 
 ### The GLIBC version problem
 
-The device has **GLIBC 2.23**. Ubuntu 18.04's `arm-linux-gnueabihf-gcc 7.5` links against the
-host sysroot, which can emit references to GLIBC symbols from 2.28 or later, causing:
+The device has **GLIBC 2.23**. Using a modern Ubuntu cross-compiler naively produces binaries
+that require GLIBC 2.28–2.34 due to three separate root causes, each needing its own fix.
 
-```
-/lib/libc.so.6: version 'GLIBC_2.28' not found
-```
+#### Root causes and fixes
 
-Simple C programs that use only basic syscalls work fine as static binaries (proven by
-`test/helloworld.c` and `test/glibcTest.c`). Complex C++ apps using glib need one of the
-workarounds below.
+**1. CRT startup files come from the cross-compiler, not the sysroot**
 
-### Option 1: Fix Dockerfile.dockcross (recommended for dynamic linking)
+When GCC links a binary it injects `Scrt1.o` / `crti.o` (C runtime startup) by *absolute
+path* from its own installation (e.g. `/usr/arm-linux-gnueabihf/lib/Scrt1.o`). This happens
+even when `--sysroot` is set, because GCC bypasses the sysroot for its own support files.
+Ubuntu 22.04's `Scrt1.o` calls `__libc_start_main@@GLIBC_2.34`.
 
-The `Dockerfile.dockcross` already uses a more compatible base. It needs two additions:
+Fix: `-B/sysroot/usr/lib/arm-linux-gnueabihf` in link args tells GCC to look there first for
+CRT objects, picking up the xenial versions that call `__libc_start_main@@GLIBC_2.4`.
 
-1. Enable dpkg multi-arch so ARM dev packages are available:
+**2. Ubuntu 22.04 headers redirect standard calls to 64-bit variants**
 
-```dockerfile
-RUN dpkg --add-architecture armhf && apt-get update && \
-    apt-get install -y libglib2.0-dev:armhf libasound2-dev:armhf
-```
+When `_FILE_OFFSET_BITS=64` is defined (meson default), Ubuntu 22.04's headers `#define
+fcntl fcntl64` and `stat → stat64`. The target's GLIBC 2.23 doesn't export `fcntl64` or
+`stat64` as separate versioned symbols — they were added in GLIBC 2.28 and 2.33.
 
-2. Add `pkg_config_libdir` to `scripts/cross_file.txt`:
+Fix: `src/glibc_compat.c` provides `fcntl64`, `stat64`, `lstat64`, and `fstat64` using
+direct ARM syscalls (numbers 221, 195–197) so the call goes straight to the kernel, bypassing
+the missing GLIBC wrapper entirely.
 
-```ini
-[properties]
-pkg_config_libdir = '/usr/lib/arm-linux-gnueabihf/pkgconfig:/usr/share/pkgconfig'
-```
+**3. GCC 11 static libstdc++ references a GLIBC 2.32 variable**
 
-Without this, meson's pkg-config looks at the host's (x86) library paths and fails:
-`Dependency "glib-2.0" not found, tried pkgconfig`
+`-static-libstdc++` pulls in GCC 11's `libstdc++.a`, which references `__libc_single_threaded`
+(added in GLIBC 2.32) as a per-thread lock-elision hint. GLIBC 2.23 doesn't export it.
 
-After the fix, build with:
+Fix: `src/glibc_compat.c` also defines `char __libc_single_threaded = 0` (always
+multi-threaded → locks are never elided, which is the safe default).
+
+#### How the Docker image achieves this
+
+`Dockerfile.dockcross` uses a two-stage build:
+
+- **Stage 1** — Ubuntu 16.04 (xenial, GLIBC 2.23) installs all armhf `-dev` packages.
+  This gives us headers, `.so` stubs, and — critically — the xenial CRT objects (`crt1.o`,
+  `Scrt1.o`, `crti.o`).
+- **Stage 2** — Ubuntu 22.04 runs GCC 11 (`arm-linux-gnueabihf-g++`) with `--sysroot`
+  pointing at the xenial libraries copied in from Stage 1.
+
+A post-COPY step rewrites all absolute symlinks inside `/sysroot` (e.g. `libglib-2.0.so →
+/lib/arm-linux-gnueabihf/libglib-2.0.so.0`) to be sysroot-prefixed, so the host linker
+follows them into the sysroot rather than looking them up on the build host.
+
+### Build
 
 ```bash
+# Build the Docker image (one-time; ~5 min)
 docker build -f Dockerfile.dockcross -t smartspeaker-cross .
+
+# Cross-compile
 docker run --rm -v $(pwd):/app smartspeaker-cross bash -c \
-  "cd /app && meson setup --wipe --cross-file=scripts/cross_file.txt builddir && ninja -C builddir"
+  "meson setup --wipe --cross-file=scripts/cross_file.txt builddir && ninja -C builddir"
 ```
 
-Verify GLIBC requirements of the output:
+The output binary is `builddir/src/smartspeaker`.
+
+### Verify GLIBC requirements
 
 ```bash
-arm-linux-gnueabihf-objdump -p builddir/src/smartspeaker | grep GLIBC
-# Must show only GLIBC_2.17 and GLIBC_2.23 -- nothing higher
-```
-
-### Option 2: musl static builds (simplest, no GLIBC dependency)
-
-Use the `dockcross/linux-armv7-musl` image for fully-static binaries. No GLIBC at all.
-
-```bash
-docker run --rm dockcross/linux-armv7-musl > /tmp/dockcross-armv7-musl
-chmod +x /tmp/dockcross-armv7-musl
-/tmp/dockcross-armv7-musl bash -c \
-  "cd /app && ${CC} --static src/main_simple.c -o build/myapp"
-```
-
-Larger binaries, but guaranteed to run on any ARMv7 Linux regardless of libc version.
-
-### Restore the meson.build files
-
-The meson build files were moved to `hold/` during refactoring. Restore them and extend
-for the current source layout in `src/`:
-
-```bash
-cp hold/meson.build meson.build
-# Then edit src/meson.build to list all .cpp files under src/:
-#   app.cpp, config.cpp, evinput.cpp, leds.cpp,
-#   state/state.cpp, state/sleeping.cpp, state/listening.cpp,
-#   state/processing.cpp, state/saying.cpp, state/config.cpp, state/disabled.cpp,
-#   audio/audioinput.cpp, audio/audioplayer.cpp, audio/audiovolume.cpp, audio/wakeword.cpp,
-#   audio/alsa/audiofifo.cpp, audio/alsa/input.cpp, audio/alsa/pa_ringbuffer.c, audio/alsa/volume.cpp,
-#   audio/pulseaudio/input.cpp, audio/pulseaudio/volume.cpp
-# Add alsa to deps: dependency('alsa')
+docker run --rm -v $(pwd):/app smartspeaker-cross \
+  arm-linux-gnueabihf-objdump -p builddir/src/smartspeaker | grep GLIBC
+# Expected: only GLIBC_2.4, GLIBC_2.7, GLIBC_2.17  (all ≤ 2.23)
 ```
 
 ### Deploy to device
@@ -291,17 +282,16 @@ adb push <local> <remote>
 # Pull a file from device
 adb pull <remote> <local>
 
-# Build inside Docker (after fixing Dockerfile.dockcross)
+# Build Docker image (one-time)
 docker build -f Dockerfile.dockcross -t smartspeaker-cross .
+
+# Cross-compile
 docker run --rm -v $(pwd):/app smartspeaker-cross bash -c \
   "meson setup --wipe --cross-file=scripts/cross_file.txt builddir && ninja -C builddir"
 
-# Build a static test binary directly
-docker run --rm -v $(pwd):/app arm32v7-cross-compiler \
-  bash -c '${CC} --static /app/test/helloworld.c -o /app/build/helloworld'
-
-# Check GLIBC requirements of an ARM binary
-arm-linux-gnueabihf-objdump -p <binary> | grep GLIBC
+# Check GLIBC requirements of an ARM binary (must be ≤ 2.23)
+docker run --rm -v $(pwd):/app smartspeaker-cross \
+  arm-linux-gnueabihf-objdump -p builddir/src/smartspeaker | grep GLIBC
 
 # Run binary on device
 adb shell "export LD_LIBRARY_PATH=/usr/lib:/lib; /opt/ss/bin/smartspeaker"

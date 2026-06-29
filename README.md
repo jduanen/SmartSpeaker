@@ -7,7 +7,13 @@ Applications for Smart Speakers
 
 ### Hardware Details
 
-* details
+* Device
+  - Baidu Xiaodu
+  - XDH-1D-A1
+
+* OS: see 'osbuild.txt'
+
+* HW details on the box
   - MAC: 48:F3:F3:*.*.*
   - mfg date: 2021/08/04
   - 12V @ 1A
@@ -22,11 +28,14 @@ Applications for Smart Speakers
   - IR receiver?
   - Wifi antenna and connector
   - 128MB DRAM
-  - ?~256MB storage?
+  - 128MB flash storage
+    * cat /sys/nand_driver0
+      - Model: GD5F1GQ5UEYIG
+      - NandID: 0xffff51c8
 
 * Main Semiconductors
   - AD52058 (ESMT): Class D audio amp, 2x15W
-  - RTL8723DS (Realtek): 802.11bgn, SDIO, BTLE
+  - RTL8723DS (Realtek): 802.11bgn, SDIO, BT 4.2
   - R328-S3 (Allwinner): mutli-microphone audio processor
     * CPUs
       - dual-core ARMv7, BogoMIPS: 57.14
@@ -89,3 +98,60 @@ Applications for Smart Speakers
   - enable ssh access
     * ????
   - reboot
+
+# Home Assistant Voice Remote Local Assistant
+
+* Assist Pipeline
+  - all local processing
+  - Speech To Text (STT)
+    * Whisper
+      - faster-whisper fork
+      - RasPi4: ~8secs; Intel NUC: <1sec
+      - CUDA acceleration is available (but haven't been able to get it to work)
+  - Text To Speech (TTS)
+    * Piper
+      - optimized for RasPi4
+      - supports multiple languages
+      - RasPi4 (medium quality model): 1.6 secs of voice in one second
+  - Wake Word Detection
+    * openWakeWord
+  - Whisper and Piper add-ons to HA (run in containers on the HA Server)
+    * also openWakeWord add-on
+    * Wyoming Integration: discovers services using Wyoming protocol
+      - Wyoming protocol is used to communicate between the services
+
+* Integration with HA
+  - Settings->Voice assistants->Add assistant
+    * Configuration
+    * Conversation Agent
+    * Speech-to-Text
+    * Text-to-Speech
+    * Wake Word
+  - expose your devices to Assist
+  - Fine-tuning Whisper and Piper
+    * Goto Whisper and Piper add-ons and open Documentation pages
+  - custom integration
+    * run TTS and STT on x86 machine with GPU (gpuServer1)
+      - there are python bindings for Piper and Whisper
+    * use HA's RESTful API or MQTT to communicate between server and HA
+    * create custom components or scripts in HA to send text for TTS and receive audio for STT
+      - e.g., send TTS requests from HA to server for audio output
+      - stream audio from HA to server for STT
+      - return transcribed text back to HA for further actions
+
+* Run Whisper and Piper on Server
+  - options set in "docker-compose.yml"
+  - run service with docker compose
+    * start: 'docker compose up -d'
+      - stays up until stopped (in yml file)
+    * stop and remove containers: 'docker compose down'
+    * list containers: 'docker compose ps'
+    * list images used in containers: 'docker compose images'
+    * kill containers: 'docker compose kill'
+    * remove containers: 'docker compose rm'
+    * get logs: 'docker compose logs'
+    * pause/unpause: 'docker compose pause/unpause'
+    * show resource use in realtime: 'docker compose stats'
+
+
+
