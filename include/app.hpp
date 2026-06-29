@@ -8,11 +8,14 @@
 
 #include <glib.h>
 #include <stdio.h>
+#include <sys/time.h>
 #include <memory>
 #include <queue>
 #include <thread>
 
 #include "audio/audio.hpp"
+#include "spotifyd.hpp"
+#include "ws-protocol/client.hpp"
 
 #include "state/disabled.hpp"
 #include "state/events.hpp"
@@ -42,6 +45,8 @@ enum class ProcessingEventType {
   END_GENIE,
   START_TTS,
   END_TTS,
+  START_SMARTSPEAKER,
+  END_SMARTSPEAKER,
   DONE,
 };
 
@@ -115,8 +120,19 @@ private:
   std::thread::id main_thread;
   GMainLoop *main_loop;
 
+  std::unique_ptr<AudioInput> audio_input;
+  std::unique_ptr<AudioPlayer> audio_player;
+  std::unique_ptr<AudioVolumeController> audio_volume_controller;
+  std::unique_ptr<STT> stt;
+  std::unique_ptr<Spotifyd> spotifyd;
+  std::unique_ptr<ws::Client> conversation_client;
   std::unique_ptr<EVInput> ev_input;
   std::unique_ptr<Leds> leds;
+
+  bool is_processing;
+  struct timeval start_stt, end_stt;
+  struct timeval start_genie, end_genie;
+  struct timeval start_tts, end_tts;
 
   state::State *current_state;
   state::events::Event *current_event = nullptr;

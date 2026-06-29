@@ -39,6 +39,7 @@ public:
   void enter() override;
   const char *name() override { return NAME; };
 
+  void react(events::Wake *) override;
   void react(events::InputFrame *input_frame) override;
   void react(events::InputDone *) override;
   void react(events::InputNotDetected *) override;

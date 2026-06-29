@@ -26,7 +26,7 @@
 
 #include <libevdev/libevdev.h>
 
-namespace genie {
+namespace smartspeaker {
 
 struct InputEventSource {
   GSource source;
@@ -53,4 +53,4 @@ private:
   GSource *source;
 };
 
-} // namespace genie
+} // namespace smartspeaker

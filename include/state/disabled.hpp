@@ -41,6 +41,7 @@ public:
   // The "actual" handlers that do things
   void react(events::ToggleDisabled *) override;
   void react(events::Panic *) override;
+  void react(events::audio::StopEvent *) override;
 
   // Events that state::State handles that we want to ignore
   void react(events::TextMessage *) override {}

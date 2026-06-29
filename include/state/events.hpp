@@ -144,6 +144,15 @@ struct ToggleDisabled : Event {};
 
 struct ToggleConfigMode : Event {};
 
+struct SpotifyCredentials : Event {
+  std::string username;
+  std::string access_token;
+
+  SpotifyCredentials(const char *username, const char *access_token)
+      : username(username ? username : ""),
+        access_token(access_token ? access_token : "") {}
+};
+
 // Speech-To-Text (STT) Events
 // ===========================================================================
 
@@ -163,6 +172,68 @@ struct ErrorResponse : Event {
 };
 
 } // namespace stt
+
+// Audio Player Control Events
+// ===========================================================================
+
+namespace audio {
+
+struct PrepareEvent : RequestEvent<void> {
+  using RequestEvent<void>::RequestEvent;
+};
+
+struct PlayURLsEvent : RequestEvent<void> {
+  std::vector<std::string> urls;
+
+  PlayURLsEvent(Request<void> *req, std::vector<std::string> urls)
+      : RequestEvent<void>(req), urls(std::move(urls)) {}
+};
+
+struct StopEvent : RequestEvent<void> {
+  using RequestEvent<void>::RequestEvent;
+};
+
+struct SetMuteEvent : RequestEvent<void> {
+  bool muted;
+
+  SetMuteEvent(Request<void> *req, bool muted)
+      : RequestEvent<void>(req), muted(muted) {}
+};
+
+struct SetVolumeEvent : RequestEvent<void> {
+  int volume;
+
+  SetVolumeEvent(Request<void> *req, int volume)
+      : RequestEvent<void>(req), volume(volume) {}
+};
+
+struct AdjVolumeEvent : RequestEvent<void> {
+  int delta;
+
+  AdjVolumeEvent(Request<void> *req, int delta)
+      : RequestEvent<void>(req), delta(delta) {}
+};
+
+} // namespace audio
+
+// Audio Player Status Events
+// ===========================================================================
+
+struct PlayerStreamEnter : Event {
+  AudioTaskType type;
+  gint64 ref_id;
+
+  PlayerStreamEnter(AudioTaskType type, gint64 ref_id)
+      : type(type), ref_id(ref_id) {}
+};
+
+struct PlayerStreamEnd : Event {
+  AudioTaskType type;
+  gint64 ref_id;
+
+  PlayerStreamEnd(AudioTaskType type, gint64 ref_id)
+      : type(type), ref_id(ref_id) {}
+};
 
 } // namespace events
 } // namespace state

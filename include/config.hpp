@@ -24,6 +24,7 @@
 
 #include <cstddef>
 #include <glib.h>
+#include "audio/audio.hpp"
 
 namespace smartspeaker {
 
@@ -84,6 +85,54 @@ public:
 
   size_t retry_interval;
   size_t connect_timeout;
+  gchar *nl_url;
+  gchar *locale;
+  gchar *ssl_ca_file;
+
+  // Audio
+  // -------------------------------------------------------------------------
+
+  AudioDriverType audio_backend;
+  gchar *audio_sink;
+  gchar *audio_output_device;
+  gchar *audio_output_device_music;
+  gchar *audio_output_device_alerts;
+  gchar *audio_output_device_voice;
+  gchar *audio_output_fifo;
+  gchar *audio_volume_control;
+  gchar *audio_input_device;
+  bool audio_input_stereo;
+  bool audio_input_stereo2mono;
+  bool audio_ec_enabled;
+  gchar *audio_ec_loopback;
+  gchar *audio_voice;
+
+  // Wakeword (Porcupine)
+  // -------------------------------------------------------------------------
+
+  gchar *asset_dir;
+  gchar *pv_model_path;
+  gchar *pv_keyword_path;
+  float pv_sensitivity;
+
+  // VAD
+  // -------------------------------------------------------------------------
+
+  size_t vad_start_speaking_ms;
+  size_t vad_done_speaking_ms;
+  size_t vad_input_detected_noise_ms;
+  size_t vad_listen_timeout_ms;
+
+  // Sound files
+  // -------------------------------------------------------------------------
+
+  gchar *sound_wake;
+  gchar *sound_no_input;
+  gchar *sound_news_intro;
+  gchar *sound_alarm_clock_elapsed;
+  gchar *sound_working;
+  gchar *sound_stt_error;
+  gchar *sound_too_much_input;
 
   // Buttons
   // -------------------------------------------------------------------------
