@@ -1,0 +1,308 @@
+* OS on Genie-installed device
+  - BusyBox v1.27.2 (ash)
+  - Tina Linux (Neptune, 5C1C9C53)
+    * https://github.com/Tina-Linux/ -- need to go to wayback machine
+      - http://web.archive.org/web/20240727104730/https://github.com/Tina-Linux/
+    * uname -a 
+      - Linux TinaLinux 4.9.118 #64 SMP Wed Mar 24 07:12:48 UTC 2021 armv7l GNU/Linux
+    * AP SSID: xiaodu-A23-425a (last four digits of SN)
+    * /etc/
+      - device_info
+        * DEVICE_MANUFACTURER='allwinnertech'
+        * DEVICE_MANUFACTURER_URL='www.allwinnertech.com'
+        * DEVICE_PRODUCT='v2.1'
+        * DEVICE_REVISION='v1.0'
+      - fstab
+        * \# /etc/fstab: static file system information.
+        * \#
+        * \# <file system>   <mount pt>  <type>  <options>     <dump>    <pass>
+        * devpts      /dev/pts  devpts  defaults,gid=5,mode=620   0   0
+      - fw_env.config
+# Configuration file for fw_(printenv/setenv) utility.
+# Up to two entries are valid, in this case the redundant
+# environment sector is assumed present.
+# Notice, that the "Number of sectors" is not required on NOR and SPI-dataflash.
+# Futhermore, if the Flash sector size is omitted, this value is assumed to
+# be the same as the Environment size, which is valid for NOR and SPI-dataflash
+# Device offset must be prefixed with 0x to be parsed as a hexadecimal value.
+
+# Allwinner Tina
+# device name           Device offset   Env. size     Flash sector size     Number of sectors
+/dev/by-name/env        0x0000          0x20000
+
+      - openwrt_release
+        * DISTRIB_ID='tina.wyg.20210324.071216'
+        * DISTRIB_RELEASE='Neptune'
+        * DISTRIB_REVISION='5C1C9C53'
+        * DISTRIB_TARGET='drum-baidu_metal/generic v2.1'
+        * DISTRIB_DESCRIPTION='tina.wyg.20210324.071216 3.0.8'
+        * DISTRIB_TAINTS='no-all no-ipv6 glibc busybox'
+      - openwrt_version
+        * 3.0.8
+      - opkg.conf
+        * dest root /
+        * dest ram /tmp
+        * lists_dir ext /var/opkg-lists
+        * option overlay_root /overlay
+    * /var/ (symlink to /tmp/)
+      - opkg-lists
+        * ?
+      - 
+    * /private/
+      - ?
+  - cat /proc/device-tree/compatible -> /sys/firmware/devicetree/base/
+    * allwinner,sun8iw18p1
+  - modules:
+    * 8723ds               1510369  0 
+    * snd_mixer_oss          12405  1 snd_pcm_oss
+    * snd_pcm_oss            33174  0 
+    * snd_seq_device          2999  0 
+  - mount (cat /proc/mounts):
+    * /dev/root on / type squashfs (ro,relatime)
+    * devtmpfs on /dev type devtmpfs (rw,relatime,size=60684k,nr_inodes=15171,mode=755)
+    * /proc on /proc type proc (rw,relatime)
+    * tmpfs on /tmp type tmpfs (rw,relatime,size=92160k)
+    * sys on /sys type sysfs (rw,relatime)
+    * pstore on /sys/fs/pstore type pstore (rw,relatime)
+    * /dev/by-name/app on /opt type ext4 (rw,relatime,data=ordered)
+    * devpts on /dev/pts type devpts (rw,relatime,gid=5,mode=620,ptmxmode=000)
+    * /dev/by-name/UDISK on /data type ext4 (rw,relatime,data=ordered)
+    * /dev/by-name/private on /private type vfat (ro,sync,relatime,fmask=0000,dmask=0000,allow_utime=0022,codepage=437,iocharset=iso8859-1,shortname=mixed,errors=remount-ro)
+    * none on /sys/kernel/config type configfs (rw,relatime)
+    * adb on /dev/usb-ffs/adb type functionfs (rw,relatime)
+  - df -k
+    * Filesystem           1K-blocks      Used Available Use% Mounted on
+    * /dev/root                16384     16384         0 100% /
+    * devtmpfs                 60684         0     60684   0% /dev
+    * tmpfs                    92160       704     91456   1% /tmp
+    * /dev/by-name/app         45588     29656     14908  67% /opt
+    * /dev/by-name/UDISK        8991       150      8635   2% /data
+    * /dev/by-name/private       123         5       119   4% /private
+      - adds up to 223,930 1K blocks -- looks like a 256MB Flash
+  - ls -lF /dev/by-name
+    * lrwxrwxrwx    1 root     root            12 Jan  1  1970 UDISK -> /dev/nand0p9
+    * lrwxrwxrwx    1 root     root            12 Jan  1  1970 app -> /dev/nand0p8
+    * lrwxrwxrwx    1 root     root            12 Jan  1  1970 bootA -> /dev/nand0p4
+    * lrwxrwxrwx    1 root     root            12 Jan  1  1970 bootB -> /dev/nand0p6
+    * lrwxrwxrwx    1 root     root            12 Jan  1  1970 env -> /dev/nand0p1
+    * lrwxrwxrwx    1 root     root            12 Jan  1  1970 private -> /dev/nand0p2
+    * lrwxrwxrwx    1 root     root            12 Jan  1  1970 pstore -> /dev/nand0p3
+    * lrwxrwxrwx    1 root     root            12 Jan  1  1970 rootfsA -> /dev/nand0p5
+    * lrwxrwxrwx    1 root     root            12 Jan  1  1970 rootfsB -> /dev/nand0p7
+  - cat /proc/diskstats
+    *   93       0 nand0 775 6594 51832 6880 50 49 450 240 0 2790 7120
+    *   93       1 nand0p1 2 0 256 30 2 30 256 80 0 70 110
+    *   93       2 nand0p2 8 0 8 20 0 0 0 0 0 20 20
+    *   93       3 nand0p3 0 0 0 0 0 0 0 0 0 0 0
+    *   93       4 nand0p4 0 0 0 0 0 0 0 0 0 0 0
+    *   93       5 nand0p5 180 6594 13548 2280 0 0 0 0 0 1010 2280
+    *   93       6 nand0p6 0 0 0 0 0 0 0 0 0 0 0
+    *   93       7 nand0p7 0 0 0 0 0 0 0 0 0 0 0
+    *   93       8 nand0p8 531 0 37730 4300 12 1 104 10 0 2010 4310
+    *   93       9 nand0p9 50 0 258 250 27 18 90 90 0 290 340
+  - Filesystem Layout
+    * /dev: devtmpfs, rw, 60K blocks
+    * /dev/pts: devpts, rw
+    * /proc: proc, rw
+    * /tmp: tmpfs, rw, 92K blocks
+    * /sys: sysfs, rw
+    * /sys/fs/pstore: /dev/by-name/private -> /dev/nand0p3, pstore, rw
+      - persistent store, crash logs, dmesg, etc.
+      - accessible in /sys/fs/pstore after reboot
+    * /sys/kernel/config: configfs, rw
+    * /dev/usb-ffs/adb: functionfs, rw
+    * /: /dev/root -> nand0p5, squashfs, ro
+    * /opt: /dev/by-name/app -> /dev/nand0p8, ext4, rw
+    * /data: /dev/by-name/UDISK -> /dev/nand0p9, ext4, rw
+    * /private: /dev/by-name/private -> /dev/nand0p2, vfat, ro
+    * boot A/B -- not mounted when running
+      - /dev/by-name/bootA -> /dev/nand0p4
+      - /dev/by-name/bootB -> /dev/nand0p6
+    * root A/B -- ????
+      - /dev/by-name/rootfsA -> /dev/nand0p5
+      - /dev/by-name/rootfsA -> /dev/nand0p7
+  - fw_printenv
+    * similar to 'strings /dev/by-name/env'
+boot_fastboot=fastboot
+boot_normal=sunxi_flash read 40007800 ${boot_partition};bootm 40007800
+boot_partition=bootA
+boot_recovery=sunxi_flash read 40007800 recovery;bootm 40007800
+bootcmd=run setargs_nand boot_normal
+bootdelay=0
+console=ttyS0,115200
+earlyprintk=sunxi-uart,0x05000000
+fastboot_key_value_max=0x8
+fastboot_key_value_min=0x2
+fdtcontroladdr=46b08e88
+gpt=1
+init=/pseudo_init
+loglevel=8
+mmc_root=/dev/mmcblk0p7
+nand_root=/dev/nand0p3
+nor_root=/dev/mtdblock4
+rdinit=/rdinit
+recovery_key_value_max=0x13
+recovery_key_value_min=0x10
+root_partition=rootfsA
+rootfsA=rootfsA
+rootfsB=rootfsB
+setargs_mmc=setenv bootargs earlyprintk=${earlyprintk} console=${console} root=${mmc_root} rootwait init=${init} rdinit=${rdinit} loglevel=${loglevel} partitions=${partitions} cma=${cma} gpt=${gpt}
+setargs_nand=setenv bootargs earlyprintk=${earlyprintk} console=${console} root=${nand_root} rootwait init=${init} rdinit=${rdinit} loglevel=${loglevel} partitions=${partitions} cma=${cma} gpt=${gpt}
+setargs_nor=setenv bootargs earlyprintk=${earlyprintk} console=${console} root=${nor_root} rootwait init=${init} rdinit=${rdinit} loglevel=${loglevel} partitions=${partitions} cma=${cma}
+systemA=bootA
+systemAB_next=A
+systemAB_now=A
+systemB=bootB
+silent_update=0
+  - opkg list-installed
+adb - 0.0.1-1
+alsa-conf-aw - 1.0.0-1
+alsa-lib - 1.1.4.1-1
+alsa-plugins - 1.1.4-1
+alsa-plugins-aw - 1.0.0-1
+alsa-utils - 1.1.0-1
+bdft - 1.0-1
+benchmarks - 1
+bluez-alsa - 20180913-1
+bluez-daemon - 5.38-1
+bluez-hfp - 20190603-1
+bluez-libs - 5.38-1
+bluez-utils - 5.38-1
+brcm_patchram_plus - 0.0.1-1
+btmanager-core - 2.1.0-1
+btmanager-demo - 2.1.0-1
+busybox - 1.27.2-3
+busybox-init-base-files - 167-1616569902
+curl - 7.54.1-1
+dbus - 1.10.4-1
+dhcpcd - 7.2.2-1
+e2fsprogs - 1.42.12-1
+fdk-aac - 0.1.6-2
+freqscan - 1
+glib2 - 2.50.1-1
+glog - 0.3.5-2
+gpio_ir_test - 1
+hfp-alsa - 0.0.0-1
+hostapd - 2017-11-08-2
+hostapd-common - 2017-11-08-2
+htop - 2.0.2-1
+hwtest - 1
+iozone3 - 444-1
+iperf - 2.0.10-1
+jshn - 2016-02-26-5326ce1046425154ab715387949728cfb09f4083
+jsonfilter - 2014-06-19-cdc760c58077f44fc40adbbe41e1556a67c1b9a9
+kernel - 4.9.118-1-00bb6404d841d784d38080f2f8edd9ae
+kmod-bluetooth - 4.9.118-1
+kmod-crypto-aead - 4.9.118-1
+kmod-crypto-cmac - 4.9.118-1
+kmod-crypto-ecb - 4.9.118-1
+kmod-crypto-hash - 4.9.118-1
+kmod-crypto-manager - 4.9.118-1
+kmod-crypto-pcompress - 4.9.118-1
+kmod-fuse - 4.9.118-1
+kmod-hid - 4.9.118-1
+kmod-input-core - 4.9.118-1
+kmod-input-evdev - 4.9.118-1
+kmod-lib-crc16 - 4.9.118-1
+kmod-net-rtl8723ds - 4.9.118-1
+kmod-nls-base - 4.9.118-1
+kmod-sound-core - 4.9.118-1
+liballwinner-base - 1-1
+libattr - 20150922-1
+libblobmsg-json - 2016-02-26-5326ce1046425154ab715387949728cfb09f4083
+libbz2 - 1.0.6-2
+libc - -1
+libconfig - 1.4.9-1
+libcurl - 7.54.1-1
+libcutils - 1-1
+libdb47 - 4.7.25.4.NC-5
+libdbus - 1.10.4-1
+libeventlog - 0.2.12-2
+libexpat - 2.1.0-3
+libext2fs - 1.42.12-1
+libffi - 3.0.13-1
+libgcc - -1
+libgcrypt - 1.7.0-1
+libgdbm - 1.11-1
+libgpg-error - 1.27-1
+libical - 1.0-1
+libjson-c - 0.12-1
+libjson-script - 2016-02-26-5326ce1046425154ab715387949728cfb09f4083
+libncurses - 5.9-3
+libncursesw - 5.9-3
+libnghttp2 - 1.24.0
+libnl-tiny - 0.1-5
+libopenssl - 1.1.0i-1
+libpcre - 8.38-2
+libpthread - -1
+libreadline - 6.3-1
+librt - -1
+libsamplerate - 1.0.9-f6730d03c3e7660bb6ecad8816f1b09c5825142a-1
+libsndfile - 1.0.28-1
+libsocket_db - 0.1-1
+libspeexdsp - 1.2rc3-1
+libsqlite3 - 3120200-1
+libssp - -1
+libstdcpp - -1
+libubox - 2016-02-26-5326ce1046425154ab715387949728cfb09f4083
+libubus - 2016-01-26-619f3a160de4f417226b69039538882787b3811c
+libuci - 2016-02-02.1-1
+libuclient - 2016-01-28-2e0918c7e0612449024caaaa8d44fb2d7a33f5f3
+libuuid - 2.25.2-4
+libxml2 - 2.9.3-1
+logd - 2016-03-07-fd4bb41ee7ab136d25609c2a917beea5d52b723b
+memtester - 4.3.0-1
+mtd-utils - 1.5.2-3
+netifd - 2016-02-01-3610a24b218974bdf2d2f709a8af9e4a990c47bd
+ntfs-3g - 2015.3.14-1-fuseint
+ntfsprogs_ntfs-3g - 2015.3.14-1-fuseint
+openssh-keygen - 8.0p1-1
+openssh-server - 8.0p1-1
+opkg - 9c97d5ecd795709c8584e972bfdf3aee3a5b846d-10
+r8723ds-firmware - 1
+realtek-rftest - 1.0.0-1
+rtk_hciattach - 1.0.0-1
+rtk_hcidump - 0.0.1-1
+rwcheck - 1-1
+sbc - 1.3-2
+stress - 1.0.4-1
+stress-ng - 0.09.28-1
+syslog-ng - 3.9.1-3
+terminfo - 5.9-3
+uboot-envtools - 2018.03-2
+ubox - 2016-03-07-fd4bb41ee7ab136d25609c2a917beea5d52b723b
+ubus - 2016-01-26-619f3a160de4f417226b69039538882787b3811c
+ubusd - 2016-01-26-619f3a160de4f417226b69039538882787b3811c
+uci - 2016-02-02.1-1
+uclient-fetch - 2016-01-28-2e0918c7e0612449024caaaa8d44fb2d7a33f5f3
+wifimanager - 0.0.1-1
+wifimanager-demo - 0.0.1-1
+wireless-tools - 29-5
+wpa-cli - 2017-11-08-2
+wpa-supplicant - 2017-11-08-2
+zlib - 1.2.8-1
+  - opkg list-changed-conffiles
+/etc/bluetooth/main.conf
+/etc/bluetooth/network.conf
+/etc/bluetooth/input.conf
+/etc/bluetooth/proximity.conf
+/etc/inittab
+/etc/passwd
+/etc/shadow
+/etc/profile
+/etc/shells
+/etc/e2fsck.conf
+/etc/ssh/sshd_config
+/etc/opkg.conf
+/etc/opkg/customfeeds.conf
+/etc/fw_env.config
+Collected errors:
+ * file_sha256sum_alloc: Failed to open file /etc/passwd: No such file or directory.
+ * file_sha256sum_alloc: Failed to open file /etc/shadow: No such file or directory.
+ * file_sha256sum_alloc: Failed to open file /etc/ssh/sshd_config: No such file or directory.
+  - opkg print-architecture
+arch all 1
+arch noarch 1
+arch sunxi 10
+  - 
+
