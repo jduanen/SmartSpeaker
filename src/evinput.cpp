@@ -31,23 +31,23 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
-genie::EVInput::EVInput(App *app) : app(app) {}
+smartspeaker::EVInput::EVInput(App *app) : app(app) {}
 
-genie::EVInput::~EVInput() { g_source_unref(source); }
+smartspeaker::EVInput::~EVInput() { g_source_unref(source); }
 
-gboolean genie::EVInput::event_prepare(GSource *source, gint *timeout) {
+gboolean smartspeaker::EVInput::event_prepare(GSource *source, gint *timeout) {
   *timeout = -1;
   return false;
 }
 
-gboolean genie::EVInput::event_check(GSource *source) {
+gboolean smartspeaker::EVInput::event_check(GSource *source) {
   InputEventSource *event_source = (InputEventSource *)source;
   gboolean rc;
   rc = (event_source->event_poll_fd.revents & G_IO_IN);
   return rc;
 }
 
-gboolean genie::EVInput::event_dispatch(GSource *g_source, GSourceFunc callback,
+gboolean smartspeaker::EVInput::event_dispatch(GSource *g_source, GSourceFunc callback,
                                         gpointer user_data) {
   EVInput *ev_input = static_cast<EVInput *>(user_data);
   InputEventSource *source = (InputEventSource *)g_source;
@@ -96,11 +96,11 @@ gboolean genie::EVInput::event_dispatch(GSource *g_source, GSourceFunc callback,
   return callback(user_data);
 }
 
-gboolean genie::EVInput::callback(gpointer user_data) {
+gboolean smartspeaker::EVInput::callback(gpointer user_data) {
   return G_SOURCE_CONTINUE;
 }
 
-int genie::EVInput::init() {
+int smartspeaker::EVInput::init() {
   if (!app->config->buttons_enabled)
     return false;
 

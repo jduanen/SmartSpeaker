@@ -22,8 +22,11 @@
 
 #include "state/listening.hpp"
 #include "app.hpp"
-#include "leds.hpp"
+#include "audio/audioplayer.hpp"
+#include "audio/audioinput.hpp"
+#include "audio/audiovolume.hpp"
 #include "stt.hpp"
+#include "leds.hpp"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "smartspeaker::state::Listening"

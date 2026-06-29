@@ -23,6 +23,9 @@
 #include "state/processing.hpp"
 #include "app.hpp"
 #include "audio/audioplayer.hpp"
+#include "audio/audioinput.hpp"
+#include "audio/audiovolume.hpp"
+#include "stt.hpp"
 #include "leds.hpp"
 #include "ws-protocol/client.hpp"
 

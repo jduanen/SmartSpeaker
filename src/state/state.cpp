@@ -22,6 +22,12 @@
 
 #include "state/state.hpp"
 #include "app.hpp"
+#include "audio/audioplayer.hpp"
+#include "audio/audioinput.hpp"
+#include "audio/audiovolume.hpp"
+#include "stt.hpp"
+#include "spotifyd.hpp"
+#include "ws-protocol/client.hpp"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "smartspeaker::state::State"
@@ -44,6 +50,10 @@ void State::exit() {
 
 // Event Handling Methods
 // ===========================================================================
+
+void State::react(events::Wake *) {
+  g_debug("FIXME received Wake when not in Listening state, ignoring.");
+}
 
 void State::react(events::InputFrame *input_frame) {
   g_debug("FIXME received InputFrame when not in Listen state, discarding.");
@@ -152,6 +162,14 @@ void State::react(events::audio::SetVolumeEvent *set_volume) {
 void State::react(events::audio::AdjVolumeEvent *adj_volume) {
   app->audio_volume_controller->adjust_volume(adj_volume->delta);
   adj_volume->resolve();
+}
+
+void State::react(events::PlayerStreamEnter *enter) {
+  g_debug("FIXME received PlayerStreamEnter when not expected, ignoring.");
+}
+
+void State::react(events::PlayerStreamEnd *end) {
+  g_debug("FIXME received PlayerStreamEnd when not expected, ignoring.");
 }
 
 } // namespace state

@@ -24,6 +24,7 @@
 
 #include <glib.h>
 #include <gst/gst.h>
+#include <libsoup/soup.h>
 #include <string.h>
 
 #ifdef STATIC

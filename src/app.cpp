@@ -15,6 +15,8 @@
 #include "evinput.hpp"
 #include "leds.hpp"
 #include "stt.hpp"
+#include "spotifyd.hpp"
+#include "ws-protocol/client.hpp"
 
 #include "EnumIterator.hpp"
 
@@ -92,7 +94,7 @@ gboolean smartspeaker::App::sigterm_handler(gpointer data) {
  *
  * @param event_type
  */
-void genie::App::track_processing_event(ProcessingEventType event_type) {
+void smartspeaker::App::track_processing_event(ProcessingEventType event_type) {
   // Unless we are starting a turn or already in a turn just bail out. This
   // avoids tracking the "Hi..." and any other messages at connect.
   if (!(event_type == ProcessingEventType::START_STT || is_processing)) {
@@ -140,7 +142,7 @@ void genie::App::track_processing_event(ProcessingEventType event_type) {
   }
 }
 
-void genie::App::replay_deferred_events() {
+void smartspeaker::App::replay_deferred_events() {
   // steal all the deferred events
   // this is necessary because handling the event
   // might queue more deferred events
@@ -168,3 +170,10 @@ void genie::App::replay_deferred_events() {
     }
     return 0;
 */
+
+void smartspeaker::App::print_processing_entry(const char *name,
+                                               double duration_ms,
+                                               double total_ms) {
+  g_message("  %-20s %8.2f ms  (%5.1f%%)", name, duration_ms,
+            total_ms > 0 ? 100.0 * duration_ms / total_ms : 0.0);
+}
