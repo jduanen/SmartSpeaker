@@ -1,0 +1,112 @@
+# Cross-compilation environment for ARMv7 hard-float (armhf) targets.
+# Produces binaries for the Allwinner R328-S3 (Baidu Xiaodu, TinaLinux GLIBC 2.23).
+#
+# Two-stage build:
+#   Stage 1 (armhf-sysroot): Ubuntu 16.04 (Xenial, GLIBC 2.23) installs all
+#     armhf development packages — headers, .so files, CRT objects (crt1.o).
+#   Stage 2 (builder):       Ubuntu 22.04 runs GCC 11 cross-compiler with
+#     --sysroot=/sysroot pointing at the Xenial libraries, keeping GLIBC
+#     requirements at ≤2.23.
+#
+# Build:  docker build -f Dockerfile.dockcross -t smartspeaker-cross .
+# Shell:  docker run --rm -it -v $(pwd):/app smartspeaker-cross bash
+# Build:  docker run --rm -v $(pwd):/app smartspeaker-cross bash -c \
+#           "meson setup --wipe --cross-file=scripts/cross_file.txt builddir && ninja -C builddir"
+# Check:  docker run --rm -v $(pwd):/app smartspeaker-cross bash -c \
+#           "arm-linux-gnueabihf-objdump -p builddir/src/smartspeaker | grep GLIBC"
+
+# ── Stage 1: Xenial armhf sysroot ───────────────────────────────────────────
+FROM ubuntu:16.04 AS armhf-sysroot
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# archive.ubuntu.com and ports.ubuntu.com still serve xenial packages.
+# Restrict existing sources to amd64 so armhf requests don't get mixed in,
+# then add dedicated armhf lines from the ports mirror.
+RUN sed -i 's|^deb http|deb [arch=amd64] http|' /etc/apt/sources.list
+
+RUN dpkg --add-architecture armhf && \
+    printf 'deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports xenial           main restricted universe multiverse\n\
+deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports xenial-updates  main restricted universe multiverse\n\
+deb [arch=armhf] http://ports.ubuntu.com/ubuntu-ports xenial-security main restricted universe multiverse\n' \
+    >> /etc/apt/sources.list && \
+    apt-get update
+
+# Install armhf dev packages.  libc6-dev:armhf is listed explicitly so the
+# sysroot contains the Xenial CRT objects (crt1.o), which reference
+# __libc_start_main@@GLIBC_2.0 instead of the newer GLIBC_2.34 variant the
+# Ubuntu 22.04 cross-compiler would otherwise pull in.
+RUN apt-get install -y --no-install-recommends \
+      libc6-dev:armhf \
+      libglib2.0-dev:armhf \
+      libasound2-dev:armhf \
+      libpulse-dev:armhf \
+      libwebrtc-audio-processing-dev:armhf \
+      libpcre3-dev:armhf \
+      libffi-dev:armhf \
+      libmount-dev:armhf \
+      libblkid-dev:armhf \
+      libevdev-dev:armhf \
+      libgstreamer1.0-dev:armhf \
+      libgstreamer-plugins-base1.0-dev:armhf \
+      libjson-glib-dev:armhf \
+      libsoup2.4-dev:armhf \
+      libspeexdsp-dev:armhf \
+    && rm -rf /var/lib/apt/lists/*
+
+# ── Stage 2: Ubuntu 22.04 cross-compiler + Xenial sysroot ───────────────────
+FROM ubuntu:22.04
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install the GCC 11 cross-compiler from Ubuntu 22.04 — no armhf packages
+# from jammy needed; all armhf libraries come from the xenial sysroot.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+      gcc-arm-linux-gnueabihf \
+      g++-arm-linux-gnueabihf \
+      binutils-arm-linux-gnueabihf \
+      pkg-config \
+      python3 python3-pip python3-venv \
+      git wget ninja-build \
+    && rm -rf /var/lib/apt/lists/*
+
+# Populate /sysroot with the Xenial armhf libraries and headers.
+# The linker (via --sysroot=/sysroot in the cross-file) will use these
+# instead of the 22.04 cross-compiler's bundled arm-linux-gnueabihf libs.
+COPY --from=armhf-sysroot /lib/arm-linux-gnueabihf     /sysroot/lib/arm-linux-gnueabihf
+COPY --from=armhf-sysroot /usr/lib/arm-linux-gnueabihf  /sysroot/usr/lib/arm-linux-gnueabihf
+COPY --from=armhf-sysroot /usr/include                  /sysroot/usr/include
+COPY --from=armhf-sysroot /usr/share/pkgconfig          /sysroot/usr/share/pkgconfig
+
+# Xenial's -dev packages install unversioned .so stubs (e.g. libglib-2.0.so)
+# as absolute symlinks pointing into /lib/arm-linux-gnueabihf/.  The host
+# linker follows these absolute paths on the BUILD host (not in the sysroot),
+# fails to find the target, and falls back to the static .a instead of the
+# shared .so.  Rewrite every absolute symlink to be sysroot-prefixed so the
+# linker resolves them correctly (e.g. /sysroot/lib/arm-linux-gnueabihf/...).
+RUN find /sysroot -type l | while read link; do \
+      target=$(readlink "$link"); \
+      if [ "${target#/}" != "$target" ]; then \
+        ln -sfn "/sysroot$target" "$link"; \
+      fi; \
+    done
+
+# meson must be installed via pip; the apt version on 22.04 may be too old.
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install meson
+
+# Compiler shorthands used by build scripts and the meson cross-file.
+ENV CROSS_COMPILE=arm-linux-gnueabihf-
+ENV CC=${CROSS_COMPILE}gcc
+ENV CXX=${CROSS_COMPILE}g++
+ENV AR=${CROSS_COMPILE}ar
+ENV STRIP=${CROSS_COMPILE}strip
+
+# Tell pkg-config to use the sysroot's .pc files and prepend /sysroot to all
+# -I and -L flags it emits.  The cross-file sets these too, but the env vars
+# are used by any shell-level pkg-config calls as well.
+ENV PKG_CONFIG_SYSROOT_DIR=/sysroot
+ENV PKG_CONFIG_LIBDIR=/sysroot/usr/lib/arm-linux-gnueabihf/pkgconfig:/sysroot/usr/share/pkgconfig
+
+WORKDIR /app
