@@ -45,12 +45,10 @@ public:
 
   // Audio Defaults
   // -------------------------------------------------------------------------
-  static const constexpr char *DEFAULT_AUDIO_SINK = "alsasink";
   static const constexpr char *DEFAULT_AUDIO_OUTPUT_DEVICE = "hw:audiocodec";
   static const constexpr char *DEFAULT_AUDIO_INPUT_DEVICE = "hw:audiocodec";
   static const constexpr char *DEFAULT_AUDIO_VOLUME_CONTROL = "LINEOUT volume";
   static const constexpr char *DEFAULT_AUDIO_OUTPUT_FIFO = "/tmp/playback.fifo";
-  static const constexpr char *DEFAULT_AUDIO_VOICE = "male";
 
   // ESPHome Defaults
   // -------------------------------------------------------------------------
@@ -101,15 +99,10 @@ public:
 
   size_t retry_interval;
   size_t connect_timeout;
-  gchar *nl_url;
-  gchar *locale;
-  gchar *ssl_ca_file;
 
   // Audio
   // -------------------------------------------------------------------------
 
-  AudioDriverType audio_backend;
-  gchar *audio_sink;
   gchar *audio_output_device;
   gchar *audio_output_device_music;
   gchar *audio_output_device_alerts;
@@ -121,7 +114,6 @@ public:
   bool audio_input_stereo2mono;
   bool audio_ec_enabled;
   bool audio_ec_loopback;
-  gchar *audio_voice;
 
   // ESPHome native API
   // -------------------------------------------------------------------------
@@ -132,23 +124,7 @@ public:
   gchar *esphome_model_dir;
   gchar *esphome_sound_dir;
 
-  // Wakeword (Porcupine)
-  // -------------------------------------------------------------------------
-
-  gchar *asset_dir;
-  gchar *pv_model_path;
-  gchar *pv_keyword_path;
-  float pv_sensitivity;
-
-  // VAD
-  // -------------------------------------------------------------------------
-
-  size_t vad_start_speaking_ms;
-  size_t vad_done_speaking_ms;
-  size_t vad_input_detected_noise_ms;
-  size_t vad_listen_timeout_ms;
-
-  // Sound files
+  // Sound files (16-bit PCM WAV; relative paths are under esphome_sound_dir)
   // -------------------------------------------------------------------------
 
   gchar *sound_wake;

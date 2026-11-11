@@ -25,9 +25,6 @@
 #include "audio/audioplayer.hpp"
 #include "audio/audioinput.hpp"
 #include "audio/audiovolume.hpp"
-#include "stt.hpp"
-#include "spotifyd.hpp"
-#include "ws-protocol/client.hpp"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "smartspeaker::state::State"
@@ -59,19 +56,6 @@ void State::react(events::InputFrame *input_frame) {
   g_debug("FIXME received InputFrame when not in Listen state, discarding.");
 }
 
-void State::react(events::InputDone *) {
-  g_debug("FIXME received InputDone when not in Listen state, ignoring.");
-}
-
-void State::react(events::InputNotDetected *) {
-  g_debug("FIXME received InputNotDetected when not in Listen state, "
-          "ignoring.");
-}
-
-void State::react(events::InputTimeout *) {
-  g_debug("FIXME received InputTimeout when not in Listen state, ignoring.");
-}
-
 // SmartSpeaker Server Message Events
 // ---------------------------------------------------------------------------
 //
@@ -87,11 +71,6 @@ void State::react(events::TextMessage *text_message) {
 
 void State::react(events::AskSpecialMessage *ask_special_message) {}
 
-void State::react(events::SpotifyCredentials *spotify_credentials) {
-  app->spotifyd->set_credentials(spotify_credentials->username,
-                                 spotify_credentials->access_token);
-}
-
 void State::react(events::AdjustVolume *adjust_volume) {
   app->audio_volume_controller->adjust_volume(
       adjust_volume->delta * AudioVolumeController::VOLUME_DELTA);
@@ -103,8 +82,7 @@ void State::react(events::TogglePlayback *) {
 
 void State::react(events::Panic *) {
   g_warning("PANIC!!! :D");
-  app->conversation_client.get()->send_thingtalk("$stop;");
-  app->spotifyd.get()->pause();
+  app->audio_player->stop();
   app->transit(new Sleeping(app));
 }
 
@@ -116,17 +94,6 @@ void State::react(events::ToggleDisabled *) {
 void State::react(events::ToggleConfigMode *) {
   g_message("CONFIG MODE...");
   app->transit(new Config(app));
-}
-
-// Speech-To-Text (STT)
-// ---------------------------------------------------------------------------
-
-void State::react(events::stt::TextResponse *response) {
-  g_debug("FIXME Received events::stt::TextResponse in state %s", NAME);
-}
-
-void State::react(events::stt::ErrorResponse *response) {
-  g_debug("FIXME Received events::stt::ErrorResponse in state %s", NAME);
 }
 
 // Audio Control Protocol

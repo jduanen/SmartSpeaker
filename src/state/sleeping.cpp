@@ -54,5 +54,10 @@ void Sleeping::react(events::audio::PlayURLsEvent *play_urls) {
   play_urls->resolve();
 }
 
+void Sleeping::react(events::TogglePlayback *) {
+  // push-to-talk until the voice pipeline exists (Phase 4)
+  app->transit(new Listening(app));
+}
+
 } // namespace state
 } // namespace smartspeaker

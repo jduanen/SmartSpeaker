@@ -28,8 +28,10 @@
 #include <linux/input.h>
 #include <stdio.h>
 #include <string.h>
+#include <sys/ioctl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 smartspeaker::EVInput::EVInput(App *app) : app(app) {}
 
@@ -52,46 +54,38 @@ gboolean smartspeaker::EVInput::event_dispatch(GSource *g_source, GSourceFunc ca
   EVInput *ev_input = static_cast<EVInput *>(user_data);
   InputEventSource *source = (InputEventSource *)g_source;
   input_event ev;
-  int rc = 0;
+  ssize_t rc;
 
-  rc = libevdev_next_event(source->device, LIBEVDEV_READ_FLAG_NORMAL, &ev);
-  while (rc != -EAGAIN) {
-    if (rc == 0) {
-      g_debug("Event type %d (%s), code %d (%s), value %d", ev.type,
-              libevdev_event_type_get_name(ev.type), ev.code,
-              libevdev_event_code_get_name(ev.type, ev.code), ev.value);
-      // Dispatch key events
-      if (ev.type == EV_KEY && ev.value == 0) {
-        // For key constant names/values see:
-        //
-        // https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h
-        //
-        switch (ev.code) {
-          case KEY_VOLUMEUP:
-            ev_input->app->dispatch(new state::events::AdjustVolume(1));
-            break;
-          case KEY_VOLUMEDOWN:
-            ev_input->app->dispatch(new state::events::AdjustVolume(-1));
-            break;
-          case KEY_MUTE:
-            ev_input->app->dispatch(new state::events::ToggleDisabled());
-            break;
-          case KEY_PLAYPAUSE:
-            // ev_input->app->dispatch(new state::events::TogglePlayback());
-            ev_input->app->dispatch(new state::events::Panic());
-            break;
-          default:
-            g_warning("Unhandled button up event, code=%d", ev.code);
-            break;
-        }
+  while ((rc = read(source->event_poll_fd.fd, &ev, sizeof(ev))) ==
+         (ssize_t)sizeof(ev)) {
+    g_debug("Event type %d, code %d, value %d", ev.type, ev.code, ev.value);
+    // Dispatch key events
+    if (ev.type == EV_KEY && ev.value == 0) {
+      // For key constant names/values see:
+      //
+      // https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h
+      //
+      switch (ev.code) {
+        case KEY_VOLUMEUP:
+          ev_input->app->dispatch(new state::events::AdjustVolume(1));
+          break;
+        case KEY_VOLUMEDOWN:
+          ev_input->app->dispatch(new state::events::AdjustVolume(-1));
+          break;
+        case KEY_MUTE:
+          ev_input->app->dispatch(new state::events::ToggleDisabled());
+          break;
+        case KEY_PLAYPAUSE:
+          ev_input->app->dispatch(new state::events::TogglePlayback());
+          break;
+        default:
+          g_warning("Unhandled button up event, code=%d", ev.code);
+          break;
       }
-    } else {
-      g_print("source read failed %s\n", strerror(-rc));
-      break;
     }
-
-    rc = libevdev_next_event(source->device, LIBEVDEV_READ_FLAG_NORMAL, &ev);
   }
+  if (rc < 0 && errno != EAGAIN)
+    g_print("source read failed %s\n", strerror(errno));
 
   return callback(user_data);
 }
@@ -111,31 +105,17 @@ int smartspeaker::EVInput::init() {
 
   fd = open(app->config->evinput_device, O_RDONLY | O_NONBLOCK);
   if (fd == -1) {
-    g_print("Failed to init libevdev (%s)\n", strerror(-fd));
+    g_print("Failed to open %s (%s)\n", app->config->evinput_device,
+            strerror(errno));
     return false;
   }
 
-  event_source->device = NULL;
   event_source->event_poll_fd.fd = fd;
   event_source->event_poll_fd.events = G_IO_IN;
-  rc = libevdev_new_from_fd(fd, &event_source->device);
-  if (rc < 0) {
-    g_print("Failed to init libevdev (%s)\n", strerror(-rc));
-    return false;
-  }
 
-  g_debug("Input device name: \"%s\"\n",
-          libevdev_get_name(event_source->device));
-  g_debug("Input device ID: bus %#x vendor %#x product %#x\n",
-          libevdev_get_id_bustype(event_source->device),
-          libevdev_get_id_vendor(event_source->device),
-          libevdev_get_id_product(event_source->device));
-  g_debug("Evdev version: %x\n",
-          libevdev_get_driver_version(event_source->device));
-  g_debug("Input device name: \"%s\"\n",
-          libevdev_get_name(event_source->device));
-  g_debug("Phys location: %s\n", libevdev_get_phys(event_source->device));
-  g_debug("Uniq identifier: %s\n", libevdev_get_uniq(event_source->device));
+  char name[256] = "?";
+  ioctl(fd, EVIOCGNAME(sizeof(name)), name);
+  g_debug("Input device name: \"%s\"\n", name);
 
   g_source_set_priority(source, G_PRIORITY_DEFAULT);
   g_source_add_poll(source, &event_source->event_poll_fd);

@@ -55,9 +55,6 @@ public:
   // and forget to declare them here
   virtual void react(events::Wake *);
   virtual void react(events::InputFrame *input_frame);
-  virtual void react(events::InputDone *);
-  virtual void react(events::InputNotDetected *);
-  virtual void react(events::InputTimeout *);
   virtual void react(events::TextMessage *text_message);
   virtual void react(events::AskSpecialMessage *ask_special_message);
   virtual void react(events::AdjustVolume *adjust_volume);
@@ -65,9 +62,6 @@ public:
   virtual void react(events::Panic *);
   virtual void react(events::ToggleDisabled *);
   virtual void react(events::ToggleConfigMode *);
-  virtual void react(events::SpotifyCredentials *spotify_credentials);
-  virtual void react(events::stt::TextResponse *response);
-  virtual void react(events::stt::ErrorResponse *response);
   virtual void react(events::audio::PrepareEvent *prepare);
   virtual void react(events::audio::PlayURLsEvent *play_urls);
   virtual void react(events::audio::StopEvent *stop);

@@ -34,7 +34,6 @@
 smartspeaker::Config::Config() {}
 
 smartspeaker::Config::~Config() {
-  g_free(audio_sink);
   g_free(audio_output_device);
   g_free(audio_output_device_music);
   g_free(audio_output_device_alerts);
@@ -42,11 +41,17 @@ smartspeaker::Config::~Config() {
   g_free(audio_output_fifo);
   g_free(audio_volume_control);
   g_free(audio_input_device);
-  g_free(audio_voice);
   g_free(esphome_name);
   g_free(esphome_encryption_key);
   g_free(esphome_model_dir);
   g_free(esphome_sound_dir);
+  g_free(sound_wake);
+  g_free(sound_no_input);
+  g_free(sound_news_intro);
+  g_free(sound_alarm_clock_elapsed);
+  g_free(sound_working);
+  g_free(sound_stt_error);
+  g_free(sound_too_much_input);
   g_free(leds_path);
   g_free(leds_type);
 }
@@ -288,17 +293,6 @@ void smartspeaker::Config::load() {
 
   // Audio
   // =========================================================================
-  gchar *backend = get_string("audio", "backend", "alsa");
-  if (strcmp(backend, "pulse") == 0 || strcmp(backend, "pulseaudio") == 0) {
-    audio_backend = AudioDriverType::PULSEAUDIO;
-  } else {
-    if (strcmp(backend, "alsa") != 0)
-      g_warning("Unknown [audio] backend '%s', using 'alsa'", backend);
-    audio_backend = AudioDriverType::ALSA;
-  }
-  g_free(backend);
-
-  audio_sink = get_string("audio", "sink", DEFAULT_AUDIO_SINK);
   audio_output_device =
       get_string("audio", "output", DEFAULT_AUDIO_OUTPUT_DEVICE);
   audio_output_device_music =
@@ -313,7 +307,6 @@ void smartspeaker::Config::load() {
       get_string("audio", "volume", DEFAULT_AUDIO_VOLUME_CONTROL);
   audio_input_device = get_string("audio", "input", DEFAULT_AUDIO_INPUT_DEVICE);
   audio_input_stereo2mono = get_bool("audio", "stereo2mono", false);
-  audio_voice = get_string("audio", "voice", DEFAULT_AUDIO_VOICE);
 
   // Echo Cancellation (same keys as Genie)
   // =========================================================================
@@ -330,6 +323,16 @@ void smartspeaker::Config::load() {
       get_string("esphome", "model_dir", DEFAULT_ESPHOME_MODEL_DIR);
   esphome_sound_dir =
       get_string("esphome", "sound_dir", DEFAULT_ESPHOME_SOUND_DIR);
+
+  // Sounds (empty disables a sound)
+  // =========================================================================
+  sound_wake = get_string("sound", "wake", "");
+  sound_no_input = get_string("sound", "no_input", "");
+  sound_news_intro = get_string("sound", "news_intro", "");
+  sound_alarm_clock_elapsed = get_string("sound", "alarm_clock_elapsed", "");
+  sound_working = get_string("sound", "working", "");
+  sound_stt_error = get_string("sound", "stt_error", "");
+  sound_too_much_input = get_string("sound", "too_much_input", "");
 
   // Buttons
   // =========================================================================

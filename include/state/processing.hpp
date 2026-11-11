@@ -38,8 +38,6 @@ public:
   const char *name() override { return NAME; };
 
   void react(events::TextMessage *text_message) override;
-  void react(events::stt::TextResponse *response) override;
-  void react(events::stt::ErrorResponse *response) override;
   void react(events::AskSpecialMessage *ask_special_message) override;
   void react(events::audio::PrepareEvent *prepare) override;
 

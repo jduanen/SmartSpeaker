@@ -14,9 +14,6 @@
 #include "utils/net.hpp"
 #include "evinput.hpp"
 #include "leds.hpp"
-#include "stt.hpp"
-#include "spotifyd.hpp"
-#include "ws-protocol/client.hpp"
 
 #include "EnumIterator.hpp"
 
@@ -54,8 +51,6 @@ int smartspeaker::App::exec(int argc, char *argv[]) {
   audio_volume_controller = std::make_unique<AudioVolumeController>(this);
 
   audio_player = std::make_unique<AudioPlayer>(this);
-
-  stt = std::make_unique<STT>(this);
 
   audio_input = std::make_unique<AudioInput>(this);
 

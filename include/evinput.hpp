@@ -24,13 +24,10 @@
 
 #include "app.hpp"
 
-#include <libevdev/libevdev.h>
-
 namespace smartspeaker {
 
 struct InputEventSource {
   GSource source;
-  struct libevdev *device;
   GPollFD event_poll_fd;
 };
 

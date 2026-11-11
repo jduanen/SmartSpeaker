@@ -14,8 +14,6 @@
 #include <thread>
 
 #include "audio/audio.hpp"
-#include "spotifyd.hpp"
-#include "ws-protocol/client.hpp"
 
 #include "state/disabled.hpp"
 #include "state/events.hpp"
@@ -35,8 +33,6 @@ class AudioPlayer;
 class AudioVolumeController;
 class EVInput;
 class Leds;
-class STT;
-class TTS;
 
 enum class ProcessingEventType {
   START_STT,
@@ -123,9 +119,6 @@ private:
   std::unique_ptr<AudioInput> audio_input;
   std::unique_ptr<AudioPlayer> audio_player;
   std::unique_ptr<AudioVolumeController> audio_volume_controller;
-  std::unique_ptr<STT> stt;
-  std::unique_ptr<Spotifyd> spotifyd;
-  std::unique_ptr<ws::Client> conversation_client;
   std::unique_ptr<EVInput> ev_input;
   std::unique_ptr<Leds> leds;
 
@@ -198,8 +191,6 @@ private:
   // =========================================================================
 
   int process_args(int argc, char *argv[]);
-
-  void init_soup();
 
   void print_processing_entry(const char *name, double duration_ms,
                               double total_ms);

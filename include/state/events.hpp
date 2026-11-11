@@ -94,16 +94,6 @@ struct InputFrame : Event {
   InputFrame(AudioFrame frame) : frame(std::move(frame)) {}
 };
 
-struct InputDone : Event {
-  bool vad_detected;
-
-  InputDone(bool vad_detected) : vad_detected(vad_detected) {}
-};
-
-struct InputNotDetected : Event {};
-
-struct InputTimeout : Event {};
-
 // Conversation Events
 // ===========================================================================
 
@@ -143,35 +133,6 @@ struct Panic : Event {};
 struct ToggleDisabled : Event {};
 
 struct ToggleConfigMode : Event {};
-
-struct SpotifyCredentials : Event {
-  std::string username;
-  std::string access_token;
-
-  SpotifyCredentials(const char *username, const char *access_token)
-      : username(username ? username : ""),
-        access_token(access_token ? access_token : "") {}
-};
-
-// Speech-To-Text (STT) Events
-// ===========================================================================
-
-namespace stt {
-
-struct TextResponse : Event {
-  std::string text;
-
-  TextResponse(const char *text) : text(text) {}
-};
-
-struct ErrorResponse : Event {
-  int code;
-  std::string message;
-
-  ErrorResponse(int code, const char *message) : code(code), message(message) {}
-};
-
-} // namespace stt
 
 // Audio Player Control Events
 // ===========================================================================

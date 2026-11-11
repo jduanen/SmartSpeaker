@@ -23,7 +23,6 @@
 #pragma once
 
 #include "app.hpp"
-#include <pv_porcupine.h>
 
 namespace smartspeaker {
 
@@ -39,12 +38,6 @@ public:
 private:
   // initialized once and never overwritten
   App *const app;
-
-  void *porcupine_library;
-  pv_porcupine_t *porcupine;
-  decltype(pv_porcupine_delete) *pv_porcupine_delete_func;
-  decltype(pv_porcupine_process) *pv_porcupine_process_func;
-  decltype(pv_status_to_string) *pv_status_to_string_func;
 };
 
 } // namespace smartspeaker

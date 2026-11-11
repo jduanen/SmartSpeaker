@@ -60,18 +60,4 @@ enum class AudioTaskType {
   URL,
 };
 
-enum class AudioDriverType { ALSA, PULSEAUDIO };
-
-static inline const char *audio_driver_type_to_string(AudioDriverType driver) {
-  switch (driver) {
-    case AudioDriverType::ALSA:
-      return "alsa";
-    case AudioDriverType::PULSEAUDIO:
-      return "pulseaudio";
-    default:
-      g_assert_not_reached();
-      return "";
-  }
-}
-
 } // namespace smartspeaker

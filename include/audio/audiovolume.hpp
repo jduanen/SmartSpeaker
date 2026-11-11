@@ -25,9 +25,6 @@
 #include "../app.hpp"
 #include "audiodriver.hpp"
 
-#include <pulse/error.h>
-#include <pulse/simple.h>
-
 namespace smartspeaker {
 
 class AudioVolumeController {

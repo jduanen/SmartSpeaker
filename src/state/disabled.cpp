@@ -25,9 +25,7 @@
 #include "audio/audioplayer.hpp"
 #include "audio/audiovolume.hpp"
 #include "leds.hpp"
-#include "spotifyd.hpp"
 #include "state/sleeping.hpp"
-#include "ws-protocol/client.hpp"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "smartspeaker::state::Disabled"
@@ -44,8 +42,7 @@ void Disabled::exit() { State::exit(); }
 
 void Disabled::react(events::Panic *) {
   g_warning("PANIC!!! :D");
-  app->conversation_client.get()->send_thingtalk("$stop;");
-  app->spotifyd.get()->pause();
+  app->audio_player->stop();
 }
 
 void Disabled::react(events::ToggleDisabled *) {

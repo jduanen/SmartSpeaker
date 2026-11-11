@@ -23,13 +23,9 @@
 #include "audiovolume.hpp"
 
 #include "alsa/volume.hpp"
-#include "pulseaudio/volume.hpp"
 
 smartspeaker::AudioVolumeController::AudioVolumeController(App *app) : app(app) {
-  if (app->config->audio_backend == AudioDriverType::ALSA)
-    driver = std::make_unique<AudioVolumeDriverAlsa>(app);
-  else
-    driver = std::make_unique<AudioVolumeDriverPulseAudio>(app);
+  driver = std::make_unique<AudioVolumeDriverAlsa>(app);
 }
 
 void smartspeaker::AudioVolumeController::duck() { driver->duck(); }

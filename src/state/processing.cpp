@@ -25,9 +25,7 @@
 #include "audio/audioplayer.hpp"
 #include "audio/audioinput.hpp"
 #include "audio/audiovolume.hpp"
-#include "stt.hpp"
 #include "leds.hpp"
-#include "ws-protocol/client.hpp"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "smartspeaker::state::Processing"
@@ -53,24 +51,6 @@ void Processing::react(events::TextMessage *text_message) {
               text_message->text.c_str());
     app->transit(new Saying(app, text_message->id, text_message->text));
   }
-}
-
-void Processing::react(events::stt::TextResponse *response) {
-  app->track_processing_event(ProcessingEventType::END_STT);
-  app->audio_player.get()->clean_queue();
-  app->track_processing_event(ProcessingEventType::START_SMARTSPEAKER);
-  app->conversation_client.get()->send_command(response->text);
-}
-
-void Processing::react(events::stt::ErrorResponse *response) {
-  app->track_processing_event(ProcessingEventType::END_STT);
-  g_warning("STT completed with an error (code=%d): %s", response->code,
-            response->message.c_str());
-  if (response->code != 404) {
-    app->audio_player.get()->play_sound(Sound_t::STT_ERROR);
-    app->leds->animate(LedsState_t::Error);
-  }
-  app->transit(new Sleeping(app));
 }
 
 void Processing::react(events::AskSpecialMessage *ask_special_message) {

@@ -25,7 +25,6 @@
 #include "audio/audioplayer.hpp"
 #include "audio/audioinput.hpp"
 #include "audio/audiovolume.hpp"
-#include "stt.hpp"
 #include "leds.hpp"
 
 #undef G_LOG_DOMAIN
@@ -38,7 +37,6 @@ void Listening::enter() {
   State::enter();
 
   app->leds->animate(LedsState_t::Listening);
-  app->stt->begin_session(is_follow_up);
   app->audio_input->wake();
   app->audio_volume_controller->duck();
   g_message("Stopping audio player...\n");
@@ -47,7 +45,11 @@ void Listening::enter() {
     g_message("Playing WAKE sound...\n");
     app->audio_player->play_sound(Sound_t::WAKE);
   }
-  g_message("Connecting STT...\n");
+}
+
+void Listening::exit() {
+  app->audio_input->sleep();
+  State::exit();
 }
 
 void Listening::react(events::Wake *) {
@@ -55,32 +57,10 @@ void Listening::react(events::Wake *) {
 }
 
 void Listening::react(events::InputFrame *input_frame) {
-  app->stt->send_frame(std::move(input_frame->frame));
+  // TODO Phase 4: stream to HA as VoiceAssistantAudio
 }
 
-void Listening::react(events::InputDone *input_done) {
-  g_message("Handling InputDone...\n");
-  app->stt->send_done();
-  app->audio_player->stop();
-  if (input_done->vad_detected) {
-    app->audio_player->play_sound(Sound_t::WORKING);
-  }
-  app->transit(new Processing(app));
-}
-
-void Listening::react(events::InputNotDetected *) {
-  g_message("Handling InputNotDetected...\n");
-  app->stt->abort();
-  app->audio_player->stop();
-  app->audio_player->play_sound(Sound_t::NO_INPUT);
-  app->transit(new Sleeping(app));
-}
-
-void Listening::react(events::InputTimeout *) {
-  g_message("Handling InputTimeout...\n");
-  app->stt->abort();
-  app->audio_player->stop();
-  app->audio_player->play_sound(Sound_t::TOO_MUCH_INPUT);
+void Listening::react(events::TogglePlayback *) {
   app->transit(new Sleeping(app));
 }
 

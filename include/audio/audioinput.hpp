@@ -25,29 +25,21 @@
 #include "app.hpp"
 #include "audiodriver.hpp"
 #include "audioplayer.hpp"
-#include "stt.hpp"
-#include "utils/webrtc_vad.h"
 #include "wakeword.hpp"
 #include <atomic>
 #include <glib.h>
 #include <queue>
 #include <thread>
 
-#define AUDIO_INPUT_VAD_FRAME_LENGTH 480
-
 namespace smartspeaker {
 
 class AudioInput {
 public:
   static const int32_t BUFFER_MAX_FRAMES = 32;
-  // static const int32_t VAD_FRAME_LENGTH = 480;
-  static const int VAD_IS_SILENT = 0;
-  static const int VAD_NOT_SILENT = 1;
 
   enum class State {
     CLOSED,
     WAITING,
-    WOKE,
     LISTENING,
   };
 
@@ -55,11 +47,11 @@ public:
   ~AudioInput();
   void close();
   void wake();
+  void sleep();
 
 private:
   // initialized once and never overwritten
   App *const app;
-  VadInst *const vad_instance;
   std::unique_ptr<WakeWord> wakeword;
   std::unique_ptr<AudioInputDriver> input;
 
@@ -73,20 +65,8 @@ private:
   int16_t channels;
   std::queue<AudioFrame> frame_buffer;
 
-  size_t vad_start_frame_count;
-  size_t vad_done_frame_count;
-  size_t vad_input_detected_noise_frame_count;
-  size_t vad_listen_timeout_frame_count;
-
-  // Loop state variables
-  size_t state_woke_frame_count;
-  size_t state_vad_silent_count;
-  size_t state_vad_noise_count;
-
-  size_t ms_to_frames(size_t frame_length, size_t ms);
   void loop();
   void loop_waiting();
-  void loop_woke();
   void loop_listening();
   void transition(State to_state);
 };
