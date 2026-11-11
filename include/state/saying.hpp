@@ -25,25 +25,42 @@
 #include "events.hpp"
 #include "state.hpp"
 
+#include <string>
+
 namespace smartspeaker {
 namespace state {
 
+/**
+ * Plays a pipeline reply or an announcement on the announce source, then
+ * listens again if HA wants to continue the conversation.
+ */
 class Saying : public State {
 public:
   static const constexpr char *NAME = "Saying";
 
-  Saying(App *app, gint64 text_id, const std::string text)
-      : State{app}, text_id(text_id), text(text) {}
+  /** A pipeline reply (TTS URL). */
+  Saying(App *app, std::string url)
+      : State{app}, url(std::move(url)), announcement(false) {}
+  /** An announcement, optionally preceded by a chime. */
+  Saying(App *app, std::string url, std::string preannounce,
+         bool start_conversation)
+      : State{app}, url(std::move(url)), preannounce(std::move(preannounce)),
+        announcement(true), start_conversation(start_conversation) {}
 
   void enter() override;
+  void exit() override;
   const char *name() override { return NAME; };
 
-  void react(events::AskSpecialMessage *ask_special_message) override;
+  void react(events::TogglePlayback *) override;
+  void react(events::voice::ResponseFinished *) override;
+  void react(events::voice::Announce *announce) override;
 
 private:
-  gint64 text_id;
-  std::string text;
-  bool follow_up = false;
+  std::string url;
+  std::string preannounce;
+  bool announcement;
+  bool start_conversation = false;
+  bool finished = false;
 };
 
 } // namespace state

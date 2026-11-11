@@ -40,6 +40,7 @@ private:
   App *const app;
   GSocketService *service = nullptr;
   std::list<Connection *> connections;
+  Connection *voice_client = nullptr; // subscribed to the voice assistant
   std::string name;
   std::string mac;
 

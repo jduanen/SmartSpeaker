@@ -17,21 +17,12 @@
 #include "evinput.hpp"
 #include "leds.hpp"
 #include "esphome/server.hpp"
+#include "voice/session.hpp"
 
 #include "EnumIterator.hpp"
 
-double time_diff(struct timeval x, struct timeval y) {
-  return (((double)y.tv_sec * 1000000 + (double)y.tv_usec) -
-          ((double)x.tv_sec * 1000000 + (double)x.tv_usec));
-}
-
-double time_diff_ms(struct timeval x, struct timeval y) {
-  return time_diff(x, y) / 1000;
-}
-
 smartspeaker::App::App() {
   main_thread = std::this_thread::get_id();
-  is_processing = FALSE;
 }
 
 smartspeaker::App::~App() { g_main_loop_unref(main_loop); }
@@ -64,6 +55,7 @@ int smartspeaker::App::exec(int argc, char *argv[]) {
   ev_input = std::make_unique<EVInput>(this);
   ev_input->init();
 
+  voice = std::make_unique<VoiceSession>(this);
   esphome = std::make_unique<esphome::Server>(this);
   esphome->start();
 
@@ -90,61 +82,6 @@ gboolean smartspeaker::App::sigterm_handler(gpointer data) {
   // exit the process directly, to avoid any crash on termination
   // that could cause us to restart
   exit(0);
-}
-
-/*
- * @brief Track an event that is part of a turn's remote processing.
- *
- * We want to keep a close eye the performance of our
- *
- * @param event_type
- */
-void smartspeaker::App::track_processing_event(ProcessingEventType event_type) {
-  // Unless we are starting a turn or already in a turn just bail out. This
-  // avoids tracking the "Hi..." and any other messages at connect.
-  if (!(event_type == ProcessingEventType::START_STT || is_processing)) {
-    return;
-  }
-
-  switch (event_type) {
-    case ProcessingEventType::START_STT:
-      gettimeofday(&start_stt, NULL);
-      is_processing = true;
-      break;
-    case ProcessingEventType::END_STT:
-      gettimeofday(&end_stt, NULL);
-      break;
-    case ProcessingEventType::START_GENIE:
-      gettimeofday(&start_genie, NULL);
-      break;
-    case ProcessingEventType::END_GENIE:
-      gettimeofday(&end_genie, NULL);
-      break;
-    case ProcessingEventType::START_TTS:
-      gettimeofday(&start_tts, NULL);
-      break;
-    case ProcessingEventType::END_TTS:
-      gettimeofday(&end_tts, NULL);
-      break;
-    case ProcessingEventType::DONE:
-      int total_ms = time_diff_ms(start_stt, end_tts);
-
-      g_print("############# Processing Performance #################\n");
-      print_processing_entry("STT", time_diff_ms(start_stt, end_stt), total_ms);
-      print_processing_entry("STT->Genie", time_diff_ms(end_stt, start_genie),
-                             total_ms);
-      print_processing_entry("Genie", time_diff_ms(start_genie, end_genie),
-                             total_ms);
-      print_processing_entry("Genie->TTS", time_diff_ms(end_genie, start_tts),
-                             total_ms);
-      print_processing_entry("TTS", time_diff_ms(start_tts, end_tts), total_ms);
-      g_print("------------------------------------------------------\n");
-      print_processing_entry("Total", total_ms, total_ms);
-      g_print("######################################################\n");
-
-      is_processing = false;
-      break;
-  }
 }
 
 void smartspeaker::App::replay_deferred_events() {
@@ -175,10 +112,3 @@ void smartspeaker::App::replay_deferred_events() {
     }
     return 0;
 */
-
-void smartspeaker::App::print_processing_entry(const char *name,
-                                               double duration_ms,
-                                               double total_ms) {
-  g_message("  %-20s %8.2f ms  (%5.1f%%)", name, duration_ms,
-            total_ms > 0 ? 100.0 * duration_ms / total_ms : 0.0);
-}

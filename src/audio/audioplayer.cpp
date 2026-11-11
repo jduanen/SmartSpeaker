@@ -77,16 +77,6 @@ bool smartspeaker::AudioPlayer::play_url(const std::string &url,
   return true;
 }
 
-bool smartspeaker::AudioPlayer::say(const std::string &text, gint64 ref_id) {
-  g_warning("say not supported yet (Phase 4): %s", text.c_str());
-  return false;
-}
-
-gboolean smartspeaker::AudioPlayer::clean_queue() {
-  app->mixer->media.stop();
-  return true;
-}
-
 gboolean smartspeaker::AudioPlayer::stop() {
   app->mixer->announce.stop();
   app->mixer->media.stop();

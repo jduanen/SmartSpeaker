@@ -54,6 +54,10 @@ _sources = [
   'state/saying.cpp',
   'state/config.cpp',
   'state/disabled.cpp',
+  'state/ringing.cpp',
+
+  # Assist voice pipeline
+  'voice/session.cpp',
 
   # Audio subsystem
   'audio/audioinput.cpp',

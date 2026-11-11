@@ -54,23 +54,8 @@ void State::react(events::Wake *) {
 }
 
 void State::react(events::InputFrame *input_frame) {
-  g_debug("FIXME received InputFrame when not in Listen state, discarding.");
+  // only Listening streams the mic
 }
-
-// SmartSpeaker Server Message Events
-// ---------------------------------------------------------------------------
-//
-// Dispatched when `smartspeaker::conversation::ConversationProtocol` receives a
-// message on the websocket from the SmartSpeaker server.
-//
-
-void State::react(events::TextMessage *text_message) {
-  g_message("Received TextMessage, saying text: %s\n",
-            text_message->text.c_str());
-  app->transit(new Saying(app, text_message->id, text_message->text));
-}
-
-void State::react(events::AskSpecialMessage *ask_special_message) {}
 
 void State::react(events::AdjustVolume *adjust_volume) {
   app->audio_volume_controller->adjust_volume(
@@ -79,7 +64,7 @@ void State::react(events::AdjustVolume *adjust_volume) {
 }
 
 void State::react(events::TogglePlayback *) {
-  g_warning("TODO Playback toggled in state %s", NAME);
+  g_warning("TODO Playback toggled in state %s", name());
 }
 
 void State::react(events::Panic *) {
@@ -98,48 +83,36 @@ void State::react(events::ToggleConfigMode *) {
   app->transit(new Config(app));
 }
 
-// Audio Control Protocol
+// Voice Pipeline
 // ---------------------------------------------------------------------------
+//
+// Pipeline events only matter while a run is in progress (Listening,
+// Processing, Saying); elsewhere they are stale and ignored.
+//
 
-void State::react(events::audio::PrepareEvent *prepare) {
-  // defer this event to the next state
-  app->defer(prepare);
+void State::react(events::voice::VadEnd *) {}
+
+void State::react(events::voice::TtsUrl *tts) {
+  g_message("Ignoring TTS URL in state %s", name());
 }
 
-void State::react(events::audio::PlayURLsEvent *play_urls) {
-  g_message("Reacting to PlayURLsEvent in %s state, deferring", NAME);
+void State::react(events::voice::RunEnd *) {}
 
-  // defer this event to the next state
-  app->defer(play_urls);
+void State::react(events::voice::Error *error) {
+  g_warning("Voice pipeline error in state %s: %s (%s)", name(),
+            error->message.c_str(), error->code.c_str());
 }
 
-void State::react(events::audio::StopEvent *stop) {
-  app->audio_player->stop();
-  stop->resolve();
+void State::react(events::voice::Announce *announce) {
+  app->transit(new Saying(app, announce->media, announce->preannounce,
+                          announce->start_conversation));
 }
 
-void State::react(events::audio::SetMuteEvent *set_mute) {
-  // TODO implement
-  set_mute->resolve();
+void State::react(events::voice::TimerFinished *) {
+  app->transit(new Ringing(app));
 }
 
-void State::react(events::audio::SetVolumeEvent *set_volume) {
-  app->audio_volume_controller->set_volume(set_volume->volume);
-  set_volume->resolve();
-}
-
-void State::react(events::audio::AdjVolumeEvent *adj_volume) {
-  app->audio_volume_controller->adjust_volume(adj_volume->delta);
-  adj_volume->resolve();
-}
-
-void State::react(events::PlayerStreamEnter *enter) {
-  g_debug("FIXME received PlayerStreamEnter when not expected, ignoring.");
-}
-
-void State::react(events::PlayerStreamEnd *end) {
-  g_debug("FIXME received PlayerStreamEnd when not expected, ignoring.");
-}
+void State::react(events::voice::ResponseFinished *) {}
 
 } // namespace state
 } // namespace smartspeaker

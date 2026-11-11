@@ -22,11 +22,12 @@
 
 #include "state/listening.hpp"
 #include "app.hpp"
-#include "audio/audioplayer.hpp"
 #include "audio/audioinput.hpp"
+#include "audio/audioplayer.hpp"
 #include "audio/audiovolume.hpp"
-#include "leds.hpp"
 #include "esphome/server.hpp"
+#include "leds.hpp"
+#include "voice/session.hpp"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "smartspeaker::state::Listening"
@@ -38,11 +39,16 @@ void Listening::enter() {
   State::enter();
 
   app->leds->animate(LedsState_t::Listening);
-  app->audio_input->wake();
   app->audio_volume_controller->duck();
+  if (!app->voice->start()) {
+    app->dispatch(new events::voice::Error("not-connected",
+                                           "Home Assistant is not connected"));
+    return;
+  }
+  app->audio_input->wake();
   if (!is_follow_up && app->esphome->entities.wake_sound()) {
     g_message("Playing WAKE sound...\n");
-    app->audio_player->play_sound(Sound_t::WAKE);
+    wake_sound_playing = app->audio_player->play_sound(Sound_t::WAKE);
   }
 }
 
@@ -56,10 +62,33 @@ void Listening::react(events::Wake *) {
 }
 
 void Listening::react(events::InputFrame *input_frame) {
-  // TODO Phase 4: stream to HA as VoiceAssistantAudio
+  if (!wake_sound_playing)
+    app->voice->audio(input_frame->frame);
+}
+
+void Listening::react(events::voice::ResponseFinished *) {
+  wake_sound_playing = false;
 }
 
 void Listening::react(events::TogglePlayback *) {
+  app->voice->stop();
+  app->transit(new Sleeping(app));
+}
+
+void Listening::react(events::voice::VadEnd *) {
+  app->transit(new Processing(app));
+}
+
+void Listening::react(events::voice::TtsUrl *tts) {
+  app->transit(new Saying(app, tts->url));
+}
+
+void Listening::react(events::voice::RunEnd *) {
+  app->transit(new Sleeping(app));
+}
+
+void Listening::react(events::voice::Error *error) {
+  State::react(error);
   app->transit(new Sleeping(app));
 }
 

@@ -28,6 +28,7 @@
 namespace smartspeaker {
 namespace state {
 
+/** A voice run is open and the mic streams to HA until its VAD ends it. */
 class Listening : public State {
 public:
   static const constexpr char *NAME = "Listening";
@@ -43,9 +44,16 @@ public:
   void react(events::Wake *) override;
   void react(events::InputFrame *input_frame) override;
   void react(events::TogglePlayback *) override;
+  void react(events::voice::VadEnd *) override;
+  void react(events::voice::TtsUrl *tts) override;
+  void react(events::voice::RunEnd *) override;
+  void react(events::voice::Error *error) override;
+  void react(events::voice::ResponseFinished *) override;
 
 private:
   bool is_follow_up = false;
+  // the AEC hasn't adapted yet, so STT would hear the beep ("Beep, beep.")
+  bool wake_sound_playing = false;
 };
 
 } // namespace state

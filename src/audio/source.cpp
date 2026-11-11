@@ -20,9 +20,10 @@ static const size_t RING_SAMPLES = 1 << 16; // ~1.4 s at 48 kHz
 static const size_t DECODE_FRAMES = 1152;   // one MP3 frame
 static const int RESAMPLE_QUALITY = 3;      // speexdsp 0-10; 3 is cheap and clean
 
-Source::Source(const char *name, unsigned rate,
-               std::function<void()> on_change)
-    : name(name), rate(rate), on_change(std::move(on_change)), cancel(false),
+Source::Source(const char *name, unsigned rate, long stall_seconds,
+               unsigned retries, std::function<void()> on_change)
+    : name(name), rate(rate), stall_seconds(stall_seconds), retries(retries),
+      on_change(std::move(on_change)), cancel(false),
       eof(false), st(State::IDLE), ring_data(RING_SAMPLES) {
   PaUtil_InitializeRingBuffer(&ring, sizeof(int16_t), RING_SAMPLES,
                               ring_data.data());
@@ -89,7 +90,7 @@ size_t Source::read(int16_t *out, size_t n) {
 void Source::run(std::string location) {
   ByteStream stream(cancel);
   Decoder decoder;
-  if (!stream.open(location) || !decoder.open(&stream)) {
+  if (!stream.open(location, stall_seconds, retries) || !decoder.open(&stream)) {
     if (!cancel) // a newer play() or stop() is not an error
       g_warning("[%s] cannot play %s", name, location.c_str());
     eof = true;

@@ -55,21 +55,18 @@ public:
   // and forget to declare them here
   virtual void react(events::Wake *);
   virtual void react(events::InputFrame *input_frame);
-  virtual void react(events::TextMessage *text_message);
-  virtual void react(events::AskSpecialMessage *ask_special_message);
   virtual void react(events::AdjustVolume *adjust_volume);
   virtual void react(events::TogglePlayback *);
   virtual void react(events::Panic *);
   virtual void react(events::ToggleDisabled *);
   virtual void react(events::ToggleConfigMode *);
-  virtual void react(events::audio::PrepareEvent *prepare);
-  virtual void react(events::audio::PlayURLsEvent *play_urls);
-  virtual void react(events::audio::StopEvent *stop);
-  virtual void react(events::audio::SetMuteEvent *set_mute);
-  virtual void react(events::audio::SetVolumeEvent *set_volume);
-  virtual void react(events::audio::AdjVolumeEvent *adj_volume);
-  virtual void react(events::PlayerStreamEnter *enter);
-  virtual void react(events::PlayerStreamEnd *end);
+  virtual void react(events::voice::VadEnd *);
+  virtual void react(events::voice::TtsUrl *tts);
+  virtual void react(events::voice::RunEnd *);
+  virtual void react(events::voice::Error *error);
+  virtual void react(events::voice::Announce *announce);
+  virtual void react(events::voice::TimerFinished *);
+  virtual void react(events::voice::ResponseFinished *);
 };
 
 } // namespace state

@@ -28,6 +28,7 @@
 namespace smartspeaker {
 namespace state {
 
+/** Speech ended; HA is transcribing and running the intent. */
 class Processing : public State {
 public:
   static const constexpr char *NAME = "Processing";
@@ -37,12 +38,10 @@ public:
   void enter() override;
   const char *name() override { return NAME; };
 
-  void react(events::TextMessage *text_message) override;
-  void react(events::AskSpecialMessage *ask_special_message) override;
-  void react(events::audio::PrepareEvent *prepare) override;
-
-private:
-  bool preparing_audio = false;
+  void react(events::TogglePlayback *) override;
+  void react(events::voice::TtsUrl *tts) override;
+  void react(events::voice::RunEnd *) override;
+  void react(events::voice::Error *error) override;
 };
 
 } // namespace state

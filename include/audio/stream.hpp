@@ -24,8 +24,13 @@ public:
   ByteStream(const std::atomic<bool> &cancel);
   ~ByteStream();
 
-  /** `location` is an http(s):// or file:// URL, or an absolute path. */
-  bool open(const std::string &location);
+  /**
+   * `location` is an http(s):// or file:// URL, or an absolute path. An HTTP
+   * transfer that receives nothing for `stall_seconds` is restarted up to
+   * `retries` times, skipping the bytes already delivered.
+   */
+  bool open(const std::string &location, long stall_seconds = 30,
+            unsigned retries = 0);
 
   size_t read(void *buf, size_t n);
   /** Copy the next `n` bytes without consuming them. */
@@ -40,10 +45,17 @@ private:
   void *curl = nullptr;  // CURL *
   void *multi = nullptr; // CURLM *
   bool curl_done = false;
+  std::string url;
+  long stall_seconds = 30;
+  unsigned retries = 0;
+  uint64_t received = 0; // HTTP body bytes delivered to `pending`
+  uint64_t discard = 0;  // bytes to drop after a restart
   std::vector<uint8_t> pending; // downloaded or peeked, not yet read
   size_t pending_off = 0;
   uint64_t pos = 0;
 
+  void start_http();
+  void stop_http();
   bool fill(size_t want);
   static size_t on_data(char *ptr, size_t size, size_t nmemb, void *user);
 };

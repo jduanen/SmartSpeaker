@@ -18,14 +18,22 @@
 namespace smartspeaker {
 
 Mixer::Mixer(App *app)
-    : media("media", RATE, [this] { sources_changed(); }),
-      announce("announce", RATE, [this] { sources_changed(); }), app(app),
+    // the WiFi drops whole TCP flows for tens of seconds; short TTS and
+    // announcement files are cheap to fetch again
+    : media("media", RATE, 30, 0, [this] { sources_changed(); }),
+      announce("announce", RATE, 5, 2, [this] { sources_changed(); }),
+      app(app),
       running(false) {}
 
 // Runs on the main loop after a source changes state
 void Mixer::sources_changed() {
   if (app->esphome)
     app->esphome->entities.media_player_changed();
+
+  Source::State now = announce.state();
+  if (now == Source::State::FINISHED && last_announce != now)
+    app->dispatch(new state::events::voice::ResponseFinished());
+  last_announce = now;
 }
 
 Mixer::~Mixer() {

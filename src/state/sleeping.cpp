@@ -38,24 +38,8 @@ void Sleeping::enter() {
   app->leds->animate(LedsState_t::Sleeping);
 }
 
-void Sleeping::react(events::audio::PrepareEvent *prepare) {
-  app->audio_player->clean_queue();
-  prepare->resolve();
-}
-
-void Sleeping::react(events::audio::PlayURLsEvent *play_urls) {
-  g_message("Reacting to PlayURLsEvent in sleeping state, about to play...");
-
-  app->audio_player->clean_queue();
-
-  for (const auto &url : play_urls->urls)
-    app->audio_player->play_url(url);
-
-  play_urls->resolve();
-}
-
 void Sleeping::react(events::TogglePlayback *) {
-  // push-to-talk until the voice pipeline exists (Phase 4)
+  // push-to-talk; Phase 7 adds stop-timer/stop-music before this
   app->transit(new Listening(app));
 }
 

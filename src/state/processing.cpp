@@ -22,10 +22,8 @@
 
 #include "state/processing.hpp"
 #include "app.hpp"
-#include "audio/audioplayer.hpp"
-#include "audio/audioinput.hpp"
-#include "audio/audiovolume.hpp"
 #include "leds.hpp"
+#include "voice/session.hpp"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "smartspeaker::state::Processing"
@@ -35,36 +33,26 @@ namespace state {
 
 void Processing::enter() {
   State::enter();
-
-  app->track_processing_event(ProcessingEventType::START_STT);
   app->leds->animate(LedsState_t::Processing);
 }
 
-void Processing::react(events::TextMessage *text_message) {
-  app->track_processing_event(ProcessingEventType::END_SMARTSPEAKER);
-  if (preparing_audio) {
-    g_message("Received TextMessage, skipping 'cause of prepare audio: %s",
-              text_message->text.c_str());
-    app->transit(new Sleeping(app));
-  } else {
-    g_message("Received TextMessage, responding with text: %s\n",
-              text_message->text.c_str());
-    app->transit(new Saying(app, text_message->id, text_message->text));
-  }
-}
-
-void Processing::react(events::AskSpecialMessage *ask_special_message) {
-  app->track_processing_event(ProcessingEventType::END_SMARTSPEAKER);
-  g_message("Received AskSpecialMessage (before TextMessage), "
-            "turn done.");
+void Processing::react(events::TogglePlayback *) {
+  app->voice->stop();
   app->transit(new Sleeping(app));
 }
 
-void Processing::react(events::audio::PrepareEvent *prepare) {
-  // HACK Flag not to say text
-  preparing_audio = true;
-  // defer this event to the next state
-  app->defer(prepare);
+void Processing::react(events::voice::TtsUrl *tts) {
+  app->transit(new Saying(app, tts->url));
+}
+
+void Processing::react(events::voice::RunEnd *) {
+  // no response to speak ("never mind")
+  app->transit(new Sleeping(app));
+}
+
+void Processing::react(events::voice::Error *error) {
+  State::react(error);
+  app->transit(new Sleeping(app));
 }
 
 } // namespace state

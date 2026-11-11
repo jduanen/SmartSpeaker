@@ -20,6 +20,7 @@
 #include "esphome/api_ids.h"
 #include "esphome/frame.hpp"
 #include "pb_decode.h"
+#include "voice/session.hpp"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "smartspeaker::esphome::Server"
@@ -212,6 +213,10 @@ void Server::send(Connection *c, uint32_t type, const pb_msgdesc_t *fields,
 
 void Server::close(Connection *c) {
   g_message("Client %s disconnected", c->peer.c_str());
+  if (c == voice_client) {
+    voice_client = nullptr;
+    app->voice->set_client(nullptr);
+  }
   connections.remove(c);
   g_io_stream_close(G_IO_STREAM(c->conn), nullptr, nullptr);
   g_object_unref(c->conn);
@@ -261,6 +266,7 @@ void Server::handle(Connection *c, uint32_t type, const uint8_t *payload,
       resp.model = s("Xiaodu XDH-1D-A1");
       resp.project_name = s("smartspeaker.xiaodu");
       resp.project_version = s(PACKAGE_VERSION);
+      resp.voice_assistant_feature_flags = VoiceSession::FEATURES;
       send(c, MSG_DEVICE_INFO_RESPONSE, DeviceInfoResponse_fields, &resp);
       break;
     }
@@ -301,6 +307,24 @@ void Server::handle(Connection *c, uint32_t type, const uint8_t *payload,
       break;
     }
 
+    case MSG_SUBSCRIBE_VOICE_ASSISTANT_REQUEST: {
+      SubscribeVoiceAssistantRequest req = SubscribeVoiceAssistantRequest_init_zero;
+      pb_istream_t stream = pb_istream_from_buffer(payload, len);
+      if (!pb_decode(&stream, SubscribeVoiceAssistantRequest_fields, &req))
+        break;
+      if (req.subscribe) {
+        g_message("Client %s subscribed to the voice assistant", c->peer.c_str());
+        voice_client = c;
+        app->voice->set_client(reply);
+      } else if (c == voice_client) {
+        g_message("Client %s unsubscribed from the voice assistant",
+                  c->peer.c_str());
+        voice_client = nullptr;
+        app->voice->set_client(nullptr);
+      }
+      break;
+    }
+
     // Subscriptions we accept but have nothing to send for
     case MSG_SUBSCRIBE_LOGS_REQUEST:
     case MSG_SUBSCRIBE_HOMEASSISTANT_SERVICES_REQUEST:
@@ -308,6 +332,8 @@ void Server::handle(Connection *c, uint32_t type, const uint8_t *payload,
       break;
 
     default:
+      if (c == voice_client && app->voice->handle(type, payload, len))
+        break;
       if (!entities.handle(type, payload, len))
         g_message("Ignoring message type %u from %s", type, c->peer.c_str());
       break;

@@ -32,7 +32,7 @@ enum class AudioDestination { VOICE, MUSIC, ALERT };
 
 /**
  * Front end for the state machine: sounds and alerts play on the mixer's
- * announce source, music on its media source. TTS arrives in Phase 4.
+ * announce source, music on its media source.
  */
 class AudioPlayer {
 public:
@@ -45,8 +45,6 @@ public:
   gboolean
   play_location(const gchar *location,
                 AudioDestination destination = AudioDestination::MUSIC);
-  bool say(const std::string &text, gint64 ref_id = -1);
-  gboolean clean_queue();
   gboolean stop();
 
 private:

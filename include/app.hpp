@@ -19,6 +19,7 @@
 #include "state/events.hpp"
 #include "state/listening.hpp"
 #include "state/processing.hpp"
+#include "state/ringing.hpp"
 #include "state/saying.hpp"
 #include "state/sleeping.hpp"
 #include "state/config.hpp"
@@ -34,23 +35,12 @@ class AudioVolumeController;
 class EVInput;
 class Leds;
 class Mixer;
+class VoiceSession;
 
 namespace esphome {
 class Entities;
 class Server;
 } // namespace esphome
-
-enum class ProcessingEventType {
-  START_STT,
-  END_STT,
-  START_GENIE,
-  END_GENIE,
-  START_TTS,
-  END_TTS,
-  START_SMARTSPEAKER,
-  END_SMARTSPEAKER,
-  DONE,
-};
 
 class App {
   friend class state::State;
@@ -58,12 +48,15 @@ class App {
   friend class state::Listening;
   friend class state::Processing;
   friend class state::Saying;
+  friend class state::Ringing;
   friend class state::Config;
   friend class state::Disabled;
   friend class esphome::Entities;
   friend class AudioPlayer;
   friend class AudioVolumeController;
   friend class Mixer;
+  friend class esphome::Server;
+  friend class VoiceSession;
 
 public:
   App();
@@ -75,7 +68,6 @@ public:
   std::unique_ptr<Config> config;
 
   int exec(int argc, char *argv[]);
-  void track_processing_event(ProcessingEventType eventType);
 
   /*  
    * @brief Dispatch a state `event`. This method is _thread-safe_
@@ -133,11 +125,8 @@ private:
   std::unique_ptr<EVInput> ev_input;
   std::unique_ptr<Leds> leds;
   std::unique_ptr<esphome::Server> esphome;
+  std::unique_ptr<VoiceSession> voice;
 
-  bool is_processing;
-  struct timeval start_stt, end_stt;
-  struct timeval start_genie, end_genie;
-  struct timeval start_tts, end_tts;
 
   state::State *current_state;
   state::events::Event *current_event = nullptr;
@@ -204,8 +193,6 @@ private:
 
   int process_args(int argc, char *argv[]);
 
-  void print_processing_entry(const char *name, double duration_ms,
-                              double total_ms);
   void replay_deferred_events();
 
   /**

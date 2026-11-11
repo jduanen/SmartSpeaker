@@ -24,7 +24,9 @@
 #include "app.hpp"
 #include "audio/audioplayer.hpp"
 #include "audio/audiovolume.hpp"
+#include "audio/mixer.hpp"
 #include "leds.hpp"
+#include "voice/session.hpp"
 #include "esphome/server.hpp"
 #include "state/sleeping.hpp"
 
@@ -55,9 +57,14 @@ void Disabled::react(events::ToggleDisabled *) {
   app->transit(new Sleeping(app));
 }
 
-void Disabled::react(events::audio::StopEvent *event) {
-  app->audio_player->stop();
-  event->resolve();
+void Disabled::react(events::voice::Announce *announce) {
+  // no conversation while muted; report it done once it has started
+  app->mixer->announce.play(announce->media);
+  app->voice->announce_finished(true);
+}
+
+void Disabled::react(events::voice::TimerFinished *) {
+  app->audio_player->play_sound(Sound_t::ALARM_CLOCK_ELAPSED);
 }
 
 } // namespace state

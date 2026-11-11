@@ -36,8 +36,6 @@ public:
 
   void enter() override;
   const char *name() override { return NAME; };
-  void react(events::audio::PrepareEvent *prepare) override;
-  void react(events::audio::PlayURLsEvent *play_urls) override;
   void react(events::TogglePlayback *) override;
 };
 

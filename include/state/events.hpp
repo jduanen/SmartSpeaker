@@ -24,9 +24,7 @@
 
 #include "../audio/audio.hpp"
 #include <glib.h>
-#include <memory>
 #include <string>
-#include <vector>
 
 namespace smartspeaker {
 namespace state {
@@ -34,53 +32,6 @@ namespace events {
 
 struct Event {
   virtual ~Event() = default;
-};
-
-template <typename Value> struct Request {
-  virtual ~Request() = default;
-
-  virtual void resolve(const Value &) = 0;
-  virtual void reject(const char *error_code, const char *error_message) = 0;
-};
-
-template <> struct Request<void> {
-  virtual ~Request() = default;
-
-  virtual void resolve() = 0;
-  virtual void reject(const char *error_code, const char *error_message) = 0;
-};
-
-template <typename Value> struct DummyRequest : public Request<Value> {
-  void resolve(const Value &) {}
-  void reject(const char *error_code, const char *error_message) {}
-};
-
-template <typename Value> struct RequestEvent : public Event {
-  RequestEvent(Request<Value> *req) : request(req) {}
-  RequestEvent(std::unique_ptr<Request<Value>> &&req)
-      : request(std::move(req)) {}
-
-  void resolve(const Value &v) { request->resolve(v); }
-  void reject(const char *error_code, const char *error_message) {
-    request->reject(error_code, error_message);
-  }
-
-private:
-  std::unique_ptr<Request<Value>> request;
-};
-
-template <> struct RequestEvent<void> : public Event {
-  RequestEvent(Request<void> *req) : request(req) {}
-  RequestEvent(std::unique_ptr<Request<void>> &&req)
-      : request(std::move(req)) {}
-
-  void resolve() { request->resolve(); }
-  void reject(const char *error_code, const char *error_message) {
-    request->reject(error_code, error_message);
-  }
-
-private:
-  std::unique_ptr<Request<void>> request;
 };
 
 // Audio Input Events
@@ -92,29 +43,6 @@ struct InputFrame : Event {
   AudioFrame frame;
 
   InputFrame(AudioFrame frame) : frame(std::move(frame)) {}
-};
-
-// Conversation Events
-// ===========================================================================
-
-struct TextMessage : Event {
-  gint64 id;
-  std::string text;
-
-  TextMessage(gint64 id, const gchar *text) : id(id), text(text) {}
-};
-
-struct AskSpecialMessage : Event {
-  std::string ask;
-  gint64 text_id;
-
-  // NOTE   Per the spec, the `ask` field may be `null` in the JSON, which
-  //        results in the `const gchar *` being `nullptr`. Since it's undefined
-  //        behavior to create a `std::string` from a null `char *` we need
-  //        to check for that condition. In this case, we simply use the empty
-  //        string in place of `null`.
-  AskSpecialMessage(const gchar *ask, gint64 text_id)
-      : ask(ask == nullptr ? "" : ask), text_id(text_id) {}
 };
 
 // Button Events
@@ -134,67 +62,50 @@ struct ToggleDisabled : Event {};
 
 struct ToggleConfigMode : Event {};
 
-// Audio Player Control Events
+// Voice Pipeline Events (from Home Assistant, via VoiceSession)
 // ===========================================================================
 
-namespace audio {
+namespace voice {
 
-struct PrepareEvent : RequestEvent<void> {
-  using RequestEvent<void>::RequestEvent;
+/** HA's VAD heard the end of speech; stop streaming the mic. */
+struct VadEnd : Event {};
+
+/** The response audio is ready to play (TTS_END, or early TTS streaming). */
+struct TtsUrl : Event {
+  std::string url;
+
+  TtsUrl(std::string url) : url(std::move(url)) {}
 };
 
-struct PlayURLsEvent : RequestEvent<void> {
-  std::vector<std::string> urls;
+/** The pipeline run is over; nothing more is coming. */
+struct RunEnd : Event {};
 
-  PlayURLsEvent(Request<void> *req, std::vector<std::string> urls)
-      : RequestEvent<void>(req), urls(std::move(urls)) {}
+struct Error : Event {
+  std::string code;
+  std::string message;
+
+  Error(std::string code, std::string message)
+      : code(std::move(code)), message(std::move(message)) {}
 };
 
-struct StopEvent : RequestEvent<void> {
-  using RequestEvent<void>::RequestEvent;
+/** HA asked the device to play an announcement. */
+struct Announce : Event {
+  std::string media;
+  std::string preannounce;
+  bool start_conversation;
+
+  Announce(std::string media, std::string preannounce, bool start_conversation)
+      : media(std::move(media)), preannounce(std::move(preannounce)),
+        start_conversation(start_conversation) {}
 };
 
-struct SetMuteEvent : RequestEvent<void> {
-  bool muted;
+/** A timer set through Assist ran out. */
+struct TimerFinished : Event {};
 
-  SetMuteEvent(Request<void> *req, bool muted)
-      : RequestEvent<void>(req), muted(muted) {}
-};
+/** The announce source finished playing (TTS, announcement or a sound). */
+struct ResponseFinished : Event {};
 
-struct SetVolumeEvent : RequestEvent<void> {
-  int volume;
-
-  SetVolumeEvent(Request<void> *req, int volume)
-      : RequestEvent<void>(req), volume(volume) {}
-};
-
-struct AdjVolumeEvent : RequestEvent<void> {
-  int delta;
-
-  AdjVolumeEvent(Request<void> *req, int delta)
-      : RequestEvent<void>(req), delta(delta) {}
-};
-
-} // namespace audio
-
-// Audio Player Status Events
-// ===========================================================================
-
-struct PlayerStreamEnter : Event {
-  AudioTaskType type;
-  gint64 ref_id;
-
-  PlayerStreamEnter(AudioTaskType type, gint64 ref_id)
-      : type(type), ref_id(ref_id) {}
-};
-
-struct PlayerStreamEnd : Event {
-  AudioTaskType type;
-  gint64 ref_id;
-
-  PlayerStreamEnd(AudioTaskType type, gint64 ref_id)
-      : type(type), ref_id(ref_id) {}
-};
+} // namespace voice
 
 } // namespace events
 } // namespace state

@@ -46,6 +46,8 @@ private:
   float duck_target = 1.0f;
   float duck_step = 0.0f; // per sample; 0 = jump
 
+  Source::State last_announce = Source::State::IDLE; // main loop only
+
   void run();
   void sources_changed();
 };

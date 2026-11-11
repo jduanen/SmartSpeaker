@@ -41,10 +41,11 @@ public:
   // The "actual" handlers that do things
   void react(events::ToggleDisabled *) override;
   void react(events::Panic *) override;
-  void react(events::audio::StopEvent *) override;
 
-  // Events that state::State handles that we want to ignore
-  void react(events::TextMessage *) override {}
+  // Muting the mic doesn't silence the speaker; these play without leaving
+  // Disabled (leaving it would unmute).
+  void react(events::voice::Announce *announce) override;
+  void react(events::voice::TimerFinished *) override;
 };
 
 } // namespace state

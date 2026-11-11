@@ -23,7 +23,10 @@
 #include "state/saying.hpp"
 #include "app.hpp"
 #include "audio/audioplayer.hpp"
+#include "audio/audiovolume.hpp"
+#include "audio/mixer.hpp"
 #include "leds.hpp"
+#include "voice/session.hpp"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "smartspeaker::state::Saying"
@@ -33,23 +36,51 @@ namespace state {
 
 void Saying::enter() {
   State::enter();
-
-  app->track_processing_event(ProcessingEventType::START_TTS);
-  app->audio_player->say(text, text_id);
   app->leds->animate(LedsState_t::Saying);
+  app->audio_volume_controller->duck();
+  if (!preannounce.empty()) {
+    app->mixer->announce.play(preannounce);
+  } else {
+    app->mixer->announce.play(url);
+  }
 }
 
-void Saying::react(events::AskSpecialMessage *ask_special_message) {
-  if (ask_special_message->ask.empty()) {
-    g_message("Received empty AskSpecialMessage, round done.");
-  } else {
-    g_message(
-        "Received AskSpecialMessage with ask=%s for text id=%" G_GINT64_FORMAT,
-        ask_special_message->ask.c_str(), ask_special_message->text_id);
-    if (ask_special_message->text_id == text_id) {
-      follow_up = true;
-    }
+void Saying::exit() {
+  if (!finished)
+    app->mixer->announce.stop();
+  if (announcement && !finished)
+    app->voice->announce_finished(false);
+  State::exit();
+}
+
+void Saying::react(events::voice::ResponseFinished *) {
+  if (!preannounce.empty()) {
+    preannounce.clear(); // the chime is done; now the announcement itself
+    app->mixer->announce.play(url);
+    return;
   }
+
+  finished = true;
+  if (announcement)
+    app->voice->announce_finished(true);
+
+  bool follow_up = announcement ? start_conversation
+                                : app->voice->continue_conversation();
+  if (follow_up)
+    app->transit(new Listening(app, true));
+  else
+    app->transit(new Sleeping(app));
+}
+
+void Saying::react(events::TogglePlayback *) {
+  // stop talking
+  app->transit(new Sleeping(app));
+}
+
+void Saying::react(events::voice::Announce *announce) {
+  // a new announcement replaces the current one
+  app->transit(new Saying(app, announce->media, announce->preannounce,
+                          announce->start_conversation));
 }
 
 } // namespace state

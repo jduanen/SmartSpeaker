@@ -24,8 +24,12 @@ class Source {
 public:
   enum class State { IDLE, PLAYING, PAUSED, FINISHED };
 
-  /** `on_change` runs on the GLib main loop after state changes. */
-  Source(const char *name, unsigned rate, std::function<void()> on_change);
+  /**
+   * `on_change` runs on the GLib main loop after state changes. An HTTP
+   * fetch that stalls for `stall_seconds` is retried `retries` times.
+   */
+  Source(const char *name, unsigned rate, long stall_seconds,
+         unsigned retries, std::function<void()> on_change);
   ~Source();
 
   void play(const std::string &location);
@@ -40,6 +44,8 @@ public:
 private:
   const char *name;
   const unsigned rate;
+  const long stall_seconds;
+  const unsigned retries;
   std::function<void()> on_change;
 
   std::thread worker;
