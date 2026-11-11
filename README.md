@@ -12,8 +12,14 @@ This project involves reverse engineering the devices, creating a cross-compilat
   - [x] README: stock-unit install/uninstall and WiFi
   - [x] probe a Genie unit → `notes/stock.txt` (no OTA updater found, `OTA_DISABLE` stays empty; AEC reference found)
   - [ ] probe a DuerOS unit (no Genie) for a DuerOS-side updater
-  - [ ] run backup; install; verify on device (needs the Phase 1 strip for a stock-runnable binary)
-- [ ] Phase 1 Strip and re-base build
+  - [x] backup of the Genie unit (`backups/<serial>/`, app.img fsck-clean after journal replay)
+  - [x] verify on device: Phase 1 binary run from `/tmp/ss` with Genie stopped; `ldd` resolves only to `/lib`, `/usr/lib`; LEDs, keys, ALSA tone, 16 kHz capture OK
+  - [ ] free `/opt` (remove `/opt/genie`) and `install.sh` (deferred until there's something worth installing)
+- [x] Phase 1 Strip and re-base build
+  - deps are glib-2.0, alsa, speexdsp, threads; gio and libcurl get added in the phases that use them
+  - PLAYPAUSE is push-to-talk (Listening ↔ Sleeping); no wake word until Phase 5
+  - `glibc_compat.c` (ARM syscall numbers) is built only for the armhf target
+  - removed the vendored glib 2.74 headers in `include/glib*`; the build uses the sysroot's glib 2.48
 - [ ] Phase 2 ESPHome API core
 - [ ] Phase 3 Audio engine (ALSA mixer, decoders, AEC)
 - [ ] Phase 4 Voice pipeline
@@ -392,7 +398,7 @@ Run these from the repo root on the host, with the unit connected over adb:
 
 WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant.conf` (see "set up device" above). The probe records that file with the PSK redacted, to confirm that stock units use the same path.
 
-`config.ini` sections: `[audio]` (backend, output, input, volume, stereo2mono), `[ec]` (enabled, loopback), `[esphome]` (name, port, encryption_key, model_dir, sound_dir), `[buttons]`, `[leds]`.
+`config.ini` sections: `[audio]` (output, input, volume, stereo2mono), `[ec]` (enabled, loopback), `[sound]` (wake and other WAV files), `[esphome]` (name, port, encryption_key, model_dir, sound_dir), `[buttons]`, `[leds]`.
 
 ### Home Assistant Voice Remote Local Assistant
 
