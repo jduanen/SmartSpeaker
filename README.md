@@ -26,7 +26,18 @@ This project involves reverse engineering the devices, creating a cross-compilat
   - [x] entities: media_player (volume live), Mute microphone (drives Disabled), Wake sound (gates the tone), Wake word, Wake word sensitivity, LED ring, Button press
   - [x] verified with aioesphomeapi 46.28.0 against the x86 build (list, states, commands, keepalive)
   - [x] verified in HA 2026.11.1 (added by IP): entities appear, mute switch toggles the muted LEDs, connection stays up
-- [ ] Phase 3 Audio engine (ALSA mixer, decoders, AEC)
+- [x] Phase 3 Audio engine (ALSA mixer, decoders, AEC)
+  - [x] `Mixer`: one ALSA writer, 48 kHz mono S16, 20 ms periods; media + announce sources; duck gain with ramp (Listening ducks -20 dB at once, Sleeping restores over 1 s)
+  - [x] `Source` → `ByteStream` (libcurl multi or file) → `Decoder` (dr_flac/dr_mp3/dr_wav @ a466dbe) → downmix → speex resampler → ring buffer
+  - [x] capture: 3 ch at 16 kHz, mics averaged + DC-blocked, first 200 ms dropped, speex AEC against ch3 + preprocess (`[ec] enabled/loopback`, `[audio] stereo2mono`)
+  - [x] HA media_player: play_media/play/pause/stop/toggle drive the media source; state IDLE/PLAYING/PAUSED/ANNOUNCING
+  - [x] CPU on the unit (`-O2`): 9% of one core idle (capture+AEC), 17–18% playing 44.1 kHz MP3/FLAC; RSS ~7 MB
+  - [x] echo test (`-Ddump_streams=true`, music at volume 19%): AEC converges in ~10 s, then removes 15–33 dB (typ. ~25 dB); no clipping at that volume
+  - [x] FLAC from the HA media folder plays over HTTP; HA play/pause/stop/volume work
+  - [x] the MP3 failures were the unit not receiving broadcasts (ARP from HA failed; 7–15 s TCP connects); reassociating fixed it, and `scripts/wifi_watchdog.sh` now does that automatically
+  - [ ] playback still takes ~10 s to start for files under `/media/local/Music`
+  - volume stays on the codec's LINEOUT (not a mixer master gain): the AEC reference is tapped after the amp, so it follows volume
+  - mic gain (MIC1/2 = 6, i.e. 39 dB, from the Genie launcher) will clip at high volume; tune with Phase 6 ducking tests
 - [ ] Phase 4 Voice pipeline
 - [ ] Phase 5 microWakeWord
 - [ ] Phase 6 Media player, ducking, volume
@@ -401,6 +412,8 @@ Run these from the repo root on the host, with the unit connected over adb:
    - renames the `OTA_DISABLE` paths to `.orig`
 
    Then `adb reboot`. The log is in `/tmp/smartspeaker.log`.
+
+   The launcher also starts `scripts/wifi_watchdog.sh`. On this unit the RTL8723DS sometimes stays associated but stops receiving broadcast frames (most likely a failed WPA group-key rekey). Peers then can't ARP it, and TCP from HA stalls for 7–15 s per connect, so streams stall too. Every 60 s the watchdog makes a TCP connect to HA (the peer of the ESPHome API connection), or to the gateway until HA has connected. Any answer counts as reachable, even "refused"; only a timeout counts as a failure. After 3 timeouts in a row it runs `wpa_cli reassociate`. Tunables: `WD_INTERVAL`, `WD_FAILS`, `WD_PORT`.
 5. `scripts/uninstall.sh [--purge]` restores the original launcher and the disabled paths. `--purge` also removes `/opt/ss`.
 
 WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant.conf` (see "set up device" above). The probe records that file with the PSK redacted, to confirm that stock units use the same path.
