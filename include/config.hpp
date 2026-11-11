@@ -43,6 +43,22 @@ public:
   static const constexpr char *DEFAULT_VOICE = "male";
   static const constexpr char *DEFAULT_NET_WLAN_IF = "wlan0";
 
+  // Audio Defaults
+  // -------------------------------------------------------------------------
+  static const constexpr char *DEFAULT_AUDIO_SINK = "alsasink";
+  static const constexpr char *DEFAULT_AUDIO_OUTPUT_DEVICE = "hw:audiocodec";
+  static const constexpr char *DEFAULT_AUDIO_INPUT_DEVICE = "hw:audiocodec";
+  static const constexpr char *DEFAULT_AUDIO_VOLUME_CONTROL = "LINEOUT volume";
+  static const constexpr char *DEFAULT_AUDIO_OUTPUT_FIFO = "/tmp/playback.fifo";
+  static const constexpr char *DEFAULT_AUDIO_VOICE = "male";
+
+  // ESPHome Defaults
+  // -------------------------------------------------------------------------
+  static const constexpr char *DEFAULT_ESPHOME_NAME = "xiaodu-speaker";
+  static const size_t DEFAULT_ESPHOME_PORT = 6053;
+  static const constexpr char *DEFAULT_ESPHOME_MODEL_DIR = "/opt/ss/share/models";
+  static const constexpr char *DEFAULT_ESPHOME_SOUND_DIR = "/opt/ss/share/sounds";
+
   // Buttons Defaults
   // -------------------------------------------------------------------------
   static const constexpr char *DEFAULT_EVINPUT_DEV = "/dev/input/event0";
@@ -106,6 +122,15 @@ public:
   bool audio_ec_enabled;
   gchar *audio_ec_loopback;
   gchar *audio_voice;
+
+  // ESPHome native API
+  // -------------------------------------------------------------------------
+
+  gchar *esphome_name;
+  size_t esphome_port;
+  gchar *esphome_encryption_key; // base64 PSK; empty means plaintext
+  gchar *esphome_model_dir;
+  gchar *esphome_sound_dir;
 
   // Wakeword (Porcupine)
   // -------------------------------------------------------------------------

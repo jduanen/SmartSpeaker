@@ -34,6 +34,20 @@
 smartspeaker::Config::Config() {}
 
 smartspeaker::Config::~Config() {
+  g_free(audio_sink);
+  g_free(audio_output_device);
+  g_free(audio_output_device_music);
+  g_free(audio_output_device_alerts);
+  g_free(audio_output_device_voice);
+  g_free(audio_output_fifo);
+  g_free(audio_volume_control);
+  g_free(audio_input_device);
+  g_free(audio_ec_loopback);
+  g_free(audio_voice);
+  g_free(esphome_name);
+  g_free(esphome_encryption_key);
+  g_free(esphome_model_dir);
+  g_free(esphome_sound_dir);
   g_free(leds_path);
   g_free(leds_type);
 }
@@ -272,6 +286,53 @@ void smartspeaker::Config::load() {
       g_critical("config load error: %s\n", error->message);
     g_clear_error(&error);
   }
+
+  // Audio
+  // =========================================================================
+  gchar *backend = get_string("audio", "backend", "alsa");
+  if (strcmp(backend, "pulse") == 0 || strcmp(backend, "pulseaudio") == 0) {
+    audio_backend = AudioDriverType::PULSEAUDIO;
+  } else {
+    if (strcmp(backend, "alsa") != 0)
+      g_warning("Unknown [audio] backend '%s', using 'alsa'", backend);
+    audio_backend = AudioDriverType::ALSA;
+  }
+  g_free(backend);
+
+  audio_sink = get_string("audio", "sink", DEFAULT_AUDIO_SINK);
+  audio_output_device =
+      get_string("audio", "output", DEFAULT_AUDIO_OUTPUT_DEVICE);
+  audio_output_device_music =
+      get_string("audio", "music_output", audio_output_device);
+  audio_output_device_alerts =
+      get_string("audio", "alert_output", audio_output_device);
+  audio_output_device_voice =
+      get_string("audio", "voice_output", audio_output_device);
+  audio_output_fifo =
+      get_string("audio", "output_fifo", DEFAULT_AUDIO_OUTPUT_FIFO);
+  audio_volume_control =
+      get_string("audio", "volume_control", DEFAULT_AUDIO_VOLUME_CONTROL);
+  audio_input_device = get_string("audio", "input", DEFAULT_AUDIO_INPUT_DEVICE);
+  audio_input_stereo = get_bool("audio", "input_stereo", false);
+  audio_input_stereo2mono = get_bool("audio", "stereo2mono", false);
+  audio_ec_enabled = get_bool("audio", "ec_enabled", false);
+  audio_ec_loopback = get_string("audio", "ec_loopback", "");
+  if (audio_ec_loopback[0] == '\0') {
+    g_free(audio_ec_loopback);
+    audio_ec_loopback = nullptr;
+  }
+  audio_voice = get_string("audio", "voice", DEFAULT_AUDIO_VOICE);
+
+  // ESPHome
+  // =========================================================================
+  esphome_name = get_string("esphome", "name", DEFAULT_ESPHOME_NAME);
+  esphome_port =
+      get_bounded_size("esphome", "port", DEFAULT_ESPHOME_PORT, 1, 65535);
+  esphome_encryption_key = get_string("esphome", "encryption_key", "");
+  esphome_model_dir =
+      get_string("esphome", "model_dir", DEFAULT_ESPHOME_MODEL_DIR);
+  esphome_sound_dir =
+      get_string("esphome", "sound_dir", DEFAULT_ESPHOME_SOUND_DIR);
 
   // Buttons
   // =========================================================================
