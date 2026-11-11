@@ -20,7 +20,12 @@ This project involves reverse engineering the devices, creating a cross-compilat
   - PLAYPAUSE is push-to-talk (Listening ↔ Sleeping); no wake word until Phase 5
   - `glibc_compat.c` (ARM syscall numbers) is built only for the armhf target
   - removed the vendored glib 2.74 headers in `include/glib*`; the build uses the sysroot's glib 2.48
-- [ ] Phase 2 ESPHome API core
+- [x] Phase 2 ESPHome API core
+  - [x] `proto/` (aioesphomeapi v46.29.0), `third_party/nanopb` (0.4.9.1), `scripts/gen_proto.py` → `src/esphome/api.pb.c`, `include/esphome/{api.pb.h,api_ids.h}`
+  - [x] plaintext server on :6053 (API 1.10, as linux-voice-assistant): Hello, DeviceInfo, DeviceCapabilities, ListEntities, SubscribeStates, Ping, Disconnect
+  - [x] entities: media_player (volume live), Mute microphone (drives Disabled), Wake sound (gates the tone), Wake word, Wake word sensitivity, LED ring, Button press
+  - [x] verified with aioesphomeapi 46.28.0 against the x86 build (list, states, commands, keepalive)
+  - [x] verified in HA 2026.11.1 (added by IP): entities appear, mute switch toggles the muted LEDs, connection stays up
 - [ ] Phase 3 Audio engine (ALSA mixer, decoders, AEC)
 - [ ] Phase 4 Voice pipeline
 - [ ] Phase 5 microWakeWord
@@ -167,6 +172,8 @@ Entities exposed to HA:
   - unknown message types: log them and ignore
 - `entities.cpp`: the entity registry and state pushes.
 - Verify on the x86 host build: add it in HA through the ESPHome integration by IP. The entities should appear and the mute switch should toggle.
+- Regenerate the protobuf code after updating `proto/`: `pip install nanopb==0.4.9.1 grpcio-tools`, then `scripts/gen_proto.py`. String, bytes and repeated fields are heap pointers (`PB_ENABLE_MALLOC`); call `pb_release()` after decoding a message that has them.
+- On a host without the Xiaodu codec, set `[audio] input=null` and `output=null` (ALSA's null device) and disable `[leds]`/`[buttons]`.
 
 **3. Audio engine** (new `src/audio/{mixer,source,decoder,aec}.cpp`; the existing ALSA input is reused)
 - **Playback:**
@@ -398,7 +405,7 @@ Run these from the repo root on the host, with the unit connected over adb:
 
 WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant.conf` (see "set up device" above). The probe records that file with the PSK redacted, to confirm that stock units use the same path.
 
-`config.ini` sections: `[audio]` (output, input, volume, stereo2mono), `[ec]` (enabled, loopback), `[sound]` (wake and other WAV files), `[esphome]` (name, port, encryption_key, model_dir, sound_dir), `[buttons]`, `[leds]`.
+`config.ini` sections: `[audio]` (output, input, volume, stereo2mono), `[ec]` (enabled, loopback), `[sound]` (wake and other WAV files), `[esphome]` (name — empty means `xiaodu-<MAC suffix>`, port, encryption_key, model_dir, sound_dir), `[buttons]`, `[leds]`.
 
 ### Home Assistant Voice Remote Local Assistant
 
