@@ -25,6 +25,7 @@
 #include "audio/audioplayer.hpp"
 #include "audio/audiovolume.hpp"
 #include "leds.hpp"
+#include "esphome/server.hpp"
 #include "state/sleeping.hpp"
 
 #undef G_LOG_DOMAIN
@@ -36,9 +37,13 @@ namespace state {
 void Disabled::enter() {
   State::enter();
   app->leds->animate(LedsState_t::Disabled);
+  app->esphome->entities.set_mic_muted(true);
 }
 
-void Disabled::exit() { State::exit(); }
+void Disabled::exit() {
+  app->esphome->entities.set_mic_muted(false);
+  State::exit();
+}
 
 void Disabled::react(events::Panic *) {
   g_warning("PANIC!!! :D");

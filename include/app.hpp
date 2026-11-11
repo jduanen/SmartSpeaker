@@ -34,6 +34,11 @@ class AudioVolumeController;
 class EVInput;
 class Leds;
 
+namespace esphome {
+class Entities;
+class Server;
+} // namespace esphome
+
 enum class ProcessingEventType {
   START_STT,
   END_STT,
@@ -54,6 +59,7 @@ class App {
   friend class state::Saying;
   friend class state::Config;
   friend class state::Disabled;
+  friend class esphome::Entities;
 
 public:
   App();
@@ -121,6 +127,7 @@ private:
   std::unique_ptr<AudioVolumeController> audio_volume_controller;
   std::unique_ptr<EVInput> ev_input;
   std::unique_ptr<Leds> leds;
+  std::unique_ptr<esphome::Server> esphome;
 
   bool is_processing;
   struct timeval start_stt, end_stt;

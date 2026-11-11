@@ -25,6 +25,7 @@
 #include "audio/audioplayer.hpp"
 #include "audio/audioinput.hpp"
 #include "audio/audiovolume.hpp"
+#include "esphome/server.hpp"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "smartspeaker::state::State"
@@ -74,6 +75,7 @@ void State::react(events::AskSpecialMessage *ask_special_message) {}
 void State::react(events::AdjustVolume *adjust_volume) {
   app->audio_volume_controller->adjust_volume(
       adjust_volume->delta * AudioVolumeController::VOLUME_DELTA);
+  app->esphome->entities.volume_changed();
 }
 
 void State::react(events::TogglePlayback *) {

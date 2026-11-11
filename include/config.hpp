@@ -52,7 +52,7 @@ public:
 
   // ESPHome Defaults
   // -------------------------------------------------------------------------
-  static const constexpr char *DEFAULT_ESPHOME_NAME = "xiaodu-speaker";
+  static const constexpr char *DEFAULT_ESPHOME_NAME = ""; // xiaodu-<MAC suffix>
   static const size_t DEFAULT_ESPHOME_PORT = 6053;
   static const constexpr char *DEFAULT_ESPHOME_MODEL_DIR = "/opt/ss/share/models";
   static const constexpr char *DEFAULT_ESPHOME_SOUND_DIR = "/opt/ss/share/sounds";

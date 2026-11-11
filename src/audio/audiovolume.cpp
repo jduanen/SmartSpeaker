@@ -32,6 +32,10 @@ void smartspeaker::AudioVolumeController::duck() { driver->duck(); }
 
 void smartspeaker::AudioVolumeController::unduck() { driver->unduck(); }
 
+int smartspeaker::AudioVolumeController::get_volume() {
+  return driver->get_volume();
+}
+
 void smartspeaker::AudioVolumeController::set_volume(int volume) {
   if (volume > MAX_VOLUME) {
     g_message("Can not adjust playback volume to %d, max is %d. Capping at max",

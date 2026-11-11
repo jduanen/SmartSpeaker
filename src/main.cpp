@@ -6,6 +6,8 @@
 
 int main(int argc, char *argv[]) {
   using namespace smartspeaker;
+  // the launcher redirects output to a log file; keep it line by line
+  setvbuf(stdout, nullptr, _IOLBF, 0);
   printf("SmartSpeaker App\n");
   App app;
   printf("...\n");

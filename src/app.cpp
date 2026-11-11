@@ -14,6 +14,7 @@
 #include "utils/net.hpp"
 #include "evinput.hpp"
 #include "leds.hpp"
+#include "esphome/server.hpp"
 
 #include "EnumIterator.hpp"
 
@@ -56,6 +57,9 @@ int smartspeaker::App::exec(int argc, char *argv[]) {
 
   ev_input = std::make_unique<EVInput>(this);
   ev_input->init();
+
+  esphome = std::make_unique<esphome::Server>(this);
+  esphome->start();
 
   this->current_state = new state::Sleeping(this);
   this->current_state->enter();
