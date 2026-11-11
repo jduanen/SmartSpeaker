@@ -12,6 +12,9 @@ amixer -D hw:audiocodec cset name='LINEOUT volume' 4 > /dev/null
 amixer -D hw:audiocodec cset name='MIC1 gain volume' 6.5 > /dev/null
 amixer -D hw:audiocodec cset name='MIC2 gain volume' 6.5 > /dev/null
 
+# reassociates WiFi when peers stop reaching us (see the script)
+/opt/ss/bin/wifi_watchdog.sh &
+
 while true; do
 	/opt/ss/bin/smartspeaker >>/tmp/smartspeaker.log 2>&1
 	echo "smartspeaker exited ($?), restarting" >>/tmp/smartspeaker.log

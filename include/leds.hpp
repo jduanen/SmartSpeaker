@@ -82,6 +82,7 @@ private:
   int step_bright;
   int bright_direction;
   bool update_timer_pulse;
+  guint pulse_source = 0;
 };
 
 } // namespace smartspeaker

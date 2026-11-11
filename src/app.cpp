@@ -4,12 +4,14 @@
 
 #include <glib-unix.h>
 #include <glib.h>
+#include <curl/curl.h>
 #include <unistd.h>
 
 #include "app.hpp"
 #include "audio/audioinput.hpp"
 #include "audio/audioplayer.hpp"
 #include "audio/audiovolume.hpp"
+#include "audio/mixer.hpp"
 #include "config.hpp"
 #include "utils/net.hpp"
 #include "evinput.hpp"
@@ -48,6 +50,10 @@ int smartspeaker::App::exec(int argc, char *argv[]) {
   leds = std::make_unique<Leds>(this);
   leds->init();
   leds->animate(LedsState_t::Starting);
+
+  curl_global_init(CURL_GLOBAL_ALL);
+  mixer = std::make_unique<Mixer>(this);
+  mixer->start();
 
   audio_volume_controller = std::make_unique<AudioVolumeController>(this);
 

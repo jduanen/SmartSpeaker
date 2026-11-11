@@ -40,7 +40,7 @@ public:
 
   // Called by the app when device-side state changes
   void set_mic_muted(bool muted);
-  void volume_changed();
+  void media_player_changed();
 
   bool wake_sound() const { return wake_sound_; }
 

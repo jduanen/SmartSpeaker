@@ -33,6 +33,7 @@ class AudioPlayer;
 class AudioVolumeController;
 class EVInput;
 class Leds;
+class Mixer;
 
 namespace esphome {
 class Entities;
@@ -60,6 +61,9 @@ class App {
   friend class state::Config;
   friend class state::Disabled;
   friend class esphome::Entities;
+  friend class AudioPlayer;
+  friend class AudioVolumeController;
+  friend class Mixer;
 
 public:
   App();
@@ -122,6 +126,7 @@ private:
   std::thread::id main_thread;
   GMainLoop *main_loop;
 
+  std::unique_ptr<Mixer> mixer;
   std::unique_ptr<AudioInput> audio_input;
   std::unique_ptr<AudioPlayer> audio_player;
   std::unique_ptr<AudioVolumeController> audio_volume_controller;

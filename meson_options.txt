@@ -1,1 +1,2 @@
 option('static', type: 'boolean', value: false)
+option('dump_streams', type : 'boolean', value : false, description : 'Dump raw capture/AEC streams to /tmp for tuning')

@@ -23,6 +23,8 @@ sh_() { adb shell "$1" | tr -d '\r'; }
 sh_ "mkdir -p /opt/ss/bin /opt/ss/share/models /opt/ss/share/sounds /opt/ss/etc"
 adb push "$BIN" /opt/ss/bin/smartspeaker
 sh_ "chmod +x /opt/ss/bin/smartspeaker"
+adb push scripts/wifi_watchdog.sh /opt/ss/bin/wifi_watchdog.sh
+sh_ "chmod +x /opt/ss/bin/wifi_watchdog.sh"
 # keep an existing on-device config (it may hold the encryption key)
 if [ "$(sh_ '[ -f /opt/ss/etc/config.ini ] && echo y')" != y ]; then
   adb push config.ini /opt/ss/etc/config.ini

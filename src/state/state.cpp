@@ -75,7 +75,7 @@ void State::react(events::AskSpecialMessage *ask_special_message) {}
 void State::react(events::AdjustVolume *adjust_volume) {
   app->audio_volume_controller->adjust_volume(
       adjust_volume->delta * AudioVolumeController::VOLUME_DELTA);
-  app->esphome->entities.volume_changed();
+  app->esphome->entities.media_player_changed();
 }
 
 void State::react(events::TogglePlayback *) {

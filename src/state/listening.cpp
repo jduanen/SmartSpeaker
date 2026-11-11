@@ -40,8 +40,6 @@ void Listening::enter() {
   app->leds->animate(LedsState_t::Listening);
   app->audio_input->wake();
   app->audio_volume_controller->duck();
-  g_message("Stopping audio player...\n");
-  app->audio_player->stop();
   if (!is_follow_up && app->esphome->entities.wake_sound()) {
     g_message("Playing WAKE sound...\n");
     app->audio_player->play_sound(Sound_t::WAKE);

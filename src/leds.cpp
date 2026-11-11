@@ -209,6 +209,12 @@ void smartspeaker::Leds::solid(int color) {
     update_timer_circular = false;
     usleep(100);
   }
+  // stop a running pulse too, or it keeps writing brightness at 20 Hz
+  if (update_timer_pulse) {
+    g_source_remove(pulse_source);
+    update_timer_pulse = false;
+    set_brightness(brightness);
+  }
   clear(color);
   set_leds();
 }
@@ -321,6 +327,6 @@ void smartspeaker::Leds::pulse() {
   bright_direction = true;
   set_brightness(0);
   update_timer_pulse = true;
-  g_timeout_add(50, update_pulse, this);
+  pulse_source = g_timeout_add(50, update_pulse, this);
   g_debug("pulse\n");  // TMP TMP TMP
 }

@@ -9,6 +9,7 @@ _incDirs = [
   include_directories('../include/audio/alsa'),
   include_directories('../include/esphome'),
   include_directories('../third_party/nanopb'),
+  include_directories('../third_party/dr_libs'),
 ]
 
 # ── Dependencies ───────────────────────────────────────────────────────────────
@@ -26,6 +27,9 @@ _deps += dependency('gio-2.0')
 
 # ALSA: audio capture/playback via hw:* devices
 _deps += dependency('alsa')
+
+# libcurl: fetching media and TTS URLs
+_deps += dependency('libcurl')
 
 # speexdsp: acoustic echo cancellation and audio preprocessing
 _deps += dependency('speexdsp')
@@ -63,6 +67,13 @@ _sources = [
   'audio/alsa/volume.cpp',
   'audio/alsa/pa_ringbuffer.c',   # C file; meson handles mixed C/C++ automatically
 
+  # Playback engine
+  'audio/mixer.cpp',
+  'audio/source.cpp',
+  'audio/decoder.cpp',
+  'audio/stream.cpp',
+  'audio/dr_libs.c',              # dr_flac/dr_mp3/dr_wav implementations
+
   # ESPHome native API
   'esphome/frame.cpp',
   'esphome/server.cpp',
@@ -80,10 +91,16 @@ if host_machine.cpu_family() == 'arm'
   _sources += 'glibc_compat.c'
 endif
 
+_cpp_args = ['-DG_LOG_USE_STRUCTURED=1', '-DPB_ENABLE_MALLOC']
+if get_option('dump_streams')
+  # raw mic/reference/AEC-output dumps in /tmp (src/audio/alsa/input.cpp)
+  _cpp_args += '-DDEBUG_DUMP_STREAMS'
+endif
+
 executable(
   app_command,
   _sources,
-  cpp_args : ['-DG_LOG_USE_STRUCTURED=1', '-DPB_ENABLE_MALLOC'],
+  cpp_args : _cpp_args,
   c_args : ['-DPB_ENABLE_MALLOC'],
   include_directories : _incDirs,
   dependencies : _deps,

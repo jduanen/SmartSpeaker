@@ -2,8 +2,8 @@
  * SmartSpeaker: entities exposed to Home Assistant over the ESPHome API
  *
  * Names and options follow the Satellite1 / HA Voice PE configurations.
- * Behavior is wired in as the phases land: mic mute, wake sound and volume
- * now; wake word, sensitivity, LED ring, button events and media playback
+ * Behavior is wired in as the phases land: mic mute, wake sound, volume and
+ * URL playback now; wake word, sensitivity, LED ring and button events
  * later.
  */
 
@@ -14,6 +14,7 @@
 
 #include "app.hpp"
 #include "audio/audiovolume.hpp"
+#include "audio/mixer.hpp"
 #include "esphome/api.pb.h"
 #include "esphome/api_ids.h"
 #include "pb_decode.h"
@@ -153,7 +154,15 @@ void Entities::push_media_player() {
     return;
   MediaPlayerStateResponse st = MediaPlayerStateResponse_init_zero;
   st.key = KEY_MEDIA_PLAYER;
-  st.state = MediaPlayerState_MEDIA_PLAYER_STATE_IDLE;
+  Source::State media = app->mixer->media.state();
+  if (app->mixer->announce.state() == Source::State::PLAYING)
+    st.state = MediaPlayerState_MEDIA_PLAYER_STATE_ANNOUNCING;
+  else if (media == Source::State::PLAYING)
+    st.state = MediaPlayerState_MEDIA_PLAYER_STATE_PLAYING;
+  else if (media == Source::State::PAUSED)
+    st.state = MediaPlayerState_MEDIA_PLAYER_STATE_PAUSED;
+  else
+    st.state = MediaPlayerState_MEDIA_PLAYER_STATE_IDLE;
   st.volume = app->audio_volume_controller->get_volume() / 100.0f;
   st.muted = media_muted;
   broadcast(MSG_MEDIA_PLAYER_STATE_RESPONSE, MediaPlayerStateResponse_fields,
@@ -200,7 +209,7 @@ void Entities::set_mic_muted(bool muted) {
   push_switch(KEY_MIC_MUTE, mic_muted);
 }
 
-void Entities::volume_changed() { push_media_player(); }
+void Entities::media_player_changed() { push_media_player(); }
 
 static bool is_option(const char *value, const char *const *options,
                       size_t count) {
@@ -284,15 +293,34 @@ bool Entities::handle(uint32_t type, const uint8_t *payload, size_t len) {
           case MediaPlayerCommand_MEDIA_PLAYER_COMMAND_VOLUME_DOWN:
             app->audio_volume_controller->decrement_volume();
             break;
+          case MediaPlayerCommand_MEDIA_PLAYER_COMMAND_PLAY:
+            app->mixer->media.resume();
+            break;
+          case MediaPlayerCommand_MEDIA_PLAYER_COMMAND_PAUSE:
+            app->mixer->media.pause();
+            break;
+          case MediaPlayerCommand_MEDIA_PLAYER_COMMAND_TOGGLE:
+            if (app->mixer->media.state() == Source::State::PAUSED)
+              app->mixer->media.resume();
+            else
+              app->mixer->media.pause();
+            break;
+          case MediaPlayerCommand_MEDIA_PLAYER_COMMAND_STOP:
+            app->mixer->media.stop();
+            break;
           default:
             g_message("media_player command %d not supported yet",
                       req.command);
             break;
         }
       }
-      if (req.has_media_url)
-        g_message("media_player play_media not supported yet: %s",
-                  req.media_url);
+      if (req.has_media_url && req.media_url) {
+        // TODO Phase 6: duck media during announcements, AnnounceFinished
+        if (req.has_announcement && req.announcement)
+          app->mixer->announce.play(req.media_url);
+        else
+          app->mixer->media.play(req.media_url);
+      }
       pb_release(MediaPlayerCommandRequest_fields, &req);
       push_media_player();
       return true;
