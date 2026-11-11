@@ -266,32 +266,17 @@ Entities exposed to HA:
 - `scripts/dcslaunch.sh` does: wait for WiFi, start NTP, set the amixer defaults, then run `/opt/ss/bin/smartspeaker` in a respawn loop with a log in `/tmp`.
 - Verify: a fresh stock unit, after `install.sh` and a reboot, is auto-discovered by HA with encryption.
 
-## Files
-- Modify:
-  - `src/app.cpp`, `include/app.hpp`
-  - `src/config.cpp`, `config.ini`
-  - `src/leds.cpp`, `src/evinput.cpp`
-  - `src/audio/audioinput.cpp`, `src/audio/alsa/*`
-  - `src/state/*` (collapse into phases)
-  - `src/meson.build`
-  - `Dockerfile.dockcross` (add libcurl, speexdsp and asound dev packages; drop pulse and gst)
-- New:
-  - `src/esphome/{frame,noise,server,entities,mdns}.cpp`
-  - `src/voice/session.cpp`
-  - `src/audio/{mixer,source,decoder,aec,microwakeword}.cpp`
-  - `third_party/{nanopb,tflite-micro,dr_libs,noise}`
-  - `proto/api.proto`
-  - `scripts/{install,uninstall,dcslaunch,deploy}.sh`
-  - `notes/stock.txt`
-  - `test/` (frame codec, decoder, wake word on WAVs)
-- Docs: update `README.md` and `DEVELOPMENT.md` with the stock-unit install and uninstall, the HA setup, entities, LED and button behavior, and config keys.
-
-## Risks
-- **DuerOS OTA updates or a watchdog** may restore `/opt/duer` or reboot the unit. The probe must find them before takeover.
+## Issues
 - **`/opt` free space on stock is unknown.** Our footprint is about 3–5 MB (binary, models, sounds). If space is tight, the DuerOS payload can be moved off-device only after a host backup.
 - **speexdsp AEC is weaker than webrtc or XMOS AEC**, and there is no beamforming across the 3 mics. Expect lower wake-word accuracy during loud music.
 - **ESPHome API drift:** pin the proto version and ignore unknown messages.
 - **Stock and Genie units may fit different LED chips:** make the path configurable, with auto-detect between the two sysfs nodes.
+
+## TBD
+- **Change from Mono to Stereo:** assumed that there is only one speaker, but there are two, so need to change the audio pipeline to do stereo
+- **Improve AEC:** look into using webrtc or XMOS AEC to improve performance
+- **Make it all an ESPHome:** programmable by way of yaml config file -- keep up with HA API changes, allow modifications without reprogramming, HA-based OTA updates, etc.
+- **Look at improving STT/TTS performance:** look at the end-to-end flow and see where the time is being spent to see if we can reduce latency between speech input and responses
 
 ## Verification (end to end)
 1. Host x86 build: HA adds the device and push-to-talk works with the laptop mic and speaker. Run `meson test -C builddir`.
