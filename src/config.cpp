@@ -42,7 +42,6 @@ smartspeaker::Config::~Config() {
   g_free(audio_output_fifo);
   g_free(audio_volume_control);
   g_free(audio_input_device);
-  g_free(audio_ec_loopback);
   g_free(audio_voice);
   g_free(esphome_name);
   g_free(esphome_encryption_key);
@@ -311,17 +310,15 @@ void smartspeaker::Config::load() {
   audio_output_fifo =
       get_string("audio", "output_fifo", DEFAULT_AUDIO_OUTPUT_FIFO);
   audio_volume_control =
-      get_string("audio", "volume_control", DEFAULT_AUDIO_VOLUME_CONTROL);
+      get_string("audio", "volume", DEFAULT_AUDIO_VOLUME_CONTROL);
   audio_input_device = get_string("audio", "input", DEFAULT_AUDIO_INPUT_DEVICE);
-  audio_input_stereo = get_bool("audio", "input_stereo", false);
   audio_input_stereo2mono = get_bool("audio", "stereo2mono", false);
-  audio_ec_enabled = get_bool("audio", "ec_enabled", false);
-  audio_ec_loopback = get_string("audio", "ec_loopback", "");
-  if (audio_ec_loopback[0] == '\0') {
-    g_free(audio_ec_loopback);
-    audio_ec_loopback = nullptr;
-  }
   audio_voice = get_string("audio", "voice", DEFAULT_AUDIO_VOICE);
+
+  // Echo Cancellation (same keys as Genie)
+  // =========================================================================
+  audio_ec_enabled = get_bool("ec", "enabled", false);
+  audio_ec_loopback = get_bool("ec", "loopback", false);
 
   // ESPHome
   // =========================================================================

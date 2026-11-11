@@ -120,7 +120,7 @@ public:
   bool audio_input_stereo;
   bool audio_input_stereo2mono;
   bool audio_ec_enabled;
-  gchar *audio_ec_loopback;
+  bool audio_ec_loopback;
   gchar *audio_voice;
 
   // ESPHome native API

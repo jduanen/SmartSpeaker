@@ -392,7 +392,7 @@ Run these from the repo root on the host, with the unit connected over adb:
 
 WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant.conf` (see "set up device" above). The probe records that file with the PSK redacted, to confirm that stock units use the same path.
 
-`config.ini` sections: `[audio]` (backend, output/input device, volume_control, ec), `[esphome]` (name, port, encryption_key, model_dir, sound_dir), `[buttons]`, `[leds]`.
+`config.ini` sections: `[audio]` (backend, output, input, volume, stereo2mono), `[ec]` (enabled, loopback), `[esphome]` (name, port, encryption_key, model_dir, sound_dir), `[buttons]`, `[leds]`.
 
 ### Home Assistant Voice Remote Local Assistant
 
