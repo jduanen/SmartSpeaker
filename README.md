@@ -23,7 +23,7 @@ This project involves reverse engineering the devices, creating a cross-compilat
 - [x] Phase 2 ESPHome API core
   - [x] `proto/` (aioesphomeapi v46.29.0), `third_party/nanopb` (0.4.9.1), `scripts/gen_proto.py` → `src/esphome/api.pb.c`, `include/esphome/{api.pb.h,api_ids.h}`
   - [x] plaintext server on :6053 (API 1.10, as linux-voice-assistant): Hello, DeviceInfo, DeviceCapabilities, ListEntities, SubscribeStates, Ping, Disconnect
-  - [x] entities: media_player (volume live), Mute microphone (drives Disabled), Wake sound (gates the tone), Wake word, Wake word sensitivity, LED ring, Button press
+  - [x] entities: media_player (volume live), Mute microphone (drives Disabled), Wake sound (gates the tone), Wake word sensitivity, LED ring, Button press (the wake word select was replaced in Phase 5)
   - [x] verified with aioesphomeapi 46.28.0 against the x86 build (list, states, commands, keepalive)
   - [x] verified in HA 2026.11.1 (added by IP): entities appear, mute switch toggles the muted LEDs, connection stays up
 - [x] Phase 3 Audio engine (ALSA mixer, decoders, AEC)
@@ -48,7 +48,16 @@ This project involves reverse engineering the devices, creating a cross-compilat
   - [x] TTS/announcement fetches restart after 5 s without data (up to 2 retries); music keeps a 30 s stall limit
   - processing LEDs are purple (`processing_color=8000ff`)
   - muted (Disabled) still plays announcements and timer sounds without leaving Disabled; Phase 7 turns mute into a flag instead of a state
-- [ ] Phase 5 microWakeWord
+- [x] Phase 5 microWakeWord
+  - [x] `third_party/tflite-micro` (esp-tflite-micro v1.3.3.1, ESPHome's pin; reference kernels, no ESP-NN) and `third_party/micro_speech_features` (ESPMicroSpeechFeatures v1.1.0), built as static libraries by `third_party/meson.build`
+  - [x] models in `share/models` (pushed by `install.sh` to `[esphome] model_dir`): okay_nabu, hey_jarvis, hey_mycroft, stop; each is `<id>.json` (v2 manifest) + `<id>.tflite`; provenance in `share/models/VERSION`
+  - [x] `src/audio/wakeword.cpp` (`WakeWord`): port of ESPHome `micro_wake_word` (40 features / 30 ms window / 10 ms step, streaming models, mean of the last `sliding_window_size` probabilities vs the cutoff, 1 s cool-off after load or detection)
+  - [x] HA picks the wake word through VoiceAssistantConfigurationRequest/SetConfiguration (one active, as ESPHome); the old "Wake word" select is gone (delete the stale entity in HA); "Wake word sensitivity" uses Voice PE's cutoffs; both saved to `config.ini` `[wakeword]`
+  - [x] states: wake word in Sleeping → Listening (sends `wake_word_phrase`; only audio after the word goes to HA); in Saying it interrupts and listens again; in Ringing it, or "stop", silences the timer; "stop" in Saying ends the reply; the stop model runs only in Saying and Ringing; muted (Disabled) ignores it
+  - [x] host test `test/wakeword_wavs` on Piper TTS clips (3 voices × 2 speeds): okay_nabu 6/6, hey_jarvis 6/6, hey_mycroft 4/6, stop 6/6; no cross-triggers between wake words; near-misses "Okay, now you" (okay_nabu 2/6) and "Start the stopwatch" (stop 3/6)
+  - [x] on the unit: 16% of one core idle (was 9% before the wake word), RSS 7.3 MB
+  - [x] real voices on the unit: Okay Nabu (0.86–0.94) close, across the room and over music; Hey Mycroft after switching in HA (1.00), choice saved to `[wakeword]`; "stop" cut off a streamed LLM reply 11 s in (0.68)
+  - [x] "stop" (0.69) and Okay Nabu (0.92) each silenced a ringing timer 2 s in
 - [ ] Phase 6 Media player, ducking, volume
 - [ ] Phase 7 LEDs, buttons, mute, sounds
 - [ ] Phase 8 Encryption, mDNS, launcher
@@ -194,6 +203,8 @@ Entities exposed to HA:
 - Verify on the x86 host build: add it in HA through the ESPHome integration by IP. The entities should appear and the mute switch should toggle.
 - Regenerate the protobuf code after updating `proto/`: `pip install nanopb==0.4.9.1 grpcio-tools`, then `scripts/gen_proto.py`. String, bytes and repeated fields are heap pointers (`PB_ENABLE_MALLOC`); call `pb_release()` after decoding a message that has them.
 - On a host without the Xiaodu codec, set `[audio] input=null` and `output=null` (ALSA's null device) and disable `[leds]`/`[buttons]`.
+- Wake word test on WAVs (16 kHz mono): `ninja -C builddir test/wakeword_wavs`, then run it under QEMU from a scratch directory (it writes `config.ini`):
+  `/sysroot/lib/arm-linux-gnueabihf/ld-2.23.so --library-path /sysroot/lib/arm-linux-gnueabihf:/sysroot/usr/lib/arm-linux-gnueabihf builddir/test/wakeword_wavs share/models okay_nabu [--stop] [--sensitivity 0|1|2] *.wav` (in the cross image, with the host's binfmt qemu-arm).
 
 **3. Audio engine** (new `src/audio/{mixer,source,decoder,aec}.cpp`; the existing ALSA input is reused)
 - **Playback:**
@@ -416,7 +427,7 @@ Run these from the repo root on the host, with the unit connected over adb:
 
 WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant.conf` (see "set up device" above). The probe records that file with the PSK redacted, to confirm that stock units use the same path.
 
-`config.ini` sections: `[audio]` (output, input, volume, stereo2mono), `[ec]` (enabled, loopback), `[sound]` (wake and other WAV files), `[esphome]` (name — empty means `xiaodu-<MAC suffix>`, port, encryption_key, model_dir, sound_dir), `[buttons]`, `[leds]`.
+`config.ini` sections: `[audio]` (output, input, volume, stereo2mono), `[ec]` (enabled, loopback), `[sound]` (wake and other WAV files), `[esphome]` (name — empty means `xiaodu-<MAC suffix>`, port, encryption_key, model_dir, sound_dir), `[wakeword]` (active — a model id in model_dir; sensitivity — Slightly/Moderately/Very sensitive; both written back when changed from HA), `[buttons]`, `[leds]`.
 
 ### Home Assistant Voice Remote Local Assistant
 
