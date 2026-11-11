@@ -6,12 +6,12 @@ This project involves reverse engineering the devices, creating a cross-compilat
 
 ## Status Checklist (updated as work proceeds)
 
-- [x] Phase 0a Document plan
 - [ ] Phase 0 Probe stock unit, backup, install/uninstall scripts, config fix
   - [x] scripts: `probe.sh`, `backup.sh`, `install.sh`, `uninstall.sh`, `dcslaunch.sh`
   - [x] `Config::load()` reads `[audio]` and `[esphome]`
   - [x] README: stock-unit install/uninstall and WiFi
-  - [ ] run probe on a unit → `notes/stock.txt`; set `OTA_DISABLE` in `install.sh`
+  - [x] probe a Genie unit → `notes/stock.txt` (no OTA updater found, `OTA_DISABLE` stays empty; AEC reference found)
+  - [ ] probe a DuerOS unit (no Genie) for a DuerOS-side updater
   - [ ] run backup; install; verify on device (needs the Phase 1 strip for a stock-runnable binary)
 - [ ] Phase 1 Strip and re-base build
 - [ ] Phase 2 ESPHome API core
@@ -54,7 +54,7 @@ The goal of this project is to provide the same feature set on stock (i.e., unmo
 - probe device first to determine what exists on the system out of the box
 
 ### What "Stock" Means in this Project
-A Stanford project named Genie used these devices for a similar application and the code is still available (<ref>).
+A Stanford project named Genie used these devices for a similar application and the code was available (https://wiki.genie.stanford.edu/getting-started/installation-guide/xiaodu-speaker).
 
 An attempt was made to create an app in this repo that was derived from Genie (using C++14/GLib) that depends on libraries that only exist in Genie's `/opt/genie/lib` -- e.g., PulseAudio 15, GStreamer, libsoup, json-glib, webrtc-audio-processing, libevdev and Porcupine.
 
@@ -69,10 +69,10 @@ The stock rootfs (`TinaLinux.txt` opkg list) provides only:
 - libstdcpp
 
 So the binary must run on those libraries alone. Everything else is provided as small static C/C++ sources:
-- **Drop PulseAudio and GStreamer:** Use direct ALSA plus an in-process mixer, the same model as ESPHome's `mixer` speaker. Owning the mixer also hands us the playback reference that echo cancellation needs.
+- **Drop PulseAudio and GStreamer:** Use direct ALSA plus an in-process mixer, the same model as ESPHome's `mixer` speaker. The echo-cancellation reference comes from the hardware (see AEC below).
 - **Audio decoding:** vendored header-only `dr_flac` and `dr_mp3`, plus WAV. HA's ESPHome integration transcodes TTS and Music Assistant media through its ffmpeg proxy into whatever `supported_formats` the media_player advertises. Advertise FLAC at 48 kHz stereo, and also 16 kHz mono for announcements.
 - **HTTP:** the device's libcurl
-- **AEC and noise suppression:** the device's `speexdsp` (MDF echo canceller plus preprocess), using the mixer's output as the reference. Voice Activity Detection (VAD) is done in HA, so remove the device-side webrtc VAD.
+- **AEC and noise suppression:** the device's `speexdsp` (MDF echo canceller plus preprocess), using capture channel 3 as the reference. The board wires the speaker signal into the codec's MIC3/Xadc input, so the reference is sample-synchronous with the mics and needs no delay estimation (measured in `notes/stock.txt`). Voice Activity Detection (VAD) is done in HA, so remove the device-side webrtc VAD.
 - **Buttons:** read `/dev/input/eventN` `struct input_event` directly, dropping libevdev
 - **Vendor-provided code:**
   - nanopb (light-weight protobuf)
@@ -86,7 +86,7 @@ Behavioral spec: **Satellite1** `~/Code/SensorNet/voiceAssistants/Satellite1/pac
 
 ## Architecture (one process, `smartspeaker`, GLib main loop + 2 RT audio threads)
 ```
-ALSA capture hw:audiocodec (48k) ─► resample 16k mono ─► speex AEC (ref = mixer out) + NS
+ALSA capture hw:audiocodec (48k, 3 ch) ─► DC block, resample 16k: mics→mono, ch3→ref ─► speex AEC + NS
    ├─► MicroWakeWord (tflite-micro + microfrontend) ─wake─► VoiceSession
    └─► (session active) VoiceAssistantAudio frames ─► HA
 ESPHome API server :6053 (nanopb; plaintext, then Noise)  + tiny mDNS responder
@@ -107,26 +107,6 @@ Entities exposed to HA:
 
 ## Development Phases
 
-### ???? Stock (DuerOS) units: probe, back up, install, uninstall
-
-Run these from the repo root on the host, with the unit connected over adb:
-
-1. `scripts/probe.sh` is read-only on the device. It writes an inventory to `notes/stock.txt`.
-2. `scripts/backup.sh` saves `/opt/duer`, `/data/wifi`, `fw_printenv` and md5-checked images of the `env` and `app` partitions into `backups/<serial>/`. That directory is gitignored because it holds the WiFi PSK.
-3. Set `OTA_DISABLE` in `scripts/install.sh` to the DuerOS updater and watchdog paths that the probe found.
-4. `scripts/install.sh [binary]` refuses to run without a backup. It then:
-   - pushes the binary to `/opt/ss/bin`
-   - pushes `config.ini` to `/opt/ss/etc`, keeping any config already on the device
-   - pushes models and sounds to `/opt/ss/share`
-   - renames `/opt/duer/dcslaunch.sh` to `.orig` and installs `scripts/dcslaunch.sh` in its place
-   - renames the `OTA_DISABLE` paths to `.orig`
-
-   Then `adb reboot`. The log is in `/tmp/smartspeaker.log`.
-5. `scripts/uninstall.sh [--purge]` restores the original launcher and the disabled paths. `--purge` also removes `/opt/ss`.
-
-WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant.conf` (see "set up device" below). The probe records that file with the PSK redacted, to confirm that stock units use the same path.
-
-`config.ini` sections: `[audio]` (backend, output/input device, volume_control, ec), `[esphome]` (name, port, encryption_key, model_dir, sound_dir), `[buttons]`, `II
 **0. Probe a stock unit and take it over safely** (the user runs these over `adb shell`; record the results in `notes/stock.txt`)
 - Inventory:
   - `ps w`
@@ -184,10 +164,10 @@ WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant
 
 **3. Audio engine** (new `src/audio/{mixer,source,decoder,aec}.cpp`; the existing ALSA input is reused)
 - **Playback:**
-  - one ALSA PCM at 48 kHz stereo s16 with a period of about 20 ms
+  - one ALSA PCM at 48 kHz mono s16 with a period of about 20 ms (both line outputs carry DACL, so the speaker is mono; downmix stereo sources)
   - mixer thread sums the media and announce sources, applies the duck gain with a ramp, then master volume
 - **Sources:** each runs a libcurl write callback into a decoder (dr_flac/dr_mp3/wav), resamples if needed, and fills a ring buffer. Each has states idle, playing, paused and finished.
-- **Capture:** ALSA at 48k, downsampled to 16k mono, then speex echo cancellation (reference = the mixer output delayed by the measured latency), then speex noise suppression, then fanned out to the wake word and the session.
+- **Capture:** ALSA at 48k, 3 channels (MIC1, MIC2, speaker reference). DC-block the mics, drop the first 200 ms (ADC power-up click), downsample to 16k, average the mics to mono, then speex echo cancellation against channel 3, then speex noise suppression, then fan out to the wake word and the session.
 - Set amixer defaults at startup (`LINEOUT volume`, `MIC1/2 gain`), as Genie's launcher did.
 - Verify:
   - play a FLAC URL from the HA media folder
@@ -392,6 +372,27 @@ WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant
   - enable ssh access
     * ????
   - reboot
+
+#### Stock (DuerOS) units: probe, back up, install, uninstall
+
+Run these from the repo root on the host, with the unit connected over adb:
+
+1. `scripts/probe.sh` is read-only on the device. It writes an inventory to `notes/stock.txt`.
+2. `scripts/backup.sh` saves `/opt/duer`, `/data/wifi`, `fw_printenv` and md5-checked images of the `env` and `app` partitions into `backups/<serial>/`. That directory is gitignored because it holds the WiFi PSK.
+3. Set `OTA_DISABLE` in `scripts/install.sh` to the DuerOS updater and watchdog paths that the probe found.
+4. `scripts/install.sh [binary]` refuses to run without a backup. It then:
+   - pushes the binary to `/opt/ss/bin`
+   - pushes `config.ini` to `/opt/ss/etc`, keeping any config already on the device
+   - pushes models and sounds to `/opt/ss/share`
+   - renames `/opt/duer/dcslaunch.sh` to `.orig` and installs `scripts/dcslaunch.sh` in its place
+   - renames the `OTA_DISABLE` paths to `.orig`
+
+   Then `adb reboot`. The log is in `/tmp/smartspeaker.log`.
+5. `scripts/uninstall.sh [--purge]` restores the original launcher and the disabled paths. `--purge` also removes `/opt/ss`.
+
+WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant.conf` (see "set up device" above). The probe records that file with the PSK redacted, to confirm that stock units use the same path.
+
+`config.ini` sections: `[audio]` (backend, output/input device, volume_control, ec), `[esphome]` (name, port, encryption_key, model_dir, sound_dir), `[buttons]`, `[leds]`.
 
 ### Home Assistant Voice Remote Local Assistant
 
