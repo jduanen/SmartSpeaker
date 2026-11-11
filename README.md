@@ -14,7 +14,7 @@ This project involves reverse engineering the devices, creating a cross-compilat
   - [ ] probe a DuerOS unit (no Genie) for a DuerOS-side updater
   - [x] backup of the Genie unit (`backups/<serial>/`, app.img fsck-clean after journal replay)
   - [x] verify on device: Phase 1 binary run from `/tmp/ss` with Genie stopped; `ldd` resolves only to `/lib`, `/usr/lib`; LEDs, keys, ALSA tone, 16 kHz capture OK
-  - [ ] free `/opt` (remove `/opt/genie`) and `install.sh` (deferred until there's something worth installing)
+  - [x] free `/opt` (removed `/opt/genie`; 43 MB free) and `install.sh` on the Genie unit
 - [x] Phase 1 Strip and re-base build
   - deps are glib-2.0, alsa, speexdsp, threads; gio and libcurl get added in the phases that use them
   - PLAYPAUSE is push-to-talk (Listening ↔ Sleeping); no wake word until Phase 5
@@ -38,7 +38,16 @@ This project involves reverse engineering the devices, creating a cross-compilat
   - [ ] playback still takes ~10 s to start for files under `/media/local/Music`
   - volume stays on the codec's LINEOUT (not a mixer master gain): the AEC reference is tapped after the amp, so it follows volume
   - mic gain (MIC1/2 = 6, i.e. 39 dB, from the Genie launcher) will clip at high volume; tune with Phase 6 ducking tests
-- [ ] Phase 4 Voice pipeline
+- [x] Phase 4 Voice pipeline
+  - [x] `src/voice/session.cpp` (`VoiceSession`): VoiceAssistantRequest/Response, mic audio buffered until HA accepts, then streamed as VoiceAssistantAudio; HA pipeline events → state events; ERROR → stop; feature flags VOICE_ASSISTANT|API_AUDIO|TIMERS|ANNOUNCE|START_CONVERSATION
+  - [x] states: Sleeping → (PLAYPAUSE) Listening → (STT_VAD_END) Processing → (TTS URL) Saying → Sleeping, or Listening again if `continue_conversation`; Ringing for finished timers; Genie conversation/audio-control events and STT→Genie timing removed
+  - [x] streaming TTS: the RUN_START URL plays at INTENT_PROGRESS `tts_start_streaming=1`, otherwise the TTS_END URL
+  - [x] the wake sound is kept out of the mic stream (before the AEC adapts, STT heard it as "Beep, beep.")
+  - [x] verified: push-to-talk "What time is it?" → "8:20 PM"; "Set a timer for one minute"; LLM follow-up question reopened the mic with the same conversation id
+  - [x] verified: timer ring (stops on PLAYPAUSE), `assist_satellite.announce` with pre-announce chime, `assist_satellite.start_conversation` (speaks, then listens without a button press)
+  - [x] TTS/announcement fetches restart after 5 s without data (up to 2 retries); music keeps a 30 s stall limit
+  - processing LEDs are purple (`processing_color=8000ff`)
+  - muted (Disabled) still plays announcements and timer sounds without leaving Disabled; Phase 7 turns mute into a flag instead of a state
 - [ ] Phase 5 microWakeWord
 - [ ] Phase 6 Media player, ducking, volume
 - [ ] Phase 7 LEDs, buttons, mute, sounds
@@ -413,7 +422,11 @@ Run these from the repo root on the host, with the unit connected over adb:
 
    Then `adb reboot`. The log is in `/tmp/smartspeaker.log`.
 
+   On a Genie unit, `/opt` is ~97% full, so either install a stripped binary (`arm-linux-gnueabihf-strip -o builddir/src/smartspeaker.stripped builddir/src/smartspeaker` in the cross image, then `scripts/install.sh builddir/src/smartspeaker.stripped`; ~330 KB instead of 5 MB) or remove `/opt/genie` first. Once `/opt/genie` is gone, the `.orig` launcher no longer works; to go back to Genie, restore `backups/<serial>/app.img` to the `app` partition.
+
    The launcher also starts `scripts/wifi_watchdog.sh`. On this unit the RTL8723DS sometimes stays associated but stops receiving broadcast frames (most likely a failed WPA group-key rekey). Peers then can't ARP it, and TCP from HA stalls for 7–15 s per connect, so streams stall too. Every 60 s the watchdog makes a TCP connect to HA (the peer of the ESPHome API connection), or to the gateway until HA has connected. Any answer counts as reachable, even "refused"; only a timeout counts as a failure. After 3 timeouts in a row it runs `wpa_cli reassociate`. Tunables: `WD_INTERVAL`, `WD_FAILS`, `WD_PORT`.
+
+   Long delays before speech (HTTP fetches that connect but then stall for 30–40 s, while the same fetch from a wired host takes 6 ms) were RF, not software: the unit sat between two APs sharing channel 11, and they kept deauthenticating it (`dmesg`: `OnDeAuth reason=34`, frames not acknowledged) every 10–40 s. Moving one AP to channel 1 and keeping the unit in the open fixed it (fetches 7–30 ms, no deauths). Driver power save (`rtw_power_mgnt=0`), RX A-MPDU and pinning a BSSID made no difference. To diagnose: `dmesg | grep -E "OnDeAuth|new candidate"` and `cat /proc/net/rtl8723ds/wlan0/rx_signal`. For one-off stalls, the announce source (TTS replies, announcements and chimes) restarts a fetch that receives nothing for 5 s, up to 2 times, skipping the bytes it already has. Music keeps a 30 s stall limit and no retry.
 5. `scripts/uninstall.sh [--purge]` restores the original launcher and the disabled paths. `--purge` also removes `/opt/ss`.
 
 WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant.conf` (see "set up device" above). The probe records that file with the PSK redacted, to confirm that stock units use the same path.
