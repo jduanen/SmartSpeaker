@@ -39,8 +39,6 @@ public:
   virtual ~AudioVolumeDriver(){};
   virtual void set_volume(int volume) = 0;
   virtual int get_volume() = 0;
-  virtual void duck() = 0;
-  virtual void unduck() = 0;
 };
 
 } // namespace smartspeaker

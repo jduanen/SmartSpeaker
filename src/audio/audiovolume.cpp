@@ -23,14 +23,18 @@
 #include "audiovolume.hpp"
 
 #include "alsa/volume.hpp"
+#include "mixer.hpp"
 
 smartspeaker::AudioVolumeController::AudioVolumeController(App *app) : app(app) {
   driver = std::make_unique<AudioVolumeDriverAlsa>(app);
 }
 
-void smartspeaker::AudioVolumeController::duck() { driver->duck(); }
+// ESPHome voice assistant defaults: -20 dB at once, back over 1 s
+void smartspeaker::AudioVolumeController::duck() { app->mixer->duck(-20.0f, 0); }
 
-void smartspeaker::AudioVolumeController::unduck() { driver->unduck(); }
+void smartspeaker::AudioVolumeController::unduck() {
+  app->mixer->duck(0.0f, 1000);
+}
 
 int smartspeaker::AudioVolumeController::get_volume() {
   return driver->get_volume();

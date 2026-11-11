@@ -23,27 +23,6 @@
 #include "volume.hpp"
 #include "../audiovolume.hpp"
 
-static const char *DUCKING_DEVICE = "hw:0";
-static const char *DUCKING_CONTROL = "hd";
-
-void smartspeaker::AudioVolumeDriverAlsa::duck() {
-  if (ducked)
-    return;
-
-  set_volume(AudioVolumeController::MIN_VOLUME, DUCKING_DEVICE,
-             DUCKING_CONTROL);
-  ducked = true;
-}
-
-void smartspeaker::AudioVolumeDriverAlsa::unduck() {
-  if (!ducked)
-    return;
-
-  set_volume(AudioVolumeController::MAX_VOLUME, DUCKING_DEVICE,
-             DUCKING_CONTROL);
-  ducked = false;
-}
-
 /**
  * Linearly convert a value between two ranges.
  */

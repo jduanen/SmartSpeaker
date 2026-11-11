@@ -59,6 +59,10 @@ private:
   size_t sample_rate;
   int16_t channels;
   size_t frame_length;
+
+  // the codec's ADCs click at power-up and the mics carry a DC offset
+  size_t samples_read = 0;
+  float dc_x1 = 0, dc_y1 = 0;
 };
 
 } // namespace smartspeaker

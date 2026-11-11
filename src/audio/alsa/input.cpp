@@ -23,6 +23,8 @@
 
 #include "input.hpp"
 
+#include <algorithm>
+
 // Define the following to dump audio streams for debugging reasons
 // #define DEBUG_DUMP_STREAMS
 
@@ -249,6 +251,19 @@ smartspeaker::AudioFrame smartspeaker::AudioInputAlsa::read_frame(int32_t frame_
         int16_t ref = *(int16_t *)&pcm[i + 2];
         pcm_playback[j] = ref;
       }
+
+      // one-pole DC blocker (~13 Hz at 16 kHz) on the mics
+      float x = pcm_mono[j];
+      dc_y1 = x - dc_x1 + 0.995f * dc_y1;
+      dc_x1 = x;
+      pcm_mono[j] = (int16_t)std::max(-32768.0f, std::min(32767.0f, dc_y1));
+
+      // drop the first 200 ms: the ADC power-up click would upset the AEC
+      if (samples_read < sample_rate / 5) {
+        pcm_mono[j] = 0;
+        pcm_playback[j] = 0;
+      }
+      samples_read++;
     }
 
     if (app->config->audio_ec_enabled && channels == 3) {

@@ -35,12 +35,9 @@ public:
   virtual ~AudioVolumeDriverAlsa(){};
   virtual void set_volume(int volume);
   virtual int get_volume();
-  virtual void duck();
-  virtual void unduck();
 
 private:
   App *app;
-  bool ducked = false;
 
   void set_volume(int volume, const char *device_name, const char *ctl_name);
   int get_volume(const char *device_name, const char *ctl_name);

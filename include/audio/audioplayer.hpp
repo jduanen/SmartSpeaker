@@ -24,22 +24,19 @@
 
 #include "app.hpp"
 
-#include <atomic>
 #include <string>
-#include <thread>
 
 namespace smartspeaker {
 
 enum class AudioDestination { VOICE, MUSIC, ALERT };
 
 /**
- * Plays local 16-bit PCM WAV files on ALSA, one at a time, on a worker
- * thread. URL streaming and TTS arrive with the Phase 3 mixer/decoders.
+ * Front end for the state machine: sounds and alerts play on the mixer's
+ * announce source, music on its media source. TTS arrives in Phase 4.
  */
 class AudioPlayer {
 public:
   AudioPlayer(App *appInstance);
-  ~AudioPlayer();
   gboolean play_sound(enum Sound_t id,
                       AudioDestination destination = AudioDestination::ALERT);
   bool play_url(const std::string &url,
@@ -54,10 +51,6 @@ public:
 
 private:
   App *const app;
-  std::thread worker;
-  std::atomic<bool> stopping;
-
-  void play_wav(std::string path, std::string device);
 };
 
 } // namespace smartspeaker
