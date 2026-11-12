@@ -1,10 +1,11 @@
 #!/bin/sh
 # Run esphome in the baidu-esphome image with the armhf / GLIBC 2.23 cross
 # toolchain as the host platform's compiler (flags as scripts/cross_file.txt).
+# -O2: ESPHome's host build adds no optimisation flag of its own.
 # Run from baidu/. Usage: scripts/esphome.sh compile|upload|logs|run baidu-xdh-1d-a1.yaml ...
 set -eu
 
-FL="-march=armv7-a -mfloat-abi=hard -mfpu=neon --sysroot=/sysroot \
+FL="-O2 -march=armv7-a -mfloat-abi=hard -mfpu=neon --sysroot=/sysroot \
 -B/sysroot/usr/lib/arm-linux-gnueabihf -L/sysroot/usr/lib/arm-linux-gnueabihf \
 -L/sysroot/lib/arm-linux-gnueabihf -static-libgcc -static-libstdc++ \
 -pthread -Wl,--allow-shlib-undefined"

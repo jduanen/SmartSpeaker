@@ -34,3 +34,36 @@ ota:
     password: !secret ota_password
 
 mdns:
+
+microphone:
+  - platform: baidu_mic
+    id: mic
+
+speaker:
+  - platform: baidu_speaker
+    id: spk
+
+media_player:
+  - platform: baidu_media_player
+    id: player
+    name: Media Player
+    speaker: spk
+    # duck the media under announcements and replies, as Voice PE
+    on_announcement:
+      - baidu_speaker.apply_ducking:
+          id: spk
+          decibel_reduction: 20
+    on_state:
+      - if:
+          condition:
+            not:
+              media_player.is_announcing: player
+          then:
+            - baidu_speaker.apply_ducking:
+                id: spk
+                decibel_reduction: 0
+                duration: 1s
+
+voice_assistant:
+  microphone: mic
+  media_player: player
