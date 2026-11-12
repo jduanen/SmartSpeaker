@@ -1,10 +1,17 @@
 /*
- * SmartSpeaker: ESPHome native API server (plaintext)
+ * SmartSpeaker: ESPHome native API server (plaintext and Noise)
  *
  * Handles the connection-level messages (hello, device info, entity
  * listing, state subscription, ping, disconnect) and hands entity commands
  * to Entities. Unknown messages are logged and ignored, so newer clients
  * keep working.
+ *
+ * Encryption follows ESPHome's api_connection.cpp / api_frame_helper_noise:
+ * with a key ([esphome] encryption_key) only Noise with that key is
+ * accepted; without one, plaintext and Noise with the all-zeros key both
+ * are, and HA uses the latter to provision a key
+ * (NoiseEncryptionSetKeyRequest), which is saved and then activated by
+ * disconnecting every client.
  */
 
 #include "esphome/server.hpp"
@@ -63,8 +70,25 @@ static std::string read_mac() {
   return result;
 }
 
+/** base64 API key -> 32 bytes; empty if `base64` is empty or invalid. */
+static std::vector<uint8_t> decode_key(const char *base64) {
+  std::vector<uint8_t> key;
+  if (!base64 || !*base64)
+    return key;
+  gsize len = 0;
+  guchar *raw = g_base64_decode(base64, &len);
+  if (len == Noise::KEY_SIZE)
+    key.assign(raw, raw + len);
+  g_free(raw);
+  return key;
+}
+
 Server::Server(App *app) : entities(app), app(app) {
   mac = read_mac();
+  psk = decode_key(app->config->esphome_encryption_key);
+  if (psk.empty() && *app->config->esphome_encryption_key)
+    g_warning("[esphome] encryption_key isn't a base64 32-byte key; "
+              "running without encryption");
   name = app->config->esphome_name;
   if (name.empty()) {
     // xiaodu-<last 3 MAC bytes>, like ESPHome's name_add_mac_suffix
@@ -105,8 +129,11 @@ bool Server::start() {
   }
   g_signal_connect(service, "incoming", G_CALLBACK(on_incoming), this);
   g_socket_service_start(service);
-  g_message("ESPHome API '%s' (%s) listening on port %zu", name.c_str(),
-            mac.c_str(), app->config->esphome_port);
+  g_message("ESPHome API '%s' (%s) listening on port %zu, %s", name.c_str(),
+            mac.c_str(), app->config->esphome_port,
+            encrypted() ? "encrypted" : "no encryption key");
+  mdns.reset(new Mdns(this, app->config->esphome_port));
+  mdns->start(); // discovery is optional; HA can still add the IP
   return true;
 }
 
@@ -166,21 +193,50 @@ void Server::on_read(GObject *source, GAsyncResult *res, gpointer user_data) {
 
   c->rx.insert(c->rx.end(), c->buf, c->buf + n);
   size_t pos = 0;
-  while (!c->closing) {
-    uint32_t type;
+  while (!c->closing && pos < c->rx.size()) {
+    if (c->mode == Mode::UNKNOWN) {
+      uint8_t preamble = c->rx[pos];
+      if (preamble == 0x01) {
+        c->mode = Mode::NOISE_HELLO;
+      } else if (preamble == 0x00 && !self->encrypted()) {
+        c->mode = Mode::PLAIN;
+      } else {
+        // a plaintext client to an encrypted device: aioesphomeapi reports
+        // "requires encryption" when the reply starts with 0x01
+        g_message("Client %s: %s", c->peer.c_str(),
+                  preamble == 0x00 ? "plaintext refused, encryption is on"
+                                   : "unknown preamble");
+        std::vector<uint8_t> reject;
+        static const char REASON[] = "\x01Encryption required";
+        encode_noise_frame((const uint8_t *)REASON, sizeof(REASON) - 1,
+                           reject);
+        self->write(c, reject);
+        c->closing = true;
+        break;
+      }
+    }
+
     size_t off, len, consumed;
-    FrameResult r = parse_frame(c->rx.data() + pos, c->rx.size() - pos, &type,
-                                &off, &len, &consumed);
+    FrameResult r;
+    uint32_t type = 0;
+    if (c->mode == Mode::PLAIN)
+      r = parse_frame(c->rx.data() + pos, c->rx.size() - pos, &type, &off,
+                      &len, &consumed);
+    else
+      r = parse_noise_frame(c->rx.data() + pos, c->rx.size() - pos, &off,
+                            &len, &consumed);
     if (r == FrameResult::INCOMPLETE)
       break;
     if (r == FrameResult::ERROR) {
-      g_warning("Client %s sent a bad frame (preamble 0x%02x); encryption "
-                "isn't supported yet",
+      g_warning("Client %s sent a bad frame (preamble 0x%02x)",
                 c->peer.c_str(), c->rx[pos]);
       c->closing = true;
       break;
     }
-    self->handle(c, type, c->rx.data() + pos + off, len);
+    if (c->mode == Mode::PLAIN)
+      self->handle(c, type, c->rx.data() + pos + off, len);
+    else
+      self->handle_noise(c, c->rx.data() + pos + off, len);
     pos += consumed;
   }
 
@@ -192,15 +248,109 @@ void Server::on_read(GObject *source, GAsyncResult *res, gpointer user_data) {
   self->read_next(c);
 }
 
+/** One frame of the Noise handshake or an encrypted message. */
+void Server::handle_noise(Connection *c, const uint8_t *payload, size_t len) {
+  switch (c->mode) {
+    case Mode::NOISE_HELLO: {
+      // The client hello (empty) is part of the prologue
+      std::vector<uint8_t> prologue = {'N', 'o', 'i', 's', 'e', 'A', 'P', 'I',
+                                       'I', 'n', 'i', 't'};
+      prologue.push_back((uint8_t)(len >> 8));
+      prologue.push_back((uint8_t)len);
+      prologue.insert(prologue.end(), payload, payload + len);
+      uint8_t key[Noise::KEY_SIZE] = {}; // all zeros: no key, provisioning
+      if (encrypted())
+        memcpy(key, psk.data(), sizeof(key));
+      c->noise.reset(new Noise(key, prologue.data(), prologue.size()));
+
+      // server hello: protocol 0x01, node name, MAC (lowercase, no colons)
+      std::string mac_raw;
+      for (char ch : mac)
+        if (ch != ':')
+          mac_raw += g_ascii_tolower(ch);
+      std::vector<uint8_t> hello = {0x01};
+      hello.insert(hello.end(), name.begin(), name.end());
+      hello.push_back(0);
+      hello.insert(hello.end(), mac_raw.begin(), mac_raw.end());
+      hello.push_back(0);
+      std::vector<uint8_t> frame;
+      encode_noise_frame(hello.data(), hello.size(), frame);
+      write(c, frame);
+      c->mode = Mode::NOISE_HANDSHAKE;
+      break;
+    }
+
+    case Mode::NOISE_HANDSHAKE: {
+      std::vector<uint8_t> reply = {0x00};
+      if (len < 1 || payload[0] != 0x00 ||
+          !c->noise->read_message(payload + 1, len - 1)) {
+        g_message("Client %s: handshake failed (wrong encryption key?)",
+                  c->peer.c_str());
+        static const char REASON[] = "\x01Handshake MAC failure";
+        reply.assign(REASON, REASON + sizeof(REASON) - 1);
+        c->closing = true;
+      } else if (!c->noise->write_message(reply)) {
+        c->closing = true;
+        return;
+      }
+      std::vector<uint8_t> frame;
+      encode_noise_frame(reply.data(), reply.size(), frame);
+      write(c, frame);
+      if (!c->closing) {
+        c->mode = Mode::NOISE;
+        g_message("Client %s: encrypted%s", c->peer.c_str(),
+                  encrypted() ? "" : " (no key yet, provisioning)");
+      }
+      break;
+    }
+
+    case Mode::NOISE: {
+      std::vector<uint8_t> plain;
+      if (!c->noise->decrypt(payload, len, plain) || plain.size() < 4) {
+        g_warning("Client %s: cannot decrypt a message", c->peer.c_str());
+        c->closing = true;
+        return;
+      }
+      uint32_t type = (uint32_t)plain[0] << 8 | plain[1];
+      size_t size = (size_t)plain[2] << 8 | plain[3];
+      if (size > plain.size() - 4) {
+        c->closing = true;
+        return;
+      }
+      handle(c, type, plain.data() + 4, size);
+      break;
+    }
+
+    default:
+      break;
+  }
+}
+
 void Server::send(Connection *c, uint32_t type, const pb_msgdesc_t *fields,
                   const void *msg) {
   if (c->closing)
     return;
   std::vector<uint8_t> frame;
-  if (!encode_frame(type, fields, msg, frame)) {
-    g_warning("Failed to encode message type %u", type);
-    return;
+  if (c->mode == Mode::NOISE) {
+    std::vector<uint8_t> plain, cipher;
+    if (!encode_noise_message(type, fields, msg, plain)) {
+      g_warning("Failed to encode message type %u", type);
+      return;
+    }
+    c->noise->encrypt(plain.data(), plain.size(), cipher);
+    encode_noise_frame(cipher.data(), cipher.size(), frame);
+  } else if (c->mode == Mode::PLAIN) {
+    if (!encode_frame(type, fields, msg, frame)) {
+      g_warning("Failed to encode message type %u", type);
+      return;
+    }
+  } else {
+    return; // handshake not done
   }
+  write(c, frame);
+}
+
+void Server::write(Connection *c, const std::vector<uint8_t> &frame) {
   GError *error = nullptr;
   if (!g_output_stream_write_all(
           g_io_stream_get_output_stream(G_IO_STREAM(c->conn)), frame.data(),
@@ -210,6 +360,45 @@ void Server::send(Connection *c, uint32_t type, const pb_msgdesc_t *fields,
     // close after the current read callback finishes with this connection
     c->closing = true;
   }
+}
+
+/**
+ * Save a new key (empty clears it), then activate it like ESPHome:
+ * 100 ms later, ask every client to disconnect so they reconnect with it.
+ */
+bool Server::set_key(const std::string &base64) {
+  std::vector<uint8_t> key = decode_key(base64.c_str());
+  if (!base64.empty() && key.empty()) {
+    g_warning("Rejected an encryption key that isn't 32 bytes");
+    return false;
+  }
+  if (key == psk)
+    return true;
+  g_free(app->config->esphome_encryption_key);
+  app->config->esphome_encryption_key = g_strdup(base64.c_str());
+  app->config->set_string("esphome", "encryption_key", base64.c_str());
+  g_message("Encryption key %s; reconnecting clients",
+            key.empty() ? "cleared" : "saved");
+
+  auto *pending = new std::vector<uint8_t>(key);
+  auto *ctx = new std::pair<Server *, std::vector<uint8_t> *>(this, pending);
+  g_timeout_add(
+      100,
+      [](gpointer data) -> gboolean {
+        auto *p = static_cast<std::pair<Server *, std::vector<uint8_t> *> *>(data);
+        Server *self = p->first;
+        self->psk = *p->second;
+        if (self->mdns)
+          self->mdns->announce(); // api_encryption vs _supported
+        DisconnectRequest req = DisconnectRequest_init_zero;
+        for (Connection *c : self->connections)
+          self->send(c, MSG_DISCONNECT_REQUEST, DisconnectRequest_fields, &req);
+        delete p->second;
+        delete p;
+        return G_SOURCE_REMOVE;
+      },
+      ctx);
+  return true;
 }
 
 void Server::close(Connection *c) {
@@ -269,6 +458,9 @@ void Server::handle(Connection *c, uint32_t type, const uint8_t *payload,
       resp.project_name = s("smartspeaker.xiaodu");
       resp.project_version = s(PACKAGE_VERSION);
       resp.voice_assistant_feature_flags = VoiceSession::FEATURES;
+      resp.api_encryption_supported = true;
+      // HA provisions a key over a zero-key Noise session when this is set
+      resp.api_encryption_provisionable = !encrypted();
       send(c, MSG_DEVICE_INFO_RESPONSE, DeviceInfoResponse_fields, &resp);
       break;
     }
@@ -301,6 +493,22 @@ void Server::handle(Connection *c, uint32_t type, const uint8_t *payload,
 
     case MSG_PING_RESPONSE:
       break;
+
+    case MSG_NOISE_ENCRYPTION_SET_KEY_REQUEST: {
+      NoiseEncryptionSetKeyRequest req = NoiseEncryptionSetKeyRequest_init_zero;
+      pb_istream_t stream = pb_istream_from_buffer(payload, len);
+      std::string key;
+      bool ok = pb_decode(&stream, NoiseEncryptionSetKeyRequest_fields, &req);
+      if (ok && req.key)
+        key.assign((const char *)req.key->bytes, req.key->size);
+      pb_release(NoiseEncryptionSetKeyRequest_fields, &req);
+      NoiseEncryptionSetKeyResponse resp =
+          NoiseEncryptionSetKeyResponse_init_zero;
+      resp.success = ok && set_key(key);
+      send(c, MSG_NOISE_ENCRYPTION_SET_KEY_RESPONSE,
+           NoiseEncryptionSetKeyResponse_fields, &resp);
+      break;
+    }
 
     case MSG_DISCONNECT_REQUEST: {
       DisconnectResponse resp = DisconnectResponse_init_zero;
