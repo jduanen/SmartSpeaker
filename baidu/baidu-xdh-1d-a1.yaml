@@ -1,0 +1,36 @@
+# Baidu Xiaodu XDH-1D-A1 as an ESPHome host-platform device.
+# One file per speaker: set mac to the unit's WiFi MAC (adb shell ifconfig wlan0).
+# SPIKE: 4A:... is the real 48:... with the locally-administered bit set, so HA
+# treats it as a new device and leaves the C++ app's xiaodu-1486a2 entry alone.
+substitutions:
+  mac: "4A:F3:F3:14:86:A2"
+  mac_suffix: "1486a2"
+  name: baidu-${mac_suffix}
+  friendly_name: Baidu ${mac_suffix}
+
+esphome:
+  name: ${name}
+  friendly_name: ${friendly_name}
+  comment: spike OTA 2
+
+host:
+  mac_address: ${mac}
+
+external_components:
+  - source:
+      type: local
+      path: components
+
+baidu_host:
+
+logger:
+  level: DEBUG
+
+api:
+  encryption: {}
+
+ota:
+  - platform: esphome
+    password: !secret ota_password
+
+mdns:
