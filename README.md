@@ -238,6 +238,44 @@ engineering the smart speaker.
     * ????
   - reboot
 
+### Installing the C++ app (smartspeaker) on a new speaker
+
+Run everything from the repo root on the host. The details of each script are in the next section.
+
+1. **Host prerequisites:** `adb`, Docker, and the cross build:
+   ```bash
+   docker build --network host -f Dockerfile.dockcross -t smartspeaker-cross .   # once
+   docker run --rm -v $(pwd):/app smartspeaker-cross bash -c \
+     "meson setup --wipe --cross-file=scripts/cross_file.txt builddir && ninja -C builddir && \
+      arm-linux-gnueabihf-strip -o builddir/src/smartspeaker.stripped builddir/src/smartspeaker"
+   ```
+   This gives `builddir/src/smartspeaker.stripped` (~620 KB).
+2. **Connect:** plug the speaker into the host with a micro-USB cable, power it from its 12 V supply, and check that `adb devices` lists it.
+3. **WiFi:** run `scripts/setwifi.sh <ssid> <password>` to write `/data/wifi/wpa_supplicant.conf`, the same path on Genie and DuerOS units. Then `adb shell ifconfig wlan0` should show an `inet addr`.
+4. **Probe and back up** while the original software is still on the unit:
+   - `scripts/probe.sh` writes an inventory to `notes/stock.txt`.
+   - `scripts/backup.sh` writes to `backups/<serial>/`. `install.sh` refuses to run without it.
+5. **Prepare, depending on what the unit runs** (`adb shell ps` tells you which):
+   - **Genie** (`genie-client` is running and `/opt/genie` exists):
+     - `/opt` has only ~1.4 MB free, and the binary plus models and sounds need ~1.3 MB, so remove Genie first: `adb shell rm -rf /opt/genie`.
+     - After that, going back to Genie means restoring `backups/<serial>/app.img` to the `app` partition; `uninstall.sh` can't do it.
+   - **DuerOS** (no `/opt/genie`; DuerOS processes in `ps`):
+     - Set `OTA_DISABLE` in `scripts/install.sh` to the updater and watchdog paths that the probe found in `notes/stock.txt`.
+     - Not yet tested on a real DuerOS unit (see DEVELOPMENT.md, Phases 0 and 8).
+6. **Install:** run `scripts/install.sh builddir/src/smartspeaker.stripped`, then `adb reboot`. Busybox `reboot` from an adb shell can silently do nothing, so use `adb reboot`.
+7. **Check that it runs:**
+   - The LEDs twinkle blue until Home Assistant connects.
+   - `adb shell tail /tmp/smartspeaker.log` should show `ESPHome API 'xiaodu-<MAC suffix>' … listening on port 6053` and the mDNS line.
+8. **Home Assistant:**
+   - HA discovers `xiaodu-<last 6 MAC hex digits>` in the ESPHome integration; click **Configure**.
+   - HA provisions an encryption key on its own. The speaker saves it in `/opt/ss/etc/config.ini`, and later installs keep that file.
+   - On the device page, pick the Assist pipeline and the wake word.
+   - **Music Assistant:** add the player explicitly in MA's Home Assistant MediaPlayers provider.
+9. **Updating later:** rebuild and strip, run `scripts/install.sh builddir/src/smartspeaker.stripped` (the config is kept), then `adb shell 'kill $(pidof smartspeaker)'`. The launcher restarts it.
+10. **Removing:**
+    - DuerOS: `scripts/uninstall.sh [--purge]`, then `adb reboot`.
+    - Genie with `/opt/genie` deleted: restore `app.img` from the backup.
+
 ### Stock (DuerOS) units: probe, back up, install, uninstall
 
 Run these from the repo root on the host, with the unit connected over adb:
