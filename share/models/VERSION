@@ -1,0 +1,2 @@
+okay_nabu, hey_jarvis, hey_mycroft: esphome/micro-wake-word-models models/v2 (commit 40ff33f57f8fc6ad71a75ef085abbf742495b225)
+stop: https://github.com/kahrendt/microWakeWord/releases/download/stop/stop.{json,tflite}
