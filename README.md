@@ -47,7 +47,7 @@ This project involves reverse engineering the devices, creating a cross-compilat
   - [x] verified: timer ring (stops on PLAYPAUSE), `assist_satellite.announce` with pre-announce chime, `assist_satellite.start_conversation` (speaks, then listens without a button press)
   - [x] TTS/announcement fetches restart after 5 s without data (up to 2 retries); music keeps a 30 s stall limit
   - processing LEDs are purple (`processing_color=8000ff`)
-  - muted (Disabled) still plays announcements and timer sounds without leaving Disabled; Phase 7 turns mute into a flag instead of a state
+  - mute was the Disabled state here; Phase 7 made it a flag
 - [x] Phase 5 microWakeWord
   - [x] `third_party/tflite-micro` (esp-tflite-micro v1.3.3.1, ESPHome's pin; reference kernels, no ESP-NN) and `third_party/micro_speech_features` (ESPMicroSpeechFeatures v1.1.0), built as static libraries by `third_party/meson.build`
   - [x] models in `share/models` (pushed by `install.sh` to `[esphome] model_dir`): okay_nabu, hey_jarvis, hey_mycroft, stop; each is `<id>.json` (v2 manifest) + `<id>.tflite`; provenance in `share/models/VERSION`
@@ -67,7 +67,14 @@ This project involves reverse engineering the devices, creating a cross-compilat
   - [x] mic headroom: pink noise at -1 dBFS, mics recorded at LINEOUT 16/22/27/31 (HA volume maps linearly to 0–31). At Genie's MIC1/2 gain 6 (39 dB) the mics compress from LINEOUT ~22 (~70%) and clip above ~27; at gain 3 (30 dB) they stay linear through 27 and only touch full scale at 31. `dcslaunch.sh` now sets 3. The reference (MIC3, 0 dB) touches full scale at 31
   - [x] wake word and STT across the room at mic gain 3, also with music fairly loud (0.86–0.93)
   - Music Assistant still streams MP3 44.1 kHz stereo (its per-player output codec); set it to FLAC in MA to skip MP3 decoding and resampling
-- [ ] Phase 7 LEDs, buttons, mute, sounds
+- [x] Phase 7 LEDs, buttons, mute, sounds
+  - [x] `src/leds.cpp` rewritten: frames rendered from app state in Satellite1's `control_leds` priority, on 12 LEDs: init (blue twinkle) / no HA (red twinkle) → volume bar (1 s after VOL±) → timer ring (whole ring pulsing) → listening (clockwise spin, two heads) → thinking (two opposite LEDs breathing) → replying (counter-clockwise spin) → error (red pulse, 2 s) → idle (the "LED ring" light, or off) with four red LEDs when the mic is muted. Phases use the light's color (default HA blue 17bbf2) at ≥20% brightness. A 50 ms timer runs only while animating; unchanged frames aren't written (the is31fl3236 driver logs every write)
+  - [x] the "LED ring" light is real (idle color, accent color) and saved to `[leds] ring/ring_color/ring_brightness`; the per-state `*_effect`/`*_color` keys are gone
+  - [x] mic mute is a flag (`App::set_mic_muted`), not a state (Disabled removed): no wake word, no frames, a running Assist stops, no follow-up listening, PLAYPAUSE won't start Assist; timers, replies and announcements work as usual; MUTE key and the HA switch both toggle it, with the Voice PE mute sounds
+  - [x] PLAYPAUSE (Voice PE timings: presses < 1 s, gaps < 0.25 s, hold 1 s): single = stop the ring, else the pipeline, else the reply/announcement, else pause music, else start Assist; double/triple/long fire the HA "Button press" event with their Voice PE sounds; VOL± are ±5% on key down (and autorepeat)
+  - [x] sounds: HA Voice PE FLACs in `share/sounds` (CC BY 4.0, Clayton Charles Tapp; `share/sounds/LICENSE.md`, `VERSION`); feedback sounds are skipped while a reply, announcement or ring plays
+  - [x] idle on the unit: 16% of a core, RSS 7.1 MB (unchanged)
+  - [x] verified on the unit: startup twinkle after a power cycle, LEDs in each phase, mute key/switch, PLAYPAUSE single/double/triple/long (HA events), VOL± bar, ring light from HA
 - [ ] Phase 8 Encryption, mDNS, launcher
 
 
@@ -435,7 +442,7 @@ Run these from the repo root on the host, with the unit connected over adb:
 
 WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant.conf` (see "set up device" above). The probe records that file with the PSK redacted, to confirm that stock units use the same path.
 
-`config.ini` sections: `[audio]` (output, input, volume, stereo2mono), `[ec]` (enabled, loopback), `[sound]` (wake and other WAV files), `[esphome]` (name — empty means `xiaodu-<MAC suffix>`, port, encryption_key, model_dir, sound_dir), `[wakeword]` (active — a model id in model_dir; sensitivity — Slightly/Moderately/Very sensitive; both written back when changed from HA), `[buttons]`, `[leds]`.
+`config.ini` sections: `[audio]` (output, input, volume, stereo2mono), `[ec]` (enabled, loopback), `[sound]` (wake, alarm_clock_elapsed, mute_on, mute_off, button_double, button_triple, button_long: WAV/FLAC/MP3 files in sound_dir, defaulting to the Voice PE sounds), `[esphome]` (name — empty means `xiaodu-<MAC suffix>`, port, encryption_key, model_dir, sound_dir), `[wakeword]` (active — a model id in model_dir; sensitivity — Slightly/Moderately/Very sensitive; both written back when changed from HA), `[buttons]`, `[leds]` (enabled, type, path; ring, ring_color, ring_brightness — the HA "LED ring" light, written back when changed there).
 
 ### Home Assistant Voice Remote Local Assistant
 
