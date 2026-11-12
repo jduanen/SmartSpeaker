@@ -37,6 +37,7 @@ public:
   void enter() override;
   const char *name() override { return NAME; };
   void react(events::TogglePlayback *) override;
+  void react(events::Wake *wake) override;
 };
 
 } // namespace state

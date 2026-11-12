@@ -40,7 +40,7 @@ void Listening::enter() {
 
   app->leds->animate(LedsState_t::Listening);
   app->audio_volume_controller->duck();
-  if (!app->voice->start()) {
+  if (!app->voice->start(wake_word_phrase)) {
     app->dispatch(new events::voice::Error("not-connected",
                                            "Home Assistant is not connected"));
     return;
@@ -55,10 +55,6 @@ void Listening::enter() {
 void Listening::exit() {
   app->audio_input->sleep();
   State::exit();
-}
-
-void Listening::react(events::Wake *) {
-  g_debug("FIXME Received Wake event while in Listening state.\n");
 }
 
 void Listening::react(events::InputFrame *input_frame) {

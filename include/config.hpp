@@ -56,6 +56,8 @@ public:
   static const size_t DEFAULT_ESPHOME_PORT = 6053;
   static const constexpr char *DEFAULT_ESPHOME_MODEL_DIR = "/opt/ss/share/models";
   static const constexpr char *DEFAULT_ESPHOME_SOUND_DIR = "/opt/ss/share/sounds";
+  static const constexpr char *DEFAULT_WAKEWORD_ACTIVE = "okay_nabu";
+  static const constexpr char *DEFAULT_WAKEWORD_SENSITIVITY = "Slightly sensitive";
 
   // Buttons Defaults
   // -------------------------------------------------------------------------
@@ -87,6 +89,8 @@ public:
   ~Config();
   void load();
   void save();
+  /** Set one key and save the file (settings changed from HA). */
+  void set_string(const char *section, const char *key, const char *value);
 
   // Configuration File Values
   // =========================================================================
@@ -123,6 +127,12 @@ public:
   gchar *esphome_encryption_key; // base64 PSK; empty means plaintext
   gchar *esphome_model_dir;
   gchar *esphome_sound_dir;
+
+  // Wake word (set from HA, saved back here)
+  // -------------------------------------------------------------------------
+
+  gchar *wakeword_active;      // model id in esphome_model_dir
+  gchar *wakeword_sensitivity; // WakeWord::SENSITIVITIES
 
   // Sound files (16-bit PCM WAV; relative paths are under esphome_sound_dir)
   // -------------------------------------------------------------------------

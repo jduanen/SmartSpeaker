@@ -22,6 +22,7 @@
 
 #include "state/saying.hpp"
 #include "app.hpp"
+#include "audio/audioinput.hpp"
 #include "audio/audioplayer.hpp"
 #include "audio/audiovolume.hpp"
 #include "audio/mixer.hpp"
@@ -38,6 +39,7 @@ void Saying::enter() {
   State::enter();
   app->leds->animate(LedsState_t::Saying);
   app->audio_volume_controller->duck();
+  app->audio_input->wake_word()->set_stop_enabled(true);
   if (!preannounce.empty()) {
     app->mixer->announce.play(preannounce);
   } else {
@@ -46,6 +48,7 @@ void Saying::enter() {
 }
 
 void Saying::exit() {
+  app->audio_input->wake_word()->set_stop_enabled(false);
   if (!finished)
     app->mixer->announce.stop();
   if (announcement && !finished)
@@ -74,6 +77,15 @@ void Saying::react(events::voice::ResponseFinished *) {
 
 void Saying::react(events::TogglePlayback *) {
   // stop talking
+  app->transit(new Sleeping(app));
+}
+
+void Saying::react(events::Wake *wake) {
+  // barge in: stop talking and listen (HA Voice PE does the same)
+  app->transit(new Listening(app, wake->phrase));
+}
+
+void Saying::react(events::StopWord *) {
   app->transit(new Sleeping(app));
 }
 

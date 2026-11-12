@@ -50,7 +50,11 @@ void State::exit() {
 // ===========================================================================
 
 void State::react(events::Wake *) {
-  g_debug("FIXME received Wake when not in Listening state, ignoring.");
+  g_message("Ignoring the wake word in state %s", name());
+}
+
+void State::react(events::StopWord *) {
+  // only Saying and Ringing listen for it
 }
 
 void State::react(events::InputFrame *input_frame) {

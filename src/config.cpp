@@ -45,6 +45,8 @@ smartspeaker::Config::~Config() {
   g_free(esphome_encryption_key);
   g_free(esphome_model_dir);
   g_free(esphome_sound_dir);
+  g_free(wakeword_active);
+  g_free(wakeword_sensitivity);
   g_free(sound_wake);
   g_free(sound_no_input);
   g_free(sound_news_intro);
@@ -278,6 +280,12 @@ void smartspeaker::Config::save() {
   }
 }
 
+void smartspeaker::Config::set_string(const char *section, const char *key,
+                                      const char *value) {
+  g_key_file_set_string(key_file, section, key, value);
+  save();
+}
+
 void smartspeaker::Config::load() {
   key_file = g_key_file_new();
 
@@ -323,6 +331,12 @@ void smartspeaker::Config::load() {
       get_string("esphome", "model_dir", DEFAULT_ESPHOME_MODEL_DIR);
   esphome_sound_dir =
       get_string("esphome", "sound_dir", DEFAULT_ESPHOME_SOUND_DIR);
+
+  // Wake word
+  // =========================================================================
+  wakeword_active = get_string("wakeword", "active", DEFAULT_WAKEWORD_ACTIVE);
+  wakeword_sensitivity =
+      get_string("wakeword", "sensitivity", DEFAULT_WAKEWORD_SENSITIVITY);
 
   // Sounds (empty disables a sound)
   // =========================================================================

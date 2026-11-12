@@ -13,8 +13,8 @@ namespace smartspeaker {
 namespace state {
 
 /**
- * Repeats the timer sound until PLAYPAUSE is pressed, or for at most
- * RING_MINUTES (HA Voice PE rings for 15 minutes).
+ * Repeats the timer sound until PLAYPAUSE, the wake word or "stop", or for
+ * at most RING_MINUTES (HA Voice PE rings for 15 minutes).
  */
 class Ringing : public State {
 public:
@@ -28,6 +28,8 @@ public:
   const char *name() override { return NAME; };
 
   void react(events::TogglePlayback *) override;
+  void react(events::Wake *) override;
+  void react(events::StopWord *) override;
   void react(events::voice::ResponseFinished *) override;
   void react(events::voice::TimerFinished *) override {}
 

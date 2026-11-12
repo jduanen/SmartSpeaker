@@ -4,6 +4,7 @@
 
 #include "state/ringing.hpp"
 #include "app.hpp"
+#include "audio/audioinput.hpp"
 #include "audio/audioplayer.hpp"
 #include "audio/audiovolume.hpp"
 #include "audio/mixer.hpp"
@@ -19,12 +20,14 @@ void Ringing::enter() {
   State::enter();
   app->leds->animate(LedsState_t::Processing); // TODO Phase 7: timer ring LEDs
   app->audio_volume_controller->duck();
+  app->audio_input->wake_word()->set_stop_enabled(true);
   if (!app->audio_player->play_sound(Sound_t::ALARM_CLOCK_ELAPSED))
     g_warning("No [sound] alarm_clock_elapsed configured; ringing silently");
   timeout_source = g_timeout_add_seconds(RING_MINUTES * 60, on_timeout, app);
 }
 
 void Ringing::exit() {
+  app->audio_input->wake_word()->set_stop_enabled(false);
   g_source_remove(timeout_source);
   app->mixer->announce.stop();
   State::exit();
@@ -42,6 +45,14 @@ void Ringing::react(events::voice::ResponseFinished *) {
 }
 
 void Ringing::react(events::TogglePlayback *) {
+  app->transit(new Sleeping(app));
+}
+
+void Ringing::react(events::Wake *) {
+  app->transit(new Sleeping(app));
+}
+
+void Ringing::react(events::StopWord *) {
   app->transit(new Sleeping(app));
 }
 

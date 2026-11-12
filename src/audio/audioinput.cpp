@@ -31,7 +31,7 @@
 
 smartspeaker::AudioInput::AudioInput(App *app)
     : app(app), wakeword(nullptr), input(nullptr), state(State::WAITING) {
-  wakeword = std::make_unique<WakeWord>(app);
+  wakeword = std::make_unique<WakeWord>(app->config.get());
 
   sample_rate = wakeword->sample_rate;
   pv_frame_length = wakeword->pv_frame_length;
@@ -84,34 +84,18 @@ void smartspeaker::AudioInput::loop_waiting() {
     return;
   }
 
-  // Drop from the queue if there are too many items
-  while (frame_buffer.size() > BUFFER_MAX_FRAMES) {
-    frame_buffer.pop();
+  // The state decides what a detection means; Listening calls wake(). HA
+  // gets only the audio after the wake word, as with ESPHome.
+  switch (wakeword->process(&new_frame)) {
+    case WakeWord::Detection::WAKE:
+      app->dispatch(new state::events::Wake(wakeword->active_phrase()));
+      break;
+    case WakeWord::Detection::STOP:
+      app->dispatch(new state::events::StopWord());
+      break;
+    case WakeWord::Detection::NONE:
+      break;
   }
-
-  // Check the new frame for the wake-word
-  bool detected = wakeword->process(&new_frame);
-
-  // Add the new frame to the queue
-  frame_buffer.push(std::move(new_frame));
-
-  if (!detected) {
-    // wake-word not found
-    return;
-  }
-
-  g_message("Wakeword detected in waiting state");
-  app->dispatch(new state::events::Wake());
-
-  g_debug("Sending prior %zd frames\n", frame_buffer.size());
-
-  while (!frame_buffer.empty()) {
-    app->dispatch(
-        new state::events::InputFrame(std::move(frame_buffer.front())));
-    frame_buffer.pop();
-  }
-
-  wake();
 }
 
 void smartspeaker::AudioInput::loop_listening() {

@@ -2,9 +2,10 @@
  * SmartSpeaker: entities exposed to Home Assistant over the ESPHome API
  *
  * Names and options follow the Satellite1 / HA Voice PE configurations.
- * Behavior is wired in as the phases land: mic mute, wake sound, volume and
- * URL playback now; wake word, sensitivity, LED ring and button events
- * later.
+ * Behavior is wired in as the phases land: mic mute, wake sound, volume,
+ * URL playback and wake word sensitivity now; LED ring and button events
+ * later. The wake word itself is chosen through the voice assistant
+ * configuration messages (VoiceSession), as on ESPHome devices.
  */
 
 #include "esphome/entities.hpp"
@@ -13,6 +14,7 @@
 #include <glib.h>
 
 #include "app.hpp"
+#include "audio/audioinput.hpp"
 #include "audio/audiovolume.hpp"
 #include "audio/mixer.hpp"
 #include "esphome/api.pb.h"
@@ -31,15 +33,11 @@ enum Key : uint32_t {
   KEY_MEDIA_PLAYER = 1,
   KEY_MIC_MUTE,
   KEY_WAKE_SOUND,
-  KEY_WAKE_WORD,
   KEY_SENSITIVITY,
   KEY_LED_RING,
   KEY_BUTTON,
 };
 
-static const char *WAKE_WORDS[] = {"Okay Nabu", "Hey Jarvis", "Hey Mycroft"};
-static const char *SENSITIVITIES[] = {"Slightly sensitive",
-                                      "Moderately sensitive", "Very sensitive"};
 static const char *BUTTON_EVENTS[] = {"double_press", "triple_press",
                                       "long_press"};
 
@@ -66,7 +64,7 @@ static bool decode(const pb_msgdesc_t *fields, const uint8_t *p, size_t n,
 }
 
 Entities::Entities(App *app)
-    : app(app), wake_word(WAKE_WORDS[0]), sensitivity(SENSITIVITIES[1]) {}
+    : app(app) {}
 
 void Entities::list(const Send &send) {
   ListEntitiesMediaPlayerResponse mp = ListEntitiesMediaPlayerResponse_init_zero;
@@ -96,23 +94,12 @@ void Entities::list(const Send &send) {
        &sw);
 
   ListEntitiesSelectResponse sel = ListEntitiesSelectResponse_init_zero;
-  sel.object_id = s("wake_word");
-  sel.key = KEY_WAKE_WORD;
-  sel.name = s("Wake word");
-  sel.icon = s("mdi:account-voice");
-  sel.options_count = G_N_ELEMENTS(WAKE_WORDS);
-  sel.options = const_cast<char **>(WAKE_WORDS);
-  sel.entity_category = EntityCategory_ENTITY_CATEGORY_CONFIG;
-  send(MSG_LIST_ENTITIES_SELECT_RESPONSE, ListEntitiesSelectResponse_fields,
-       &sel);
-
-  sel = ListEntitiesSelectResponse_init_zero;
   sel.object_id = s("wake_word_sensitivity");
   sel.key = KEY_SENSITIVITY;
   sel.name = s("Wake word sensitivity");
   sel.icon = s("mdi:tune-variant");
-  sel.options_count = G_N_ELEMENTS(SENSITIVITIES);
-  sel.options = const_cast<char **>(SENSITIVITIES);
+  sel.options_count = G_N_ELEMENTS(WakeWord::SENSITIVITIES);
+  sel.options = const_cast<char **>(WakeWord::SENSITIVITIES);
   sel.entity_category = EntityCategory_ENTITY_CATEGORY_CONFIG;
   send(MSG_LIST_ENTITIES_SELECT_RESPONSE, ListEntitiesSelectResponse_fields,
        &sel);
@@ -143,8 +130,7 @@ void Entities::states(const Send &send) {
   push_media_player();
   push_switch(KEY_MIC_MUTE, mic_muted);
   push_switch(KEY_WAKE_SOUND, wake_sound_);
-  push_select(KEY_WAKE_WORD, wake_word);
-  push_select(KEY_SENSITIVITY, sensitivity);
+  push_select(KEY_SENSITIVITY, app->audio_input->wake_word()->sensitivity());
   push_light();
   broadcast = saved;
 }
@@ -211,14 +197,6 @@ void Entities::set_mic_muted(bool muted) {
 
 void Entities::media_player_changed() { push_media_player(); }
 
-static bool is_option(const char *value, const char *const *options,
-                      size_t count) {
-  for (size_t i = 0; i < count; i++)
-    if (g_strcmp0(value, options[i]) == 0)
-      return true;
-  return false;
-}
-
 bool Entities::handle(uint32_t type, const uint8_t *payload, size_t len) {
   switch (type) {
     case MSG_SWITCH_COMMAND_REQUEST: {
@@ -241,16 +219,10 @@ bool Entities::handle(uint32_t type, const uint8_t *payload, size_t len) {
       SelectCommandRequest req = SelectCommandRequest_init_zero;
       if (!decode(SelectCommandRequest_fields, payload, len, &req))
         return true;
-      if (req.key == KEY_WAKE_WORD &&
-          is_option(req.state, WAKE_WORDS, G_N_ELEMENTS(WAKE_WORDS))) {
-        wake_word = req.state; // TODO Phase 5: switch microWakeWord model
-        push_select(KEY_WAKE_WORD, wake_word);
-      } else if (req.key == KEY_SENSITIVITY &&
-                 is_option(req.state, SENSITIVITIES,
-                           G_N_ELEMENTS(SENSITIVITIES))) {
-        sensitivity = req.state; // TODO Phase 5: probability cutoff
-        push_select(KEY_SENSITIVITY, sensitivity);
-      }
+      WakeWord *ww = app->audio_input->wake_word();
+      if (req.key == KEY_SENSITIVITY && req.state &&
+          ww->set_sensitivity(req.state))
+        push_select(KEY_SENSITIVITY, ww->sensitivity());
       pb_release(SelectCommandRequest_fields, &req);
       return true;
     }

@@ -1,43 +1,81 @@
 /*
-* SmartSpeaker derived from Genie
-*/
-
-// -*- mode: cpp; indent-tabs-mode: nil; c-basic-offset: 2 -*-
-//
-// This file is part of Genie
-//
-// Copyright 2021 The Board of Trustees of the Leland Stanford Junior University
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+ * SmartSpeaker: on-device wake word detection (microWakeWord)
+ *
+ * Mirrors esphome/components/micro_wake_word: 16 kHz audio becomes 40 mel
+ * features every 10 ms (ESPMicroSpeechFeatures), which drive streaming
+ * TFLite Micro models. A word is detected when the mean of its last
+ * `sliding_window_size` probabilities exceeds the cutoff.
+ */
 
 #pragma once
 
-#include "app.hpp"
+#include <memory>
+#include <mutex>
+#include <string>
+#include <vector>
+
+#include "audio/audio.hpp"
+#include "config.hpp"
+
+struct FrontendState; // ESPMicroSpeechFeatures frontend.h
 
 namespace smartspeaker {
 
 class WakeWord {
 public:
-  WakeWord(App *app);
+  enum class Detection { NONE, WAKE, STOP };
+
+  /** A wake word HA can choose (VoiceAssistantConfigurationResponse). */
+  struct Info {
+    std::string id; // file stem, e.g. "okay_nabu"
+    std::string phrase; // e.g. "Okay Nabu"
+    std::vector<std::string> languages;
+  };
+
+  static const char *const SENSITIVITIES[3];
+
+  WakeWord(Config *config);
   ~WakeWord();
-  int process(AudioFrame *frame);
+
+  // Audio input thread
+  // -------------------------------------------------------------------------
+
+  /** Run the frame through the active models. */
+  Detection process(const AudioFrame *frame);
+
+  // Main loop
+  // -------------------------------------------------------------------------
+
+  const std::vector<Info> &available() const { return infos; }
+  std::string active();
+  std::string active_phrase();
+  /** Switch to wake word `id` (one of available()); saved to config.ini. */
+  bool set_active(const std::string &id);
+  std::string sensitivity();
+  /** One of SENSITIVITIES; saved to config.ini. */
+  bool set_sensitivity(const std::string &level);
+  /** The "stop" word is only listened for during replies and timer rings. */
+  void set_stop_enabled(bool enabled);
 
   int32_t pv_frame_length;
   size_t sample_rate;
 
+  struct Model;
+
 private:
-  // initialized once and never overwritten
-  App *const app;
+
+  Config *const config;
+  std::mutex lock; // models, active_model, stop_enabled, cutoffs
+  std::vector<std::unique_ptr<Model>> models;
+  std::vector<Info> infos;
+  Model *active_model = nullptr;
+  Model *stop_model = nullptr;
+  bool stop_enabled = false;
+  size_t sensitivity_level = 0;
+
+  ::FrontendState *frontend = nullptr;
+
+  void apply_sensitivity();
 };
 
 } // namespace smartspeaker

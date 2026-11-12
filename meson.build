@@ -52,4 +52,6 @@ add_global_arguments([
   '-Wno-unused',
 ], language : 'c')
 
+subdir('third_party')
 subdir('src')
+subdir('test')

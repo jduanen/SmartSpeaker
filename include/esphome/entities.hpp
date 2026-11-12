@@ -51,8 +51,6 @@ private:
 
   bool mic_muted = false;
   bool wake_sound_ = true;
-  std::string wake_word;
-  std::string sensitivity;
   bool media_muted = false;
 
   bool led_on = true;

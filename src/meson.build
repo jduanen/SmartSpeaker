@@ -37,6 +37,9 @@ _deps += dependency('speexdsp')
 # POSIX threads: std::thread in AudioInput and AudioPlayer
 _deps += dependency('threads')
 
+# Vendored wake word inference (third_party/meson.build)
+_deps += [tflm_dep, micro_speech_features_dep]
+
 # ── Source files ───────────────────────────────────────────────────────────────
 
 _sources = [

@@ -28,15 +28,12 @@
 #include "wakeword.hpp"
 #include <atomic>
 #include <glib.h>
-#include <queue>
 #include <thread>
 
 namespace smartspeaker {
 
 class AudioInput {
 public:
-  static const int32_t BUFFER_MAX_FRAMES = 32;
-
   enum class State {
     CLOSED,
     WAITING,
@@ -48,6 +45,7 @@ public:
   void close();
   void wake();
   void sleep();
+  WakeWord *wake_word() { return wakeword.get(); }
 
 private:
   // initialized once and never overwritten
@@ -63,7 +61,6 @@ private:
   int32_t pv_frame_length;
   size_t sample_rate;
   int16_t channels;
-  std::queue<AudioFrame> frame_buffer;
 
   void loop();
   void loop_waiting();

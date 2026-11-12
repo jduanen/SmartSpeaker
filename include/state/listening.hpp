@@ -25,6 +25,8 @@
 #include "events.hpp"
 #include "state.hpp"
 
+#include <string>
+
 namespace smartspeaker {
 namespace state {
 
@@ -36,12 +38,14 @@ public:
   Listening(App *app) : State{app} {}
   Listening(App *app, bool is_follow_up)
       : State{app}, is_follow_up(is_follow_up) {}
+  /** Started by the on-device wake word. */
+  Listening(App *app, std::string wake_word_phrase)
+      : State{app}, wake_word_phrase(std::move(wake_word_phrase)) {}
 
   void enter() override;
   void exit() override;
   const char *name() override { return NAME; };
 
-  void react(events::Wake *) override;
   void react(events::InputFrame *input_frame) override;
   void react(events::TogglePlayback *) override;
   void react(events::voice::VadEnd *) override;
@@ -52,6 +56,7 @@ public:
 
 private:
   bool is_follow_up = false;
+  std::string wake_word_phrase;
   // the AEC hasn't adapted yet, so STT would hear the beep ("Beep, beep.")
   bool wake_sound_playing = false;
 };

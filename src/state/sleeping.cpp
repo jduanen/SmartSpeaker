@@ -43,5 +43,9 @@ void Sleeping::react(events::TogglePlayback *) {
   app->transit(new Listening(app));
 }
 
+void Sleeping::react(events::Wake *wake) {
+  app->transit(new Listening(app, wake->phrase));
+}
+
 } // namespace state
 } // namespace smartspeaker

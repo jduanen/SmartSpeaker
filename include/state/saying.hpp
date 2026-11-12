@@ -52,6 +52,8 @@ public:
   const char *name() override { return NAME; };
 
   void react(events::TogglePlayback *) override;
+  void react(events::Wake *wake) override;
+  void react(events::StopWord *) override;
   void react(events::voice::ResponseFinished *) override;
   void react(events::voice::Announce *announce) override;
 

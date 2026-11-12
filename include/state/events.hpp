@@ -37,7 +37,14 @@ struct Event {
 // Audio Input Events
 // ===========================================================================
 
-struct Wake : Event {};
+struct Wake : Event {
+  std::string phrase; // sent to HA as wake_word_phrase
+
+  Wake(std::string phrase) : phrase(std::move(phrase)) {}
+};
+
+/** The "stop" word, heard during a reply, announcement or timer ring. */
+struct StopWord : Event {};
 
 struct InputFrame : Event {
   AudioFrame frame;

@@ -54,6 +54,7 @@ public:
   // otherwise you won't get any error when you add new event classes
   // and forget to declare them here
   virtual void react(events::Wake *);
+  virtual void react(events::StopWord *);
   virtual void react(events::InputFrame *input_frame);
   virtual void react(events::AdjustVolume *adjust_volume);
   virtual void react(events::TogglePlayback *);

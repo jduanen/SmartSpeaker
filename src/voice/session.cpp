@@ -15,6 +15,7 @@
 #include <string.h>
 
 #include "app.hpp"
+#include "audio/audioinput.hpp"
 #include "esphome/api.pb.h"
 #include "esphome/api_ids.h"
 #include "pb_decode.h"
@@ -204,17 +205,46 @@ bool VoiceSession::handle(uint32_t type, const uint8_t *payload, size_t len) {
     }
 
     case MSG_VOICE_ASSISTANT_CONFIGURATION_REQUEST: {
-      // No on-device wake words yet (Phase 5)
+      // voice_assistant.cpp get_configuration(): one active wake word
+      WakeWord *ww = app->audio_input->wake_word();
+      const auto &infos = ww->available();
+      std::vector<VoiceAssistantWakeWord> words(infos.size());
+      std::vector<std::vector<char *>> languages(infos.size());
+      for (size_t i = 0; i < infos.size(); i++) {
+        for (const auto &lang : infos[i].languages)
+          languages[i].push_back(s(lang.c_str()));
+        words[i] = VoiceAssistantWakeWord_init_zero;
+        words[i].id = s(infos[i].id.c_str());
+        words[i].wake_word = s(infos[i].phrase.c_str());
+        words[i].trained_languages_count = languages[i].size();
+        words[i].trained_languages = languages[i].data();
+      }
+      std::string active = ww->active();
+      char *active_ids[] = {s(active.c_str())};
+
       VoiceAssistantConfigurationResponse resp =
           VoiceAssistantConfigurationResponse_init_zero;
+      resp.available_wake_words_count = words.size();
+      resp.available_wake_words = words.data();
+      resp.active_wake_words_count = active.empty() ? 0 : 1;
+      resp.active_wake_words = active_ids;
+      resp.max_active_wake_words = words.empty() ? 0 : 1;
       client(MSG_VOICE_ASSISTANT_CONFIGURATION_RESPONSE,
              VoiceAssistantConfigurationResponse_fields, &resp);
       return true;
     }
 
-    case MSG_VOICE_ASSISTANT_SET_CONFIGURATION:
-      g_message("Ignoring wake word configuration until Phase 5");
+    case MSG_VOICE_ASSISTANT_SET_CONFIGURATION: {
+      VoiceAssistantSetConfiguration req =
+          VoiceAssistantSetConfiguration_init_zero;
+      if (!decode(VoiceAssistantSetConfiguration_fields, payload, len, &req))
+        return true;
+      // an empty list would mean no wake word; keep the current one
+      if (req.active_wake_words_count > 0 && req.active_wake_words[0])
+        app->audio_input->wake_word()->set_active(req.active_wake_words[0]);
+      pb_release(VoiceAssistantSetConfiguration_fields, &req);
       return true;
+    }
 
     default:
       return false;
