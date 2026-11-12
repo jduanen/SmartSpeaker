@@ -1,0 +1,1 @@
+LoupVaillant/Monocypher 4.0.3 (commit ab2b16dd619ad5f6979a4fbe69cfa324a6fcc35f), src/monocypher.{c,h}; X25519 and ChaCha20-Poly1305 for the ESPHome Noise transport.
