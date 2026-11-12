@@ -1,0 +1,2 @@
+espressif/esp-tflite-micro v1.3.3.1 (commit 78e5532e682d3863a3c2985c3a74eed0a9ebaa61), the version ESPHome micro_wake_word pins.
+Trimmed: tests, testing/, examples, tools, ESP-NN kernels and signal/ sources removed (signal/micro/kernels headers kept for micro_ops.h); reference kernels are used.
