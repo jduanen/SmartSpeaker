@@ -69,7 +69,7 @@ void Saying::react(events::voice::ResponseFinished *) {
 
   bool follow_up = announcement ? start_conversation
                                 : app->voice->continue_conversation();
-  if (follow_up)
+  if (follow_up && !app->mic_muted)
     app->transit(new Listening(app, true));
   else
     app->transit(new Sleeping(app));

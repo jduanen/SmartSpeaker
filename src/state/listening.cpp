@@ -71,6 +71,14 @@ void Listening::react(events::TogglePlayback *) {
   app->transit(new Sleeping(app));
 }
 
+void Listening::react(events::ToggleMute *mute) {
+  State::react(mute);
+  if (app->mic_muted) {
+    app->voice->stop();
+    app->transit(new Sleeping(app));
+  }
+}
+
 void Listening::react(events::voice::VadEnd *) {
   app->transit(new Processing(app));
 }

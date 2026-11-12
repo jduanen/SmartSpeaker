@@ -26,6 +26,7 @@
 #include "audio/audioinput.hpp"
 #include "audio/audiovolume.hpp"
 #include "esphome/server.hpp"
+#include "leds.hpp"
 
 #undef G_LOG_DOMAIN
 #define G_LOG_DOMAIN "smartspeaker::state::State"
@@ -65,6 +66,7 @@ void State::react(events::AdjustVolume *adjust_volume) {
   app->audio_volume_controller->adjust_volume(
       adjust_volume->delta * AudioVolumeController::VOLUME_DELTA);
   app->esphome->entities.media_player_changed();
+  app->leds->show_volume(app->audio_volume_controller->get_volume() / 100.0f);
 }
 
 void State::react(events::TogglePlayback *) {
@@ -77,9 +79,18 @@ void State::react(events::Panic *) {
   app->transit(new Sleeping(app));
 }
 
-void State::react(events::ToggleDisabled *) {
-  g_message("DISABLING...");
-  app->transit(new Disabled(app));
+void State::react(events::ToggleMute *) {
+  app->set_mic_muted(!app->mic_muted);
+}
+
+void State::react(events::ButtonPress *press) {
+  app->esphome->entities.fire_button_event(press->type);
+  if (press->type == "double_press")
+    app->play_feedback(Sound_t::BUTTON_DOUBLE);
+  else if (press->type == "triple_press")
+    app->play_feedback(Sound_t::BUTTON_TRIPLE);
+  else if (press->type == "long_press")
+    app->play_feedback(Sound_t::BUTTON_LONG);
 }
 
 void State::react(events::ToggleConfigMode *) {
@@ -105,6 +116,7 @@ void State::react(events::voice::RunEnd *) {}
 void State::react(events::voice::Error *error) {
   g_warning("Voice pipeline error in state %s: %s (%s)", name(),
             error->message.c_str(), error->code.c_str());
+  app->leds->show_error();
 }
 
 void State::react(events::voice::Announce *announce) {

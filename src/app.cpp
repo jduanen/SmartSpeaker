@@ -72,6 +72,20 @@ int smartspeaker::App::exec(int argc, char *argv[]) {
   return EXIT_SUCCESS;
 }
 
+void smartspeaker::App::set_mic_muted(bool muted) {
+  mic_muted = muted;
+  g_message("Microphone %s", muted ? "muted" : "unmuted");
+  audio_input->set_muted(muted);
+  leds->set_muted(muted);
+  esphome->entities.set_mic_muted(muted);
+  play_feedback(muted ? Sound_t::MUTE_ON : Sound_t::MUTE_OFF);
+}
+
+void smartspeaker::App::play_feedback(Sound_t sound) {
+  if (mixer->announce.state() != Source::State::PLAYING)
+    audio_player->play_sound(sound);
+}
+
 gboolean smartspeaker::App::sigint_handler(gpointer data) {
   GMainLoop *loop = static_cast<GMainLoop *>(data);
   g_main_loop_quit(loop);

@@ -46,6 +46,8 @@ public:
   void wake();
   void sleep();
   WakeWord *wake_word() { return wakeword.get(); }
+  /** Mic mute: no wake word detection and no frames. Thread-safe. */
+  void set_muted(bool m) { muted = m; }
 
 private:
   // initialized once and never overwritten
@@ -56,6 +58,7 @@ private:
   // thread safe, accessed from both threads
   std::thread input_thread;
   std::atomic<State> state;
+  std::atomic<bool> muted{false};
 
   // only accessed from the input thread
   int32_t pv_frame_length;

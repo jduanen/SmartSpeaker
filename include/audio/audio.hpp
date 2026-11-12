@@ -53,6 +53,11 @@ enum class Sound_t {
   WORKING,
   STT_ERROR,
   TOO_MUCH_INPUT,
+  MUTE_ON,
+  MUTE_OFF,
+  BUTTON_DOUBLE,
+  BUTTON_TRIPLE,
+  BUTTON_LONG,
 };
 
 enum class AudioTaskType {

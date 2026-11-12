@@ -59,7 +59,8 @@ public:
   virtual void react(events::AdjustVolume *adjust_volume);
   virtual void react(events::TogglePlayback *);
   virtual void react(events::Panic *);
-  virtual void react(events::ToggleDisabled *);
+  virtual void react(events::ToggleMute *);
+  virtual void react(events::ButtonPress *press);
   virtual void react(events::ToggleConfigMode *);
   virtual void react(events::voice::VadEnd *);
   virtual void react(events::voice::TtsUrl *tts);

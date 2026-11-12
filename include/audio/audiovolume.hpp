@@ -41,7 +41,7 @@ public:
 
   static const int MAX_VOLUME = 100;
   static const int MIN_VOLUME = 0;
-  static const int VOLUME_DELTA = 10;
+  static const int VOLUME_DELTA = 5; // VOL± keys
 
 private:
   App *app;

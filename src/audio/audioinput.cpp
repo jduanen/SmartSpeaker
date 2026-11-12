@@ -80,7 +80,7 @@ void smartspeaker::AudioInput::sleep() {
 void smartspeaker::AudioInput::loop_waiting() {
   AudioFrame new_frame = input->read_frame(pv_frame_length);
 
-  if (new_frame.length == 0) {
+  if (new_frame.length == 0 || muted) {
     return;
   }
 
@@ -101,7 +101,7 @@ void smartspeaker::AudioInput::loop_waiting() {
 void smartspeaker::AudioInput::loop_listening() {
   AudioFrame new_frame = input->read_frame(pv_frame_length);
 
-  if (new_frame.length == 0) {
+  if (new_frame.length == 0 || muted) {
     return;
   }
 

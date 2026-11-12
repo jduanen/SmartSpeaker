@@ -14,6 +14,7 @@
 #include <string.h>
 
 #include "app.hpp"
+#include "leds.hpp"
 #include "config.h"
 #include "config.hpp"
 #include "esphome/api.pb.h"
@@ -216,6 +217,7 @@ void Server::close(Connection *c) {
   if (c == voice_client) {
     voice_client = nullptr;
     app->voice->set_client(nullptr);
+    app->leds->set_connected(false);
   }
   connections.remove(c);
   g_io_stream_close(G_IO_STREAM(c->conn), nullptr, nullptr);
@@ -316,11 +318,13 @@ void Server::handle(Connection *c, uint32_t type, const uint8_t *payload,
         g_message("Client %s subscribed to the voice assistant", c->peer.c_str());
         voice_client = c;
         app->voice->set_client(reply);
+        app->leds->set_connected(true);
       } else if (c == voice_client) {
         g_message("Client %s unsubscribed from the voice assistant",
                   c->peer.c_str());
         voice_client = nullptr;
         app->voice->set_client(nullptr);
+        app->leds->set_connected(false);
       }
       break;
     }

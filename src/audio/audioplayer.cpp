@@ -49,6 +49,16 @@ gboolean smartspeaker::AudioPlayer::play_sound(enum Sound_t id,
       return play_location(app->config->sound_working, destination);
     case Sound_t::STT_ERROR:
       return play_location(app->config->sound_stt_error, destination);
+    case Sound_t::MUTE_ON:
+      return play_location(app->config->sound_mute_on, destination);
+    case Sound_t::MUTE_OFF:
+      return play_location(app->config->sound_mute_off, destination);
+    case Sound_t::BUTTON_DOUBLE:
+      return play_location(app->config->sound_button_double, destination);
+    case Sound_t::BUTTON_TRIPLE:
+      return play_location(app->config->sound_button_triple, destination);
+    case Sound_t::BUTTON_LONG:
+      return play_location(app->config->sound_button_long, destination);
   }
   return false;
 }

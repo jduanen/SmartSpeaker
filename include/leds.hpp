@@ -1,22 +1,11 @@
 /*
-*
-*/
-
-// This file is part of Genie
-//
-// Copyright 2021 The Board of Trustees of the Leland Stanford Junior University
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//    http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
+ * SmartSpeaker: the 12-LED ring
+ *
+ * Derived from Genie's leds.hpp (Copyright 2021 The Board of Trustees of the
+ * Leland Stanford Junior University, Apache License 2.0). The phases, their
+ * priority and their animations follow Satellite1's led_ring.yaml, scaled
+ * from 24 LEDs to 12.
+ */
 
 #pragma once
 
@@ -24,65 +13,71 @@
 
 namespace smartspeaker {
 
+/** The app's phase; overlays (no HA, volume, error, mute) are separate. */
 enum class LedsState_t {
   Starting,
   Sleeping,
   Listening,
   Processing,
   Saying,
+  Ringing,
   Config,
-  Error,
-  NetError,
-  Disabled,
-  Last
 };
-
-enum class LedsAnimation_t { None, Solid, Circular, Pulse };
 
 class Leds {
 public:
-  Leds(App *appInstance);
+  static const int COUNT = 12;
+
+  Leds(App *app);
   ~Leds();
   int init();
 
-  void animate(enum LedsState_t state);
+  void animate(LedsState_t state);
+  /** HA subscribed to the voice assistant; before the first time, "init". */
+  void set_connected(bool connected);
+  void set_muted(bool muted);
+  /** Show the volume bar (0..1) for a second. */
+  void show_volume(float volume);
+  /** Red pulse for two seconds. */
+  void show_error();
 
-protected:
-  void animate_internal(LedsAnimation_t style, int color = 0, int duration = 0);
-  bool set_user(bool enabled);
-  int get_brightness_internal(bool max);
-  bool set_brightness(int level);
-  bool set_leds();
-
-  void clear(int color = 0);
-  void solid(int color);
-  void circular(int color);
-  void pulse();
-
-  static gboolean update_circular(gpointer data);
-  static gboolean update_pulse(gpointer data);
+  /** The "LED ring" light: idle color and the phases' accent color. */
+  void set_ring(bool on, float brightness, float r, float g, float b);
+  bool ring_on() const { return ring.on; }
+  float ring_brightness() const { return ring.brightness; }
+  float ring_red() const { return ring.r; }
+  float ring_green() const { return ring.g; }
+  float ring_blue() const { return ring.b; }
 
 private:
-  bool initialized;
-  App *app;
-  gchar *ctrl_path_base;
-  gchar *ctrl_path_brightness;
-  gchar *ctrl_path_all;
-  int *leds;
-  int led_count;
-  int max_brightness;
+  struct Ring {
+    bool on;
+    float brightness, r, g, b;
+  };
 
-  int base_color;
-  int brightness;
+  App *const app;
+  bool initialized = false;
+  gchar *path_all = nullptr;
 
-  int step_circular;
-  int color_circular;
-  bool update_timer_circular;
+  LedsState_t state = LedsState_t::Starting;
+  bool connected = false;
+  bool ever_connected = false;
+  bool muted = false;
+  Ring ring = {false, 0.66f, 0.094f, 0.733f, 0.949f};
+  float volume = 0;
+  gint64 volume_until = 0; // monotonic us
+  gint64 error_until = 0;
 
-  int step_bright;
-  int bright_direction;
-  bool update_timer_pulse;
-  guint pulse_source = 0;
+  guint timer = 0;
+  unsigned tick = 0;
+  int spin = 0; // where the listening spin left off
+  float twinkle[COUNT] = {};
+  int last[COUNT];
+
+  void update();
+  static gboolean on_tick(gpointer data);
+  bool render(int frame[COUNT]);
+  void write(const int frame[COUNT]);
 };
 
 } // namespace smartspeaker

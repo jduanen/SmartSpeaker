@@ -48,6 +48,7 @@ public:
 
   void react(events::InputFrame *input_frame) override;
   void react(events::TogglePlayback *) override;
+  void react(events::ToggleMute *) override;
   void react(events::voice::VadEnd *) override;
   void react(events::voice::TtsUrl *tts) override;
   void react(events::voice::RunEnd *) override;

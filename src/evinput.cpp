@@ -59,35 +59,83 @@ gboolean smartspeaker::EVInput::event_dispatch(GSource *g_source, GSourceFunc ca
   while ((rc = read(source->event_poll_fd.fd, &ev, sizeof(ev))) ==
          (ssize_t)sizeof(ev)) {
     g_debug("Event type %d, code %d, value %d", ev.type, ev.code, ev.value);
-    // Dispatch key events
-    if (ev.type == EV_KEY && ev.value == 0) {
-      // For key constant names/values see:
-      //
-      // https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h
-      //
-      switch (ev.code) {
-        case KEY_VOLUMEUP:
-          ev_input->app->dispatch(new state::events::AdjustVolume(1));
-          break;
-        case KEY_VOLUMEDOWN:
-          ev_input->app->dispatch(new state::events::AdjustVolume(-1));
-          break;
-        case KEY_MUTE:
-          ev_input->app->dispatch(new state::events::ToggleDisabled());
-          break;
-        case KEY_PLAYPAUSE:
-          ev_input->app->dispatch(new state::events::TogglePlayback());
-          break;
-        default:
-          g_warning("Unhandled button up event, code=%d", ev.code);
-          break;
-      }
+    // Dispatch key events (value 1 = down, 2 = autorepeat, 0 = up)
+    if (ev.type != EV_KEY)
+      continue;
+    // For key constant names/values see:
+    //
+    // https://github.com/torvalds/linux/blob/master/include/uapi/linux/input-event-codes.h
+    //
+    switch (ev.code) {
+      case KEY_VOLUMEUP:
+      case KEY_VOLUMEDOWN:
+        if (ev.value != 0)
+          ev_input->app->dispatch(new state::events::AdjustVolume(
+              ev.code == KEY_VOLUMEUP ? 1 : -1));
+        break;
+      case KEY_MUTE:
+        if (ev.value == 1)
+          ev_input->app->dispatch(new state::events::ToggleMute());
+        break;
+      case KEY_PLAYPAUSE:
+        if (ev.value != 2)
+          ev_input->playpause(ev.value == 1);
+        break;
+      default:
+        if (ev.value == 1)
+          g_warning("Unhandled key, code=%d", ev.code);
+        break;
     }
   }
   if (rc < 0 && errno != EAGAIN)
     g_print("source read failed %s\n", strerror(errno));
 
   return callback(user_data);
+}
+
+void smartspeaker::EVInput::playpause(bool down) {
+  if (down) {
+    if (gap_timer) {
+      // another click of the same sequence
+      g_source_remove(gap_timer);
+      gap_timer = 0;
+    }
+    long_fired = false;
+    long_timer = g_timeout_add(LONG_PRESS_MS, on_long_press, this);
+    return;
+  }
+  if (long_timer) {
+    g_source_remove(long_timer);
+    long_timer = 0;
+  }
+  if (long_fired) {
+    long_fired = false; // the release of a long press
+    return;
+  }
+  clicks++;
+  gap_timer = g_timeout_add(CLICK_GAP_MS, on_click_gap, this);
+}
+
+gboolean smartspeaker::EVInput::on_long_press(gpointer data) {
+  EVInput *self = static_cast<EVInput *>(data);
+  self->long_timer = 0;
+  self->long_fired = true;
+  self->clicks = 0;
+  self->app->dispatch(new state::events::ButtonPress("long_press"));
+  return G_SOURCE_REMOVE;
+}
+
+gboolean smartspeaker::EVInput::on_click_gap(gpointer data) {
+  EVInput *self = static_cast<EVInput *>(data);
+  self->gap_timer = 0;
+  if (self->clicks == 1)
+    self->app->dispatch(new state::events::TogglePlayback());
+  else if (self->clicks == 2)
+    self->app->dispatch(new state::events::ButtonPress("double_press"));
+  else if (self->clicks == 3)
+    self->app->dispatch(new state::events::ButtonPress("triple_press"));
+  self->clicks = 0;
+  return G_SOURCE_REMOVE;
 }
 
 gboolean smartspeaker::EVInput::callback(gpointer user_data) {

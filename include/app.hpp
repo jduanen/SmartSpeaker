@@ -15,7 +15,6 @@
 
 #include "audio/audio.hpp"
 
-#include "state/disabled.hpp"
 #include "state/events.hpp"
 #include "state/listening.hpp"
 #include "state/processing.hpp"
@@ -50,7 +49,6 @@ class App {
   friend class state::Saying;
   friend class state::Ringing;
   friend class state::Config;
-  friend class state::Disabled;
   friend class esphome::Entities;
   friend class AudioPlayer;
   friend class AudioVolumeController;
@@ -126,6 +124,13 @@ private:
   std::unique_ptr<Leds> leds;
   std::unique_ptr<esphome::Server> esphome;
   std::unique_ptr<VoiceSession> voice;
+
+  // Mic mute (MUTE key, HA switch): no wake word, no Assist; everything
+  // else, timers and announcements included, keeps working. Main loop only.
+  bool mic_muted = false;
+  void set_mic_muted(bool muted);
+  /** Button/mute feedback, unless a reply, announcement or ring is playing. */
+  void play_feedback(Sound_t sound);
 
 
   state::State *current_state;

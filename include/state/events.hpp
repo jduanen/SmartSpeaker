@@ -65,7 +65,15 @@ struct TogglePlayback : Event {};
 
 struct Panic : Event {};
 
-struct ToggleDisabled : Event {};
+/** MUTE key or the HA "Mute microphone" switch. */
+struct ToggleMute : Event {};
+
+/** PLAYPAUSE double_press, triple_press or long_press (an HA event). */
+struct ButtonPress : Event {
+  std::string type;
+
+  ButtonPress(std::string type) : type(std::move(type)) {}
+};
 
 struct ToggleConfigMode : Event {};
 

@@ -41,6 +41,8 @@ public:
   // Called by the app when device-side state changes
   void set_mic_muted(bool muted);
   void media_player_changed();
+  /** The "Button press" event entity: double/triple/long_press. */
+  void fire_button_event(const std::string &type);
 
   bool wake_sound() const { return wake_sound_; }
 
@@ -52,10 +54,6 @@ private:
   bool mic_muted = false;
   bool wake_sound_ = true;
   bool media_muted = false;
-
-  bool led_on = true;
-  float led_brightness = 0.66f;
-  float led_red = 0.09f, led_green = 0.73f, led_blue = 1.0f;
 
   void push_media_player();
   void push_switch(uint32_t key, bool state);

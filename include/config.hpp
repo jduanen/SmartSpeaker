@@ -66,24 +66,9 @@ public:
   // Leds Defaults
   // -------------------------------------------------------------------------
 
-  static const constexpr char *DEFAULT_LEDS_STARTING_EFFECT = "pulse";
-  static const constexpr char *DEFAULT_LEDS_STARTING_COLOR = "0000ff";
-  static const constexpr char *DEFAULT_LEDS_SLEEPING_EFFECT = "none";
-  static const constexpr char *DEFAULT_LEDS_SLEEPING_COLOR = "000000";
-  static const constexpr char *DEFAULT_LEDS_LISTENING_EFFECT = "pulse";
-  static const constexpr char *DEFAULT_LEDS_LISTENING_COLOR = "ffffff";
-  static const constexpr char *DEFAULT_LEDS_PROCESSING_EFFECT = "circular";
-  static const constexpr char *DEFAULT_LEDS_PROCESSING_COLOR = "ffffff";
-  static const constexpr char *DEFAULT_LEDS_SAYING_EFFECT = "pulse";
-  static const constexpr char *DEFAULT_LEDS_SAYING_COLOR = "00ff00";
-  static const constexpr char *DEFAULT_LEDS_CONFIG_EFFECT = "pulse";
-  static const constexpr char *DEFAULT_LEDS_CONFIG_COLOR = "0000ff";
-  static const constexpr char *DEFAULT_LEDS_ERROR_EFFECT = "pulse";
-  static const constexpr char *DEFAULT_LEDS_ERROR_COLOR = "ff0000";
-  static const constexpr char *DEFAULT_LEDS_NET_ERROR_EFFECT = "circular";
-  static const constexpr char *DEFAULT_LEDS_NET_ERROR_COLOR = "ffa500";
-  static const constexpr char *DEFAULT_LEDS_DISABLED_EFFECT = "solid";
-  static const constexpr char *DEFAULT_LEDS_DISABLED_COLOR = "ff0000";
+  // the "LED ring" light; Satellite1's default color (HA blue)
+  static const constexpr char *DEFAULT_LEDS_RING_COLOR = "17bbf2";
+  static constexpr double DEFAULT_LEDS_RING_BRIGHTNESS = 0.66;
 
   Config();
   ~Config();
@@ -144,6 +129,11 @@ public:
   gchar *sound_working;
   gchar *sound_stt_error;
   gchar *sound_too_much_input;
+  gchar *sound_mute_on;
+  gchar *sound_mute_off;
+  gchar *sound_button_double;
+  gchar *sound_button_triple;
+  gchar *sound_button_long;
 
   // Buttons
   // -------------------------------------------------------------------------
@@ -157,31 +147,15 @@ public:
   gchar *leds_type;
   gchar *leds_path;
 
-  gint leds_starting_effect;
-  gint leds_starting_color;
-  gint leds_sleeping_effect;
-  gint leds_sleeping_color;
-  gint leds_listening_effect;
-  gint leds_listening_color;
-  gint leds_processing_effect;
-  gint leds_processing_color;
-  gint leds_saying_effect;
-  gint leds_saying_color;
-  gint leds_config_effect;
-  gint leds_config_color;
-  gint leds_error_effect;
-  gint leds_error_color;
-  gint leds_net_error_effect;
-  gint leds_net_error_color;
-  gint leds_disabled_effect;
-  gint leds_disabled_color;
+  // the "LED ring" light entity, saved when HA changes it
+  bool leds_ring_on;
+  int leds_ring_color; // 0xRRGGBB
+  double leds_ring_brightness;
 
 protected:
 private:
   GKeyFile *key_file = nullptr;
 
-  int get_leds_effect_string(const char *section, const char *key,
-                             const gchar *default_value);
   int get_dec_color_from_hex_string(const char *section, const char *key,
                                     const gchar *default_value);
   gchar *get_string(const char *section, const char *key,

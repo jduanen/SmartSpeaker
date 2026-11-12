@@ -24,6 +24,7 @@
 #include "app.hpp"
 #include "audio/audioplayer.hpp"
 #include "audio/audiovolume.hpp"
+#include "audio/mixer.hpp"
 #include "leds.hpp"
 
 #undef G_LOG_DOMAIN
@@ -39,8 +40,12 @@ void Sleeping::enter() {
 }
 
 void Sleeping::react(events::TogglePlayback *) {
-  // push-to-talk; Phase 7 adds stop-timer/stop-music before this
-  app->transit(new Listening(app));
+  // Satellite1 single click, after the states that stop something: pause
+  // the music, else start Assist unless the mic is muted
+  if (app->mixer->media.state() == Source::State::PLAYING)
+    app->mixer->media.pause();
+  else if (!app->mic_muted)
+    app->transit(new Listening(app));
 }
 
 void Sleeping::react(events::Wake *wake) {

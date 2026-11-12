@@ -45,6 +45,18 @@ private:
                                  gpointer user_data);
   static gboolean callback(gpointer user_data);
 
+  // PLAYPAUSE multi-click (HA Voice PE timings): presses under 1 s, gaps
+  // under 0.25 s; a hold of 1 s is a long press
+  static const guint LONG_PRESS_MS = 1000;
+  static const guint CLICK_GAP_MS = 250;
+  guint long_timer = 0;
+  guint gap_timer = 0;
+  int clicks = 0;
+  bool long_fired = false;
+  void playpause(bool down);
+  static gboolean on_long_press(gpointer data);
+  static gboolean on_click_gap(gpointer data);
+
   GSourceFuncs event_funcs = {event_prepare, event_check, event_dispatch,
                               NULL,          NULL,        NULL};
   GSource *source;

@@ -18,7 +18,7 @@ namespace state {
 
 void Ringing::enter() {
   State::enter();
-  app->leds->animate(LedsState_t::Processing); // TODO Phase 7: timer ring LEDs
+  app->leds->animate(LedsState_t::Ringing);
   app->audio_volume_controller->duck();
   app->audio_input->wake_word()->set_stop_enabled(true);
   if (!app->audio_player->play_sound(Sound_t::ALARM_CLOCK_ELAPSED))

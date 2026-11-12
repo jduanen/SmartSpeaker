@@ -23,9 +23,9 @@
 #include "config.hpp"
 #include <glib-unix.h>
 #include <glib.h>
+#include <stdio.h>
 #include <string.h>
 
-#include "leds.hpp"
 #include <memory>
 
 #undef G_LOG_DOMAIN
@@ -54,6 +54,11 @@ smartspeaker::Config::~Config() {
   g_free(sound_working);
   g_free(sound_stt_error);
   g_free(sound_too_much_input);
+  g_free(sound_mute_on);
+  g_free(sound_mute_off);
+  g_free(sound_button_double);
+  g_free(sound_button_triple);
+  g_free(sound_button_long);
   g_free(leds_path);
   g_free(leds_type);
 }
@@ -62,40 +67,6 @@ static inline bool is_key_not_found_error(GError *error) {
   return error->domain == G_KEY_FILE_ERROR &&
          (error->code == G_KEY_FILE_ERROR_GROUP_NOT_FOUND ||
           error->code == G_KEY_FILE_ERROR_KEY_NOT_FOUND);
-}
-
-int smartspeaker::Config::get_leds_effect_string(const char *section, const char *key,
-                                          const char *default_value) {
-  GError *error = NULL;
-  gchar *value = g_key_file_get_string(key_file, section, key, &error);
-  if (error != NULL) {
-    if (is_key_not_found_error(error)) {
-      g_message("Config key [%s] %s missing, using default '%s'", section, key,
-                default_value);
-    } else {
-      g_warning("Failed to load [%s] %s from config file, using default '%s'",
-                section, key, default_value);
-    }
-    g_error_free(error);
-    value = strdup(default_value);
-  }
-
-  int i;
-  if (strcmp(value, "none") == 0) {
-    i = (int)LedsAnimation_t::None;
-  } else if (strcmp(value, "solid") == 0) {
-    i = (int)LedsAnimation_t::Solid;
-  } else if (strcmp(value, "circular") == 0) {
-    i = (int)LedsAnimation_t::Circular;
-  } else if (strcmp(value, "pulse") == 0) {
-    i = (int)LedsAnimation_t::Pulse;
-  } else {
-    g_warning("Failed to parse [%s] %s from config file, using 'none'", section,
-              key);
-    i = (int)LedsAnimation_t::None;
-  }
-  free(value);
-  return i;
 }
 
 int smartspeaker::Config::get_dec_color_from_hex_string(const char *section,
@@ -338,15 +309,25 @@ void smartspeaker::Config::load() {
   wakeword_sensitivity =
       get_string("wakeword", "sensitivity", DEFAULT_WAKEWORD_SENSITIVITY);
 
-  // Sounds (empty disables a sound)
+  // Sounds (empty disables a sound); defaults are the HA Voice PE sounds in
+  // share/sounds
   // =========================================================================
-  sound_wake = get_string("sound", "wake", "");
+  sound_wake = get_string("sound", "wake", "wake_word_triggered.flac");
   sound_no_input = get_string("sound", "no_input", "");
   sound_news_intro = get_string("sound", "news_intro", "");
-  sound_alarm_clock_elapsed = get_string("sound", "alarm_clock_elapsed", "");
+  sound_alarm_clock_elapsed =
+      get_string("sound", "alarm_clock_elapsed", "timer_finished.flac");
   sound_working = get_string("sound", "working", "");
   sound_stt_error = get_string("sound", "stt_error", "");
   sound_too_much_input = get_string("sound", "too_much_input", "");
+  sound_mute_on = get_string("sound", "mute_on", "mute_switch_on.flac");
+  sound_mute_off = get_string("sound", "mute_off", "mute_switch_off.flac");
+  sound_button_double =
+      get_string("sound", "button_double", "center_button_double_press.flac");
+  sound_button_triple =
+      get_string("sound", "button_triple", "center_button_triple_press.flac");
+  sound_button_long =
+      get_string("sound", "button_long", "center_button_long_press.flac");
 
   // Buttons
   // =========================================================================
@@ -382,42 +363,11 @@ void smartspeaker::Config::load() {
       g_clear_error(&error);
     }
 
-    leds_starting_effect = get_leds_effect_string("leds", "starting_effect",
-                                                  DEFAULT_LEDS_STARTING_EFFECT);
-    leds_starting_color = get_dec_color_from_hex_string(
-        "leds", "starting_color", DEFAULT_LEDS_STARTING_COLOR);
-    leds_sleeping_effect = get_leds_effect_string("leds", "sleeping_effect",
-                                                  DEFAULT_LEDS_SLEEPING_EFFECT);
-    leds_sleeping_color = get_dec_color_from_hex_string(
-        "leds", "sleeping_color", DEFAULT_LEDS_SLEEPING_COLOR);
-    leds_listening_effect = get_leds_effect_string(
-        "leds", "listening_effect", DEFAULT_LEDS_LISTENING_EFFECT);
-    leds_listening_color = get_dec_color_from_hex_string(
-        "leds", "listening_color", DEFAULT_LEDS_LISTENING_COLOR);
-    leds_processing_effect = get_leds_effect_string(
-        "leds", "processing_effect", DEFAULT_LEDS_PROCESSING_EFFECT);
-    leds_processing_color = get_dec_color_from_hex_string(
-        "leds", "processing_color", DEFAULT_LEDS_PROCESSING_COLOR);
-    leds_saying_effect = get_leds_effect_string("leds", "saying_effect",
-                                                DEFAULT_LEDS_SAYING_EFFECT);
-    leds_saying_color = get_dec_color_from_hex_string(
-        "leds", "saying_color", DEFAULT_LEDS_SAYING_COLOR);
-    leds_config_effect = get_leds_effect_string("leds", "config_effect",
-                                                DEFAULT_LEDS_CONFIG_EFFECT);
-    leds_config_color = get_dec_color_from_hex_string(
-        "leds", "config_color", DEFAULT_LEDS_CONFIG_COLOR);
-    leds_error_effect = get_leds_effect_string("leds", "error_effect",
-                                               DEFAULT_LEDS_ERROR_EFFECT);
-    leds_error_color = get_dec_color_from_hex_string("leds", "error_color",
-                                                     DEFAULT_LEDS_ERROR_COLOR);
-    leds_net_error_effect = get_leds_effect_string(
-        "leds", "net_error_effect", DEFAULT_LEDS_NET_ERROR_EFFECT);
-    leds_net_error_color = get_dec_color_from_hex_string(
-        "leds", "net_error_color", DEFAULT_LEDS_NET_ERROR_COLOR);
-    leds_disabled_effect = get_leds_effect_string("leds", "disabled_effect",
-                                                  DEFAULT_LEDS_DISABLED_EFFECT);
-    leds_disabled_color = get_dec_color_from_hex_string(
-        "leds", "disabled_color", DEFAULT_LEDS_DISABLED_COLOR);
+    leds_ring_on = get_bool("leds", "ring", false);
+    leds_ring_color =
+        get_dec_color_from_hex_string("leds", "ring_color", DEFAULT_LEDS_RING_COLOR);
+    leds_ring_brightness = get_bounded_double(
+        "leds", "ring_brightness", DEFAULT_LEDS_RING_BRIGHTNESS, 0.0, 1.0);
   } else {
     leds_type = nullptr;
     leds_path = nullptr;

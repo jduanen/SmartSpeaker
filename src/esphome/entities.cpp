@@ -3,9 +3,9 @@
  *
  * Names and options follow the Satellite1 / HA Voice PE configurations.
  * Behavior is wired in as the phases land: mic mute, wake sound, volume,
- * URL playback and wake word sensitivity now; LED ring and button events
- * later. The wake word itself is chosen through the voice assistant
- * configuration messages (VoiceSession), as on ESPHome devices.
+ * URL playback, wake word sensitivity, the LED ring (Leds) and PLAYPAUSE
+ * multi-press events. The wake word itself is chosen through the voice
+ * assistant configuration messages (VoiceSession), as on ESPHome devices.
  */
 
 #include "esphome/entities.hpp"
@@ -17,6 +17,7 @@
 #include "audio/audioinput.hpp"
 #include "audio/audiovolume.hpp"
 #include "audio/mixer.hpp"
+#include "leds.hpp"
 #include "esphome/api.pb.h"
 #include "esphome/api_ids.h"
 #include "pb_decode.h"
@@ -188,13 +189,14 @@ void Entities::push_light() {
   if (!broadcast)
     return;
   LightStateResponse st = LightStateResponse_init_zero;
+  Leds *l = app->leds.get();
   st.key = KEY_LED_RING;
-  st.state = led_on;
-  st.brightness = led_brightness;
+  st.state = l->ring_on();
+  st.brightness = l->ring_brightness();
   st.color_brightness = 1.0f;
-  st.red = led_red;
-  st.green = led_green;
-  st.blue = led_blue;
+  st.red = l->ring_red();
+  st.green = l->ring_green();
+  st.blue = l->ring_blue();
   st.color_mode = ColorMode_COLOR_MODE_RGB;
   broadcast(MSG_LIGHT_STATE_RESPONSE, LightStateResponse_fields, &st);
 }
@@ -208,6 +210,15 @@ void Entities::set_mic_muted(bool muted) {
 
 void Entities::media_player_changed() { push_media_player(); }
 
+void Entities::fire_button_event(const std::string &type) {
+  if (!broadcast)
+    return;
+  EventResponse ev = EventResponse_init_zero;
+  ev.key = KEY_BUTTON;
+  ev.event_type = s(type.c_str());
+  broadcast(MSG_EVENT_RESPONSE, EventResponse_fields, &ev);
+}
+
 bool Entities::handle(uint32_t type, const uint8_t *payload, size_t len) {
   switch (type) {
     case MSG_SWITCH_COMMAND_REQUEST: {
@@ -215,10 +226,9 @@ bool Entities::handle(uint32_t type, const uint8_t *payload, size_t len) {
       if (!decode(SwitchCommandRequest_fields, payload, len, &req))
         return true;
       if (req.key == KEY_MIC_MUTE) {
-        // The Disabled state is mic mute; entering/leaving it calls
-        // set_mic_muted, which pushes the new state.
+        // App::set_mic_muted calls set_mic_muted, which pushes the state
         if (req.state != mic_muted)
-          app->dispatch(new state::events::ToggleDisabled());
+          app->dispatch(new state::events::ToggleMute());
       } else if (req.key == KEY_WAKE_SOUND) {
         wake_sound_ = req.state;
         push_switch(KEY_WAKE_SOUND, wake_sound_);
@@ -242,17 +252,15 @@ bool Entities::handle(uint32_t type, const uint8_t *payload, size_t len) {
       LightCommandRequest req = LightCommandRequest_init_zero;
       if (!decode(LightCommandRequest_fields, payload, len, &req))
         return true;
-      if (req.has_state)
-        led_on = req.state;
-      if (req.has_brightness)
-        led_brightness = req.brightness;
-      if (req.has_rgb) {
-        led_red = req.red;
-        led_green = req.green;
-        led_blue = req.blue;
-      }
+      Leds *l = app->leds.get();
+      bool on = req.has_state ? req.state : l->ring_on();
+      float brightness = req.has_brightness ? req.brightness : l->ring_brightness();
+      float r = req.has_rgb ? req.red : l->ring_red();
+      float g = req.has_rgb ? req.green : l->ring_green();
+      float b = req.has_rgb ? req.blue : l->ring_blue();
+      l->set_ring(on, brightness, r, g, b);
       pb_release(LightCommandRequest_fields, &req);
-      push_light(); // TODO Phase 7: idle color of the LED ring
+      push_light();
       return true;
     }
 

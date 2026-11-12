@@ -56,7 +56,6 @@ _sources = [
   'state/processing.cpp',
   'state/saying.cpp',
   'state/config.cpp',
-  'state/disabled.cpp',
   'state/ringing.cpp',
 
   # Assist voice pipeline
