@@ -35,9 +35,9 @@ This project involves reverse engineering the devices, creating a cross-compilat
   - [x] echo test (`-Ddump_streams=true`, music at volume 19%): AEC converges in ~10 s, then removes 15–33 dB (typ. ~25 dB); no clipping at that volume
   - [x] FLAC from the HA media folder plays over HTTP; HA play/pause/stop/volume work
   - [x] the MP3 failures were the unit not receiving broadcasts (ARP from HA failed; 7–15 s TCP connects); reassociating fixed it, and `scripts/wifi_watchdog.sh` now does that automatically
-  - [ ] playback still takes ~10 s to start for files under `/media/local/Music`
+  - [x] the ~10 s start delay for files under `/media/local/Music` went away once HA's ffmpeg proxy delivers FLAC 48 kHz mono (Phase 6)
   - volume stays on the codec's LINEOUT (not a mixer master gain): the AEC reference is tapped after the amp, so it follows volume
-  - mic gain (MIC1/2 = 6, i.e. 39 dB, from the Genie launcher) will clip at high volume; tune with Phase 6 ducking tests
+  - mic gain (MIC1/2 = 6, i.e. 39 dB, from the Genie launcher) clipped at high volume; lowered to 3 in Phase 6
 - [x] Phase 4 Voice pipeline
   - [x] `src/voice/session.cpp` (`VoiceSession`): VoiceAssistantRequest/Response, mic audio buffered until HA accepts, then streamed as VoiceAssistantAudio; HA pipeline events → state events; ERROR → stop; feature flags VOICE_ASSISTANT|API_AUDIO|TIMERS|ANNOUNCE|START_CONVERSATION
   - [x] states: Sleeping → (PLAYPAUSE) Listening → (STT_VAD_END) Processing → (TTS URL) Saying → Sleeping, or Listening again if `continue_conversation`; Ringing for finished timers; Genie conversation/audio-control events and STT→Genie timing removed
@@ -58,7 +58,15 @@ This project involves reverse engineering the devices, creating a cross-compilat
   - [x] on the unit: 16% of one core idle (was 9% before the wake word), RSS 7.3 MB
   - [x] real voices on the unit: Okay Nabu (0.86–0.94) close, across the room and over music; Hey Mycroft after switching in HA (1.00), choice saved to `[wakeword]`; "stop" cut off a streamed LLM reply 11 s in (0.68)
   - [x] "stop" (0.69) and Okay Nabu (0.92) each silenced a ringing timer 2 s in
-- [ ] Phase 6 Media player, ducking, volume
+- [x] Phase 6 Media player, ducking, volume
+  - [x] `supported_formats`: FLAC, 48 kHz, mono, 16-bit for both media and announcements, so HA's ffmpeg proxy and TTS deliver the mixer's own rate (no resampling, no MP3); Music Assistant reads the same list from HA diagnostics
+  - [x] media_player mute silences all output (`Mixer::set_muted`), as ESPHome's speaker does
+  - [x] media_player announcements (Music Assistant, `play_media` with announce) go through Saying (duck, LEDs, "stop" word) without VoiceAssistantAnnounceFinished
+  - [x] verified with Music Assistant: playback, ducking under a voice question and reply, recovery, mute, announcements, voice replies as FLAC
+  - [x] mono is the hardware: the codec (sun8iw18) has one DAC (DACL); both LINEOUT muxes can only select DACL or nothing, and both drive one amplifier as a pair (muting the right side measured -6 dB with a mic, nothing goes silent). Genie opened the PCM as 2 channels into the same DAC
+  - [x] mic headroom: pink noise at -1 dBFS, mics recorded at LINEOUT 16/22/27/31 (HA volume maps linearly to 0–31). At Genie's MIC1/2 gain 6 (39 dB) the mics compress from LINEOUT ~22 (~70%) and clip above ~27; at gain 3 (30 dB) they stay linear through 27 and only touch full scale at 31. `dcslaunch.sh` now sets 3. The reference (MIC3, 0 dB) touches full scale at 31
+  - [x] wake word and STT across the room at mic gain 3, also with music fairly loud (0.86–0.93)
+  - Music Assistant still streams MP3 44.1 kHz stereo (its per-player output codec); set it to FLAC in MA to skip MP3 decoding and resampling
 - [ ] Phase 7 LEDs, buttons, mute, sounds
 - [ ] Phase 8 Encryption, mDNS, launcher
 
