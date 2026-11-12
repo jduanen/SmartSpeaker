@@ -1,0 +1,46 @@
+# Test for components/baidu_speaker and baidu_media_player, driven over the
+# API (plaintext; test only). With the unit on USB: adb forward tcp:6053
+# tcp:6053, then connect aioesphomeapi to 127.0.0.1.
+# Build from baidu/: scripts/esphome.sh compile tests/baidu_media_player.yaml
+esphome:
+  name: baidu-media-test
+
+host:
+  mac_address: "4A:F3:F3:14:86:A2"
+
+external_components:
+  - source:
+      type: local
+      path: ../components
+
+baidu_host:
+
+logger:
+  level: DEBUG
+
+api:
+
+speaker:
+  - platform: baidu_speaker
+    id: spk
+
+media_player:
+  - platform: baidu_media_player
+    id: player
+    name: Media Player
+    speaker: spk
+    volume_initial: 20%
+    on_announcement:
+      - baidu_speaker.apply_ducking:
+          id: spk
+          decibel_reduction: 20
+    on_state:
+      - if:
+          condition:
+            not:
+              media_player.is_announcing: player
+          then:
+            - baidu_speaker.apply_ducking:
+                id: spk
+                decibel_reduction: 0
+                duration: 1s

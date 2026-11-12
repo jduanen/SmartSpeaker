@@ -1,0 +1,48 @@
+# Test for components/baidu_mic: capture starts at boot and the level of the
+# processed (AEC + noise suppression) signal is logged once a second.
+# Build from baidu/: scripts/esphome.sh compile tests/baidu_mic.yaml
+# (add -s aec false before compile for the raw mics, no AEC/noise suppression)
+substitutions:
+  aec: "true"
+
+esphome:
+  name: baidu-mic-test
+  on_boot:
+    then:
+      - microphone.capture: mic
+
+host:
+  mac_address: "4A:F3:F3:14:86:A2"
+
+external_components:
+  - source:
+      type: local
+      path: ../components
+
+baidu_host:
+
+logger:
+  level: DEBUG
+
+microphone:
+  - platform: baidu_mic
+    id: mic
+    echo_cancellation: ${aec}
+    on_data:
+      - lambda: |-
+          static double sum = 0;
+          static size_t samples = 0, bytes = 0;
+          static uint32_t last = millis();
+          const int16_t *s = reinterpret_cast<const int16_t *>(x.data());
+          for (size_t i = 0; i < x.size() / 2; i++)
+            sum += double(s[i]) * s[i];
+          samples += x.size() / 2;
+          bytes += x.size();
+          if (millis() - last >= 1000) {
+            double rms = samples ? sqrt(sum / samples) : 0;
+            ESP_LOGI("mic_test", "%u bytes/s, rms %.0f (%.1f dBFS)", (unsigned) bytes, rms,
+                     rms > 0 ? 20 * log10(rms / 32768.0) : -120.0);
+            sum = 0;
+            samples = bytes = 0;
+            last = millis();
+          }

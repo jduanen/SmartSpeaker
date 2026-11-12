@@ -56,3 +56,32 @@ int fstat64(int fd, void *buf) {
  * libstdc++ to skip mutex locks in single-threaded programs.
  * 0 = never single-threaded → locks are always taken (safe default). */
 char __libc_single_threaded = 0;
+
+/* pthread_cond_clockwait was added in glibc 2.30; GCC 11's libstdc++ uses it
+ * for std::condition_variable::wait_for/wait_until on steady_clock. Convert
+ * the deadline to CLOCK_REALTIME and use pthread_cond_timedwait. */
+#include <errno.h>
+#include <pthread.h>
+#include <time.h>
+
+int pthread_cond_clockwait(pthread_cond_t *cond, pthread_mutex_t *mutex,
+                           clockid_t clockid, const struct timespec *abstime)
+{
+    struct timespec now, rt;
+    long long ns;
+
+    if (clockid == CLOCK_REALTIME)
+        return pthread_cond_timedwait(cond, mutex, abstime);
+    if (clockid != CLOCK_MONOTONIC)
+        return EINVAL;
+    clock_gettime(CLOCK_MONOTONIC, &now);
+    ns = (long long)(abstime->tv_sec - now.tv_sec) * 1000000000LL +
+         (abstime->tv_nsec - now.tv_nsec);
+    if (ns < 0)
+        ns = 0;
+    clock_gettime(CLOCK_REALTIME, &rt);
+    ns += rt.tv_nsec;
+    rt.tv_sec += ns / 1000000000LL;
+    rt.tv_nsec = ns % 1000000000LL;
+    return pthread_cond_timedwait(cond, mutex, &rt);
+}
