@@ -100,10 +100,14 @@ struct Announce : Event {
   std::string media;
   std::string preannounce;
   bool start_conversation;
+  // false for media_player announcements: HA isn't waiting for
+  // VoiceAssistantAnnounceFinished
+  bool notify_ha;
 
-  Announce(std::string media, std::string preannounce, bool start_conversation)
+  Announce(std::string media, std::string preannounce, bool start_conversation,
+           bool notify_ha = true)
       : media(std::move(media)), preannounce(std::move(preannounce)),
-        start_conversation(start_conversation) {}
+        start_conversation(start_conversation), notify_ha(notify_ha) {}
 };
 
 /** A timer set through Assist ran out. */

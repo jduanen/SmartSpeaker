@@ -33,6 +33,9 @@ public:
   /** Ramp the media gain to `db` (0 = full) over `ramp_ms`. Thread-safe. */
   void duck(float db, unsigned ramp_ms);
 
+  /** HA media_player mute: silences all output, as ESPHome's speaker does. */
+  void set_muted(bool m) { muted = m; }
+
   Source media;
   Source announce;
 
@@ -41,6 +44,7 @@ private:
   snd_pcm_t *pcm = nullptr;
   std::thread thread;
   std::atomic<bool> running;
+  std::atomic<bool> muted{false};
 
   std::mutex duck_lock;
   float duck_target = 1.0f;

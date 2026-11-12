@@ -9,8 +9,10 @@ if [ -z "$(pidof ntpd)" ]; then
 	/usr/bin/start_ntp.sh &
 fi
 amixer -D hw:audiocodec cset name='LINEOUT volume' 4 > /dev/null
-amixer -D hw:audiocodec cset name='MIC1 gain volume' 6.5 > /dev/null
-amixer -D hw:audiocodec cset name='MIC2 gain volume' 6.5 > /dev/null
+# mic preamp step 3 = 30 dB (Genie used 6 = 39 dB, which compresses from
+# ~70% volume and clips the mics above ~85%; see README Phase 6)
+amixer -D hw:audiocodec cset name='MIC1 gain volume' 3 > /dev/null
+amixer -D hw:audiocodec cset name='MIC2 gain volume' 3 > /dev/null
 
 # reassociates WiFi when peers stop reaching us (see the script)
 /opt/ss/bin/wifi_watchdog.sh &

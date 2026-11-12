@@ -43,9 +43,10 @@ public:
       : State{app}, url(std::move(url)), announcement(false) {}
   /** An announcement, optionally preceded by a chime. */
   Saying(App *app, std::string url, std::string preannounce,
-         bool start_conversation)
+         bool start_conversation, bool notify_ha)
       : State{app}, url(std::move(url)), preannounce(std::move(preannounce)),
-        announcement(true), start_conversation(start_conversation) {}
+        announcement(true), start_conversation(start_conversation),
+        notify_ha(notify_ha) {}
 
   void enter() override;
   void exit() override;
@@ -62,6 +63,7 @@ private:
   std::string preannounce;
   bool announcement;
   bool start_conversation = false;
+  bool notify_ha = false; // send VoiceAssistantAnnounceFinished
   bool finished = false;
 };
 

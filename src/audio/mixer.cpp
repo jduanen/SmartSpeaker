@@ -98,6 +98,8 @@ void Mixer::run() {
       int32_t v = (int32_t)lrintf(m[i] * gain) + a[i];
       out[i] = (int16_t)std::max(-32768, std::min(32767, v));
     }
+    if (muted)
+      std::fill(out.begin(), out.end(), 0);
 
     snd_pcm_sframes_t w = snd_pcm_writei(pcm, out.data(), PERIOD);
     if (w < 0) {

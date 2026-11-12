@@ -51,7 +51,7 @@ void Saying::exit() {
   app->audio_input->wake_word()->set_stop_enabled(false);
   if (!finished)
     app->mixer->announce.stop();
-  if (announcement && !finished)
+  if (notify_ha && !finished)
     app->voice->announce_finished(false);
   State::exit();
 }
@@ -64,7 +64,7 @@ void Saying::react(events::voice::ResponseFinished *) {
   }
 
   finished = true;
-  if (announcement)
+  if (notify_ha)
     app->voice->announce_finished(true);
 
   bool follow_up = announcement ? start_conversation
@@ -92,7 +92,7 @@ void Saying::react(events::StopWord *) {
 void Saying::react(events::voice::Announce *announce) {
   // a new announcement replaces the current one
   app->transit(new Saying(app, announce->media, announce->preannounce,
-                          announce->start_conversation));
+                          announce->start_conversation, announce->notify_ha));
 }
 
 } // namespace state

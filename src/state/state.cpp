@@ -109,7 +109,7 @@ void State::react(events::voice::Error *error) {
 
 void State::react(events::voice::Announce *announce) {
   app->transit(new Saying(app, announce->media, announce->preannounce,
-                          announce->start_conversation));
+                          announce->start_conversation, announce->notify_ha));
 }
 
 void State::react(events::voice::TimerFinished *) {

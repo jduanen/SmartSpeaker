@@ -60,7 +60,8 @@ void Disabled::react(events::ToggleDisabled *) {
 void Disabled::react(events::voice::Announce *announce) {
   // no conversation while muted; report it done once it has started
   app->mixer->announce.play(announce->media);
-  app->voice->announce_finished(true);
+  if (announce->notify_ha)
+    app->voice->announce_finished(true);
 }
 
 void Disabled::react(events::voice::TimerFinished *) {

@@ -73,6 +73,17 @@ void Entities::list(const Send &send) {
   mp.name = s("Media Player");
   mp.supports_pause = true;
   mp.feature_flags = MEDIA_FEATURES;
+  // The codec has one DAC, so mono; 48 kHz is the mixer rate. HA's ffmpeg
+  // proxy converts media and announcements to these, and TTS is requested in
+  // the announcement format.
+  MediaPlayerSupportedFormat formats[2] = {
+      {s("flac"), Mixer::RATE, 1,
+       MediaPlayerFormatPurpose_MEDIA_PLAYER_FORMAT_PURPOSE_DEFAULT, 2, 0},
+      {s("flac"), Mixer::RATE, 1,
+       MediaPlayerFormatPurpose_MEDIA_PLAYER_FORMAT_PURPOSE_ANNOUNCEMENT, 2, 0},
+  };
+  mp.supported_formats_count = G_N_ELEMENTS(formats);
+  mp.supported_formats = formats;
   send(MSG_LIST_ENTITIES_MEDIA_PLAYER_RESPONSE,
        ListEntitiesMediaPlayerResponse_fields, &mp);
 
@@ -254,10 +265,10 @@ bool Entities::handle(uint32_t type, const uint8_t *payload, size_t len) {
       if (req.has_command) {
         switch (req.command) {
           case MediaPlayerCommand_MEDIA_PLAYER_COMMAND_MUTE:
-            media_muted = true; // TODO Phase 6: mixer mute
-            break;
           case MediaPlayerCommand_MEDIA_PLAYER_COMMAND_UNMUTE:
-            media_muted = false;
+            media_muted =
+                req.command == MediaPlayerCommand_MEDIA_PLAYER_COMMAND_MUTE;
+            app->mixer->set_muted(media_muted);
             break;
           case MediaPlayerCommand_MEDIA_PLAYER_COMMAND_VOLUME_UP:
             app->audio_volume_controller->increment_volume();
@@ -287,9 +298,11 @@ bool Entities::handle(uint32_t type, const uint8_t *payload, size_t len) {
         }
       }
       if (req.has_media_url && req.media_url) {
-        // TODO Phase 6: duck media during announcements, AnnounceFinished
+        // announcements duck the media and show the Saying LEDs, like
+        // assist_satellite.announce, but HA isn't waiting for a reply
         if (req.has_announcement && req.announcement)
-          app->mixer->announce.play(req.media_url);
+          app->dispatch(new state::events::voice::Announce(
+              req.media_url, "", false, false));
         else
           app->mixer->media.play(req.media_url);
       }
