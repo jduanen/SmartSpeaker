@@ -7,6 +7,12 @@ The goal of this project is to provide the same feature set on both stock (i.e.,
 This project involves the reverse engineering the smart speaker, creating a cross-compilation environment, and building the code needed to implement the
 features of existing HA Voice Satellites (see ~/Code/SensorNet/voiceAssistants/ -- FIXME).
 
+At the top-level of this repo is the C++ application (smartspeaker) that was
+created to meet the given requirements using the Home Assistant (HA) API.
+In the `baidu/` directory there is a version that conforms to the ESPHome
+standards, which allows the app to be configured with a YAML file, managed
+via the HA ESPHome Builder GUI, and updated via the ESPHome's OTA mechanism.
+
 ## Context
 
 ### Baidu Xiaodu XDH-1D-A1 Smart Speaker System Overview
