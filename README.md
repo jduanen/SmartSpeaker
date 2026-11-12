@@ -121,7 +121,7 @@ Entities exposed to HA:
 See [DEVELOPMENT.md](DEVELOPMENT.md)
 
 ## Issues
-- **`/opt` free space on stock is tight.** Our footprint is about 3–5 MB (binary, models, sounds). If space is tight, the DuerOS payload can be moved off-device only after a host backup. Already moved Genie off.
+- **`/opt` free space is tight.** The new footprint is about 3–5 MB (binary, models, sounds). If space is tight, the DuerOS payload can be moved off-device only after a host backup. Already moved Genie off.
 - **speexdsp AEC is weaker than webrtc or XMOS AEC**, and there is no beamforming across the 3 mics. Expect lower wake-word accuracy during loud music. Need to explore alternatives.
 - **ESPHome API drift:** pin the proto version and ignore unknown messages. Try to fix by making it a proper ESPHome device.
 - **Stock and Genie units may fit different LED chips:** make the path configurable, with auto-detect between the two sysfs nodes.
