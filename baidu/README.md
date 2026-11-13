@@ -39,7 +39,7 @@ Differences from Voice PE: no dial, jack, voice kit, Sendspin, improv or factory
 
 ## Install on a unit
 
-Run from `baidu/`, with the unit on adb, its WiFi set up and a backup made (`scripts/setwifi.sh` and `scripts/backup.sh` from the repo root; see the top-level README's install guide):
+Run from `baidu/`, with the unit on adb, its WiFi set up and a backup made (`scripts/setwifi.sh` and `scripts/backup.sh` from the repo root; see the top-level README's install guide). With more than one unit on adb, choose one with `ANDROID_SERIAL=<serial>` (see the top-level README's install guide, step 2; `scripts/adb_unit.sh` is a copy of the repo root's):
 
 ```bash
 scripts/esphome.sh compile baidu-<unit>.yaml
@@ -177,10 +177,14 @@ Tested on 143a00 (2026-11-12): pressing Mute once, Volume Down twice, Volume Up 
 `components/micro_wake_word` overrides ESPHome 2026.10.2's component of the same name, so Voice PE's `micro_wake_word:` YAML (models from the manifests, `on_wake_word_detected`, `voice_assistant: micro_wake_word:`, the `start`/`stop`/`enable_model` actions) works unchanged. Changes from upstream:
 - `__init__.py`: allowed on `host`. On host, instead of the ESP-IDF components, it adds the include paths and `-ltflm -lmicro_speech_features` from `/opt/baidu-tp` in the image.
 - The C++ files are upstream's with `USE_ESP32` guards widened to `USE_HOST`. `freertos_host.h` supplies what the inference task uses (event group, queue, `StaticTask`, `vTaskSuspend`/`vTaskResume`) on std::thread, so the task logic is unchanged. Suspending the task for an OTA is a no-op on host.
+- `neon_kernels.{h,cpp}` (new): NEON int8 `CONV_2D` and `DEPTHWISE_CONV_2D`, which `streaming_model.cpp` registers on host in place of TFLM's. They keep TFLM's Init and Prepare and replace Eval with the reference arithmetic, so the output is bit-identical; other cases (non-int8, grouped conv, depth multiplier ≠ 1) go to TFLM's Eval. The reference kernels recompute a 4-D index per multiply-add (about 75 cycles each on the Cortex-A7) and took 90% of an inference.
+- The audio threads are named (`mww`, `baidu_mic`, `baidu_speaker`) for `top -H`.
 
 The libraries are built into the `baidu-esphome` image by `third_party/build.sh` (run from the Dockerfile): TFLite Micro from `third_party/tflite-micro`, the esp-tflite-micro version ESPHome pins (copied from the C++ app's `third_party`, reference kernels instead of ESP-NN), and the spectrogram frontend from `third_party/micro_speech_features`, v1.2.3, the version ESPHome now pins (the C++ app has v1.1.0). Re-check both when changing the pinned ESPHome version.
 
 Tested on 143a00 (2026-11-12, 802.11b-only WiFi) with `baidu-xdh-1d-a1.yaml` (Okay Nabu, Hey Jarvis, Hey Mycroft; the first enabled): "Okay Nabu" detected at a sliding-average probability of 0.97 to 0.99, `voice_assistant` ran the session (including HA's follow-up question, "What day is it?" → "It's Thursday, November 12 2026."), and detection restarted when it ended. While detecting, the whole process used 17% of one core and 6.8 MB RSS (4 threads); the C++ app used 16% in total. The reference kernels are the likely cost; ESP-NN is ESP32-only.
+
+With the NEON kernels (2026-11-13): a test program running each model with both kernel sets on the same random input for 3,000 inferences found no output difference, and one inference took 161 µs instead of 1,659 (Okay Nabu), 138 instead of 1,477 (Hey Jarvis), 143 instead of 1,640 (Hey Mycroft) and 112 instead of 1,240 (Stop). A model runs every 30 ms. In the app the `mww` thread went from 7.0% to 1.9% of a core and the process from 17.4% to 12.3%; the rest is mostly `baidu_mic` (Speex echo cancellation and noise suppression, 9.5%). Before, the wake word logged `Not enough free bytes in ring buffer` about ten times in a day, several during CPU-heavy WiFi tests.
 
 ### `baidu_mdns`
 
