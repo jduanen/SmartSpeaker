@@ -1,0 +1,704 @@
+# Stock unit probe
+# date: 2026-11-12T23:59:42Z  serial: XDHM1P1GG0324M1C7O0366783
+
+### cat /etc/openwrt_release /etc/os-release 2>/dev/null; uname -a
+DISTRIB_ID='tina.wyg.20210324.071216'
+DISTRIB_RELEASE='Neptune'
+DISTRIB_REVISION='5C1C9C53'
+DISTRIB_TARGET='drum-baidu_metal/generic v2.1'
+DISTRIB_DESCRIPTION='tina.wyg.20210324.071216 3.0.8'
+DISTRIB_TAINTS='no-all no-ipv6 glibc busybox'
+Linux TinaLinux 4.9.118 #64 SMP Wed Mar 24 07:12:48 UTC 2021 armv7l GNU/Linux
+
+### ps w
+  PID USER       VSZ STAT COMMAND
+    1 0         2928 S    /sbin/init
+    2 0            0 SW   [kthreadd]
+    3 0            0 SW   [ksoftirqd/0]
+    4 0            0 SW   [kworker/0:0]
+    5 0            0 SW<  [kworker/0:0H]
+    6 0            0 SW   [kworker/u4:0]
+    7 0            0 SW   [rcu_sched]
+    8 0            0 SW   [rcu_bh]
+    9 0            0 SW   [migration/0]
+   10 0            0 SW<  [lru-add-drain]
+   11 0            0 SW   [cpuhp/0]
+   12 0            0 SW   [cpuhp/1]
+   13 0            0 SW   [migration/1]
+   14 0            0 SW   [ksoftirqd/1]
+   16 0            0 SW<  [kworker/1:0H]
+   17 0            0 SW   [kdevtmpfs]
+  126 0            0 SW   [kworker/u4:2]
+  257 0            0 SW   [oom_reaper]
+  258 0            0 SW<  [writeback]
+  260 0            0 SW<  [crypto]
+  261 0            0 SW<  [bioset]
+  263 0            0 SW<  [kblockd]
+  306 0            0 SW   [kworker/0:1]
+  308 0            0 SW<  [cfg80211]
+  409 0            0 SW   [kswapd0]
+  410 0            0 SW<  [vmstat]
+  534 0            0 RW   [kworker/1:1]
+  544 0            0 SW<  [bioset]
+  545 0            0 SW   [nand]
+  546 0            0 SW   [nftld]
+  558 0            0 SW   [nand_rcd]
+  612 0            0 SW   [rc0]
+  619 0            0 SW<  [btfwwork]
+  620 0            0 SW   [cfinteractive]
+  621 0            0 SW   [autohotplug]
+  625 0            0 SW   [irq/165-sunxi-m]
+  659 0            0 SW<  [krfcommd]
+  676 0            0 SW<  [kworker/0:1H]
+  677 0            0 SW<  [kworker/1:1H]
+  699 0            0 SW   [jbd2/nand0p8-8]
+  700 0            0 SW<  [ext4-rsv-conver]
+  709 0            0 SW   [kworker/1:2]
+  712 0            0 SW   [jbd2/nand0p9-8]
+  713 0            0 SW<  [ext4-rsv-conver]
+  742 0            0 SW   [ksdioirqd/mmc0]
+  782 0        45120 R    /bin/adbd -D
+  789 0         2928 S    /sbin/syslogd -n -m 0 -s 256 -b 1
+  790 0         2928 S    /sbin/klogd -n
+  815 0         2928 S    sh /usr/bin/start_ntp.sh
+  847 0         3052 S    -/bin/sh
+  859 0            0 DW   [RTW_XMIT_THREAD]
+  860 0            0 DW   [RTW_CMD_THREAD]
+  861 0            0 DW   [RTWHALXT]
+  865 0         3252 S    wpa_supplicant -Dnl80211 -i wlan0 -s -c /data/wifi/wpa_supplicant.conf
+ 1748 0            0 SW   [kworker/1:0]
+ 2466 0         2796 S    sleep 1
+ 2470 0            0 SW   [kworker/u4:1]
+ 2472 0         2928 S    /bin/sh -c ps w
+ 2474 0         3052 R    ps w
+
+### cat /opt/duer/dcslaunch.sh
+cat: can't open '/opt/duer/dcslaunch.sh': No such file or directory
+
+### ls -lR /opt/duer | head -100
+ls: /opt/duer: No such file or directory
+
+### df
+Filesystem           1K-blocks      Used Available Use% Mounted on
+/dev/root                16384     16384         0 100% /
+devtmpfs                 60684         0     60684   0% /dev
+tmpfs                    92160        40     92120   0% /tmp
+/dev/by-name/app         45588        40     44524   0% /opt
+/dev/by-name/UDISK        8991       149      8636   2% /data
+/dev/by-name/private       123         5       119   4% /private
+
+### free
+             total       used       free     shared    buffers     cached
+Mem:        121644      32920      88724         40       6632      11552
+-/+ buffers/cache:      14736     106908
+Swap:            0          0          0
+
+### ls /etc/init.d /etc/rc.d
+/etc/init.d:
+[1;32mS20urandom[0m        [1;32madbd[0m              [1;32mntpd[0m              [1;32msshd[0m
+[1;32mS42wifi[0m           [1;32mdbus[0m              [0;0mrc.final[0m          [1;32msyslog[0m
+[1;32mS44bluetooth[0m      [1;32mdhcpcd[0m            [0;0mrc.modules[0m        [1;32msysntpd[0m
+[1;32mS45ntpd[0m           [1;32mload_script.conf[0m  [0;0mrc.preboot[0m
+[1;32mS48bdinfo[0m         [1;32mnetwork[0m           [1;32mrcS[0m
+
+/etc/rc.d:
+[1;36mK50sshd[0m       [1;36mK90network[0m    [1;36mS10dbus[0m       [1;36mS20network[0m    [1;36mS50syslog-ng[0m
+[1;36mK85dhcpcd[0m     [1;36mK99adbd[0m       [1;36mS11syslog[0m     [1;36mS30dhcpcd[0m     [1;36mS80adbd[0m
+[1;36mK89log[0m        [1;36mK99dbus[0m       [1;36mS12log[0m        [1;36mS50sshd[0m       [1;36mS98sysntpd[0m
+
+### cat /etc/inittab
+null::sysinit:/bin/mount -o remount,rw /
+null::sysinit:/bin/mkdir -p /dev/pts
+null::sysinit:/bin/mount -a
+::sysinit:/etc/init.d/rcS boot
+/dev/console::respawn:-/bin/sh
+::ctrlaltdel:/sbin/reboot
+null::shutdown:/bin/umount -a -r
+
+### cat /proc/asound/cards /proc/asound/pcm
+ 0 [audiocodec     ]: audiocodec - audiocodec
+                      audiocodec
+ 1 [snddaudio2     ]: snddaudio2 - snddaudio2
+                      snddaudio2
+00-00: SUNXI-CODEC sun8iw18codec-0 :  : playback 1 : capture 1
+01-00: SUNXI-AUDIO snd-soc-dummy-dai-0 :  : playback 1 : capture 1
+
+### amixer -D hw:audiocodec contents
+numid=10,iface=MIXER,name='Lineout Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=off
+numid=7,iface=MIXER,name='ADC gain volume'
+  ; type=INTEGER,access=rw---R--,values=1,min=0,max=7,step=0
+  : values=4
+  | dBscale-min=-4.50dB,step=1.50dB,mute=0
+numid=9,iface=MIXER,name='External Speaker Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=on
+numid=6,iface=MIXER,name='LINEOUT volume'
+  ; type=INTEGER,access=rw---R--,values=1,min=0,max=31,step=0
+  : values=27
+  | dBrange-
+    rangemin=0,,rangemax=0
+      | dBscale-min=0.00dB,step=0.00dB,mute=1
+    rangemin=1,,rangemax=31
+      | dBscale-min=-43.50dB,step=1.50dB,mute=1
+
+numid=14,iface=MIXER,name='Left Input Mixer DACL Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=off
+numid=13,iface=MIXER,name='Left Input Mixer MIC1 Boost Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=on
+numid=12,iface=MIXER,name='Left Input Mixer MIC2 Boost Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=off
+numid=11,iface=MIXER,name='Left Input Mixer MIC3 Boost Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=off
+numid=23,iface=MIXER,name='Left LINEOUT Mux'
+  ; type=ENUMERATED,access=rw------,values=1,items=2
+  ; Item #0 'DACL'
+  ; Item #1 'DAC_NULL'
+  : values=0
+numid=3,iface=MIXER,name='MIC1 gain volume'
+  ; type=INTEGER,access=rw---R--,values=1,min=0,max=7,step=0
+  : values=1
+  | dBrange-
+    rangemin=0,,rangemax=0
+      | dBscale-min=0.00dB,step=0.00dB,mute=0
+    rangemin=1,,rangemax=7
+      | dBscale-min=24.00dB,step=3.00dB,mute=0
+
+numid=4,iface=MIXER,name='MIC2 gain volume'
+  ; type=INTEGER,access=rw---R--,values=1,min=0,max=7,step=0
+  : values=1
+  | dBrange-
+    rangemin=0,,rangemax=0
+      | dBscale-min=0.00dB,step=0.00dB,mute=0
+    rangemin=1,,rangemax=7
+      | dBscale-min=24.00dB,step=3.00dB,mute=0
+
+numid=5,iface=MIXER,name='MIC3 gain volume'
+  ; type=INTEGER,access=rw---R--,values=1,min=0,max=7,step=0
+  : values=0
+  | dBrange-
+    rangemin=0,,rangemax=0
+      | dBscale-min=0.00dB,step=0.00dB,mute=0
+    rangemin=1,,rangemax=7
+      | dBscale-min=24.00dB,step=3.00dB,mute=0
+
+numid=18,iface=MIXER,name='Right Input Mixer DACL Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=off
+numid=17,iface=MIXER,name='Right Input Mixer MIC1 Boost Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=off
+numid=16,iface=MIXER,name='Right Input Mixer MIC2 Boost Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=on
+numid=15,iface=MIXER,name='Right Input Mixer MIC3 Boost Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=off
+numid=24,iface=MIXER,name='Right LINEOUT Mux'
+  ; type=ENUMERATED,access=rw------,values=1,items=2
+  ; Item #0 'DAC_NULL'
+  ; Item #1 'DACL'
+  : values=1
+numid=8,iface=MIXER,name='Spk PA Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=off
+numid=22,iface=MIXER,name='Xadc Input Mixer DACL Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=off
+numid=21,iface=MIXER,name='Xadc Input Mixer MIC1 Boost Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=off
+numid=20,iface=MIXER,name='Xadc Input Mixer MIC2 Boost Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=off
+numid=19,iface=MIXER,name='Xadc Input Mixer MIC3 Boost Switch'
+  ; type=BOOLEAN,access=rw------,values=1
+  : values=on
+numid=30,iface=MIXER,name='alarm'
+  ; type=INTEGER,access=rw---RW-,values=2,min=0,max=255,step=0
+  : values=255,255
+  | dBscale-min=-62.00dB,step=0.19dB,mute=0
+numid=28,iface=MIXER,name='bt'
+  ; type=INTEGER,access=rw---RW-,values=2,min=0,max=255,step=0
+  : values=255,255
+  | dBscale-min=-62.00dB,step=0.19dB,mute=0
+numid=1,iface=MIXER,name='codec hub mode'
+  ; type=ENUMERATED,access=rw------,values=1,items=3
+  ; Item #0 'null'
+  ; Item #1 'hub_disable'
+  ; Item #2 'hub_enable'
+  : values=1
+numid=26,iface=MIXER,name='default'
+  ; type=INTEGER,access=rw---RW-,values=2,min=0,max=255,step=0
+  : values=255,255
+  | dBscale-min=-62.00dB,step=0.19dB,mute=0
+numid=2,iface=MIXER,name='digital volume'
+  ; type=INTEGER,access=rw---R--,values=1,min=0,max=63,step=0
+  : values=0
+  | dBscale-min=-74.24dB,step=1.16dB,mute=0
+numid=25,iface=MIXER,name='hd'
+  ; type=INTEGER,access=rw---RW-,values=2,min=0,max=255,step=0
+  : values=255,255
+  | dBscale-min=-62.00dB,step=0.19dB,mute=0
+numid=29,iface=MIXER,name='tip'
+  ; type=INTEGER,access=rw---RW-,values=2,min=0,max=255,step=0
+  : values=255,255
+  | dBscale-min=-62.00dB,step=0.19dB,mute=0
+numid=27,iface=MIXER,name='voice'
+  ; type=INTEGER,access=rw---RW-,values=2,min=0,max=255,step=0
+  : values=255,255
+  | dBscale-min=-62.00dB,step=0.19dB,mute=0
+
+### cat /proc/bus/input/devices
+I: Bus=0019 Vendor=0001 Product=0001 Version=0100
+N: Name="sunxi-keyboard"
+P: Phys=sunxikbd/input0
+S: Sysfs=/devices/virtual/input/input0
+U: Uniq=
+H: Handlers=kbd event0 autohotplug 
+B: PROP=0
+B: EV=3
+B: KEY=10 0 e0000 0 0 0
+
+I: Bus=0019 Vendor=0001 Product=0001 Version=0100
+N: Name="sunxi-gpadc3"
+P: Phys=sunxigpadc3/input0
+S: Sysfs=/devices/virtual/input/input1
+U: Uniq=
+H: Handlers=event1 
+B: PROP=0
+B: EV=11
+B: MSC=10
+
+I: Bus=0019 Vendor=0001 Product=0001 Version=0100
+N: Name="sunxi_gpio_ir"
+P: Phys=sunxi_gpio_ir/input0
+S: Sysfs=/devices/platform/soc/soc@03000000:gpio-ir/rc/rc0/input2
+U: Uniq=
+H: Handlers=kbd event2 autohotplug 
+B: PROP=0
+B: EV=100013
+B: KEY=1000000 0 0 0 0
+B: MSC=10
+
+I: Bus=0000 Vendor=0000 Product=0000 Version=0000
+N: Name="MCE IR Keyboard/Mouse (sunxi-gpio-rc)"
+P: Phys=/input0
+S: Sysfs=/devices/virtual/input/input3
+U: Uniq=
+H: Handlers=sysrq kbd event3 
+B: PROP=0
+B: EV=100017
+B: KEY=30000 0 7 ff87207a c14057ff febeffdf ffefffff ffffffff fffffffe
+B: REL=3
+B: MSC=10
+
+
+### ls /sys/class/leds/
+[1;36misled01[0m
+
+### ls /usr/lib | grep -E "curl|speex|glib|gio|asound|ssl|stdc"
+libasound.so.2
+libasound.so.2.0.0
+libcurl.so
+libcurl.so.4
+libcurl.so.4.4.0
+libcurl.so.4.5.0
+libcurl.so.5
+libcurl.so.5.4
+libgio-2.0.so.0
+libgio-2.0.so.0.5000.1
+libglib-2.0.so.0
+libglib-2.0.so.0.5000.1
+libspeexdsp.so.1
+libspeexdsp.so.1.5.0
+libssl.so
+libssl.so.1.0.0
+libssl.so.1.1
+
+### fw_printenv
+boot_fastboot=fastboot
+boot_normal=sunxi_flash read 40007800 ${boot_partition};bootm 40007800
+boot_partition=bootA
+boot_recovery=sunxi_flash read 40007800 recovery;bootm 40007800
+bootcmd=run setargs_nand boot_normal
+bootdelay=0
+console=ttyS0,115200
+earlyprintk=sunxi-uart,0x05000000
+fastboot_key_value_max=0x8
+fastboot_key_value_min=0x2
+fdtcontroladdr=46b08e88
+gpt=1
+init=/pseudo_init
+loglevel=8
+mmc_root=/dev/mmcblk0p7
+nand_root=/dev/nand0p3
+nor_root=/dev/mtdblock4
+rdinit=/rdinit
+recovery_key_value_max=0x13
+recovery_key_value_min=0x10
+root_partition=rootfsA
+rootfsA=rootfsA
+rootfsB=rootfsB
+setargs_mmc=setenv bootargs earlyprintk=${earlyprintk} console=${console} root=${mmc_root} rootwait init=${init} rdinit=${rdinit} loglevel=${loglevel} partitions=${partitions} cma=${cma} gpt=${gpt}
+setargs_nand=setenv bootargs earlyprintk=${earlyprintk} console=${console} root=${nand_root} rootwait init=${init} rdinit=${rdinit} loglevel=${loglevel} partitions=${partitions} cma=${cma} gpt=${gpt}
+setargs_nor=setenv bootargs earlyprintk=${earlyprintk} console=${console} root=${nor_root} rootwait init=${init} rdinit=${rdinit} loglevel=${loglevel} partitions=${partitions} cma=${cma}
+systemA=bootA
+systemAB_next=A
+systemAB_now=A
+systemB=bootB
+silent_update=0
+
+### ls -l /dev/watchdog* 2>&1; cat /proc/sys/kernel/watchdog 2>&1
+ls: /dev/watchdog*: No such file or directory
+cat: can't open '/proc/sys/kernel/watchdog': No such file or directory
+
+### ls /etc/crontabs 2>&1; cat /etc/crontabs/* 2>&1
+cat: can't open '/etc/crontabs/*': No such file or directory
+
+### find /opt/duer /usr/bin /usr/sbin /etc -iname "*ota*" -o -iname "*upgrade*" -o -iname "*update*" -o -iname "*swupdate*" -o -iname "*watchdog*" 2>/dev/null
+/usr/bin/ota-burnboot0
+/usr/bin/ota-burnuboot
+/usr/bin/ota_verify.sh
+
+### grep -l -i -E "ota|upgrade|swupdate" /opt/duer/*.sh /etc/init.d/* 2>/dev/null
+/etc/init.d/rc.final
+/etc/init.d/rcS
+
+### for d in /sys/class/leds/*; do echo "== $d"; ls $d; cat $d/user_space 2>/dev/null; done
+== /sys/class/leds/isled01
+[0;0mbrightness[0m         [0;0mmax_brightness[0m     [0;0mset_one_led_color[0m  [0;0muevent[0m
+[1;36mdevice[0m             [1;34mpower[0m              [1;36msubsystem[0m          [0;0muser_space[0m
+[0;0meffect[0m             [0;0mset_all_led_color[0m  [0;0mtrigger[0m
+
+### ls -l /dev/input/
+crw-rw----    1 0        0          13,  64 Jan  1 08:00 [1;35mevent0[0m
+crw-rw----    1 0        0          13,  65 Jan  1 08:00 [1;35mevent1[0m
+crw-rw----    1 0        0          13,  66 Jan  1 08:00 [1;35mevent2[0m
+crw-rw----    1 0        0          13,  67 Jan  1 08:00 [1;35mevent3[0m
+
+### arecord -D hw:audiocodec --dump-hw-params -d 1 -f S16_LE -r 48000 /dev/null 2>&1
+Recording WAVE '/dev/null' : Signed 16 bit Little Endian, Rate 48000 Hz, Mono
+HW Params of device "hw:audiocodec":
+--------------------
+ACCESS:  MMAP_INTERLEAVED RW_INTERLEAVED
+FORMAT:  S16_LE S24_LE
+SUBFORMAT:  STD
+SAMPLE_BITS: [16 32]
+FRAME_BITS: [16 96]
+CHANNELS: [1 3]
+RATE: (0 4294967295]
+PERIOD_TIME: (0 4294967295]
+PERIOD_SIZE: [22 65536]
+PERIOD_BYTES: [256 131072]
+PERIODS: [1 8]
+BUFFER_TIME: (0 4294967295]
+BUFFER_SIZE: [22 131072]
+BUFFER_BYTES: [256 262144]
+TICK_TIME: ALL
+--------------------
+
+### aplay -L 2>&1; arecord -L 2>&1
+null
+    Discard all samples (playback) or generate zero samples (capture)
+sysdefault:CARD=audiocodec
+    audiocodec, 
+    Default Audio Device
+sysdefault:CARD=snddaudio2
+    snddaudio2, 
+    Default Audio Device
+null
+    Discard all samples (playback) or generate zero samples (capture)
+sysdefault:CARD=audiocodec
+    audiocodec, 
+    Default Audio Device
+sysdefault:CARD=snddaudio2
+    snddaudio2, 
+    Default Audio Device
+
+### cat /etc/asound.conf 2>&1
+pcm.!default {
+  type plug
+  slave {
+    pcm {
+      type softvol
+      slave.pcm awequal
+      control{
+        name "default"
+        card 0
+      }
+      min_dB -62.0
+      max_dB -12.0
+      dev_vol_10 "-62,-56,-50,-44,-38,-33,-28,-24,-20,-16,-12"
+    }
+    channels 2
+    format S16_LE
+    rate 48000
+  }
+}
+
+pcm.factory {
+  type plug
+  slave {
+    pcm {
+      type softvol
+      slave.pcm "plug:dmixer"
+      control{
+        name "factory"
+        card 0
+      }
+      min_dB -62.0
+      max_dB -12.0
+      dev_vol_10 "-62,-56,-50,-44,-38,-33,-28,-24,-20,-16,-12"
+    }
+    channels 2
+    format S16_LE
+    rate 48000
+  }
+}
+
+pcm.voice {
+  type plug
+  slave {
+    pcm {
+      type softvol
+      slave.pcm "plug:dmixer"
+      control{
+        name "voice"
+        card 0
+      }
+      min_dB -62.0
+      max_dB -12.0
+      dev_vol_10 "-62,-56,-50,-44,-38,-33,-28,-24,-20,-16,-12"
+    }
+    channels 2
+    format S16_LE
+    rate 48000
+  }
+}
+
+pcm.bt {
+  type plug
+  slave {
+    pcm {
+      type softvol
+      slave.pcm plugequal_bt
+      control{
+        name "bt"
+        card 0
+      }
+      min_dB -62.0
+      max_dB -12.0
+      dev_vol_10 "-62,-56,-50,-44,-38,-33,-28,-24,-20,-16,-12"
+    }
+    channels 2
+    format S16_LE
+    rate 48000
+  }
+}
+
+pcm.tip {
+  type plug
+  slave {
+    pcm {
+      type softvol
+      slave.pcm "plug:dmixer"
+      control{
+        name "tip"
+        card 0
+      }
+      min_dB -62.0
+      max_dB -12.0
+      dev_vol_10 "-62,-56,-50,-44,-38,-33,-28,-24,-20,-16,-12"
+    }
+    channels 2
+    format S16_LE
+    rate 48000
+  }
+}
+
+pcm.hd {
+  type plug
+  slave {
+    pcm {
+      type softvol
+      slave.pcm "plug:dmixer"
+      control{
+        name "hd"
+        card 0
+      }
+      min_dB -62.0
+      max_dB -12.0
+      dev_vol_10 "-62,-56,-50,-44,-38,-33,-28,-24,-20,-16,-12"
+    }
+    channels 2
+    format S16_LE
+    rate 48000
+  }
+}
+
+
+pcm.alarm {
+  type plug
+  slave {
+    pcm {
+      type softvol
+      slave.pcm "plug:dmixer"
+      control{
+        name "alarm"
+        card 0
+      }
+      min_dB -62.0
+      max_dB -12.0
+      dev_vol_10 "-62,-56,-50,-44,-38,-33,-28,-24,-20,-16,-12"
+    }
+    channels 2
+    format S16_LE
+    rate 48000
+  }
+}
+
+pcm.dmixer  {
+   type dmix
+   ipc_key 1024
+   ipc_perm 0666
+   slave {
+      pcm "hw:0,0"
+      format S16_LE
+      period_time 0
+      period_size 1024
+      buffer_size 8192
+      rate 48000
+      channels 1
+   }
+}
+
+pcm.bt_dmixer  {
+   type dmix
+   ipc_key 1024
+   ipc_perm 0666
+   slave {
+      pcm "hw:0,0"
+      format S16_LE
+      period_time 0
+      period_size 1024
+      buffer_size 8192
+      rate 48000
+      channels 1
+   }
+}
+
+pcm.CaptureAec {
+    type hooks
+    slave.pcm "hw:audiocodec,0"
+    hooks.0 {
+        type ctl_elems
+        hook_args [
+            {
+                name "Left Input Mixer MIC1 Boost Switch"
+                optional true
+                value 1
+            }
+            {
+                name "Right Input Mixer MIC2 Boost Switch"
+                optional true
+                value 1
+            }
+            {
+                name "Xadc Input Mixer MIC3 Boost Switch"
+                optional true
+                value 1
+            }
+            {
+                name "ADC gain volume"
+                optional true
+                value 4
+            }
+            {
+                name "MIC1 gain volume"
+                optional true
+                value 1
+            }
+            {
+                name "MIC2 gain volume"
+                optional true
+                value 1
+            }
+            {
+                name "MIC3 gain volume"
+                optional true
+                value 0
+            }
+        ]
+    }
+}
+
+pcm.plugequal {
+    type awequal
+    slave.pcm "plug:dmixer";
+}
+
+pcm.awequal{
+    type plug;
+    slave.pcm plugequal;
+}
+pcm.awequal_bt {
+    type awequal
+    slave.pcm "plug:bt_dmixer";
+}
+
+pcm.plugequal_bt {
+    type plug
+    slave {
+        pcm "awequal_bt"
+        channels 2
+    }
+}
+
+
+
+
+
+### df -h /opt /data /tmp
+Filesystem                Size      Used Available Use% Mounted on
+/dev/by-name/app         44.5M     40.0K     43.5M   0% /opt
+/dev/by-name/UDISK        8.8M    149.0K      8.4M   2% /data
+tmpfs                    90.0M     40.0K     90.0M   0% /tmp
+
+### ls -l /dev/by-name/; cat /proc/partitions
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mUDISK[0m -> [1;35m/dev/nand0p9[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mapp[0m -> [1;35m/dev/nand0p8[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mbootA[0m -> [1;35m/dev/nand0p4[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mbootB[0m -> [1;35m/dev/nand0p6[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36menv[0m -> [1;35m/dev/nand0p1[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mprivate[0m -> [1;35m/dev/nand0p2[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mpstore[0m -> [1;35m/dev/nand0p3[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mrootfsA[0m -> [1;35m/dev/nand0p5[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mrootfsB[0m -> [1;35m/dev/nand0p7[0m
+major minor  #blocks  name
+
+  93        0     114688 nand0
+  93        1        128 nand0p1
+  93        2        128 nand0p2
+  93        3        512 nand0p3
+  93        4       4096 nand0p4
+  93        5      20480 nand0p5
+  93        6       4096 nand0p6
+  93        7      20480 nand0p7
+  93        8      54272 nand0p8
+  93        9      10351 nand0p9
+
+### cat /data/wifi/wpa_supplicant.conf | sed "s/psk=.*/psk=<redacted>/"
+ctrl_interface=/var/run/wpa_supplicant
+update_config=1
+network={
+    scan_ssid=1
+    key_mgmt=WPA-PSK
+    ssid="Home"
+    psk=<redacted>
+}

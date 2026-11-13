@@ -1,5 +1,5 @@
 # Stock unit probe
-# date: 2026-11-11T01:27:40Z  serial: XDHM1P1GG0324M1C7R0369971
+# date: 2026-11-12T23:59:42Z  serial: XDHM1P1GG0324M1C7O0366783
 
 ### cat /etc/openwrt_release /etc/os-release 2>/dev/null; uname -a
 DISTRIB_ID='tina.wyg.20210324.071216'
@@ -12,130 +12,85 @@ Linux TinaLinux 4.9.118 #64 SMP Wed Mar 24 07:12:48 UTC 2021 armv7l GNU/Linux
 
 ### ps w
   PID USER       VSZ STAT COMMAND
-    1 root      2928 S    /sbin/init
-    2 root         0 SW   [kthreadd]
-    3 root         0 SW   [ksoftirqd/0]
-    4 root         0 SW   [kworker/0:0]
-    5 root         0 SW<  [kworker/0:0H]
-    6 root         0 SW   [kworker/u4:0]
-    7 root         0 SW   [rcu_sched]
-    8 root         0 SW   [rcu_bh]
-    9 root         0 SW   [migration/0]
-   10 root         0 SW<  [lru-add-drain]
-   11 root         0 SW   [cpuhp/0]
-   12 root         0 SW   [cpuhp/1]
-   13 root         0 SW   [migration/1]
-   14 root         0 SW   [ksoftirqd/1]
-   15 root         0 SW   [kworker/1:0]
-   16 root         0 SW<  [kworker/1:0H]
-   17 root         0 SW   [kdevtmpfs]
-   18 root         0 SW   [kworker/u4:1]
-  124 root         0 SW   [kworker/u4:2]
-  257 root         0 SW   [oom_reaper]
-  258 root         0 SW<  [writeback]
-  260 root         0 SW<  [crypto]
-  261 root         0 SW<  [bioset]
-  263 root         0 SW<  [kblockd]
-  306 root         0 SW   [kworker/0:1]
-  307 root         0 SW<  [cfg80211]
-  392 root         0 SW   [kworker/1:1]
-  410 root         0 SW   [kswapd0]
-  411 root         0 SW<  [vmstat]
-  544 root         0 SW<  [bioset]
-  545 root         0 SW   [nand]
-  546 root         0 SW   [nftld]
-  558 root         0 SW   [nand_rcd]
-  612 root         0 SW   [rc0]
-  619 root         0 SW<  [btfwwork]
-  620 root         0 SW   [cfinteractive]
-  621 root         0 SW   [autohotplug]
-  625 root         0 SW   [irq/165-sunxi-m]
-  658 root         0 SW<  [krfcommd]
-  674 root         0 SW   [kworker/0:2]
-  676 root         0 SW<  [kworker/0:1H]
-  677 root         0 SW<  [kworker/1:1H]
-  700 root         0 SW   [jbd2/nand0p8-8]
-  701 root         0 SW<  [ext4-rsv-conver]
-  706 root      2928 S    {rcS} /bin/sh /etc/init.d/rcS boot
-  712 root         0 SW   [jbd2/nand0p9-8]
-  713 root         0 SW<  [ext4-rsv-conver]
-  742 root         0 SW   [ksdioirqd/mmc0]
-  782 root     45120 S    /bin/adbd -D
-  794 root      2928 S    /sbin/syslogd -n -m 0 -s 256 -b 1
-  795 root      2928 S    /sbin/klogd -n
-  800 root      2928 S    sh /usr/bin/start_ntp.sh
-  848 root      2540 S    /usr/sbin/dbus-daemon --system
-  856 root      2928 S    {dcslaunch.sh} /bin/bash /opt/duer/dcslaunch.sh
-  858 root      2928 S    {start_ntp.sh} /bin/sh /usr/bin/start_ntp.sh
-  873 root      4680 S    /usr/sbin/sshd
-  879 root      613m S<   ./pulseaudio --start -v -F /opt/genie/.system.pa -p /opt/genie/lib/pulseaudio --exit-idle-time=-1 --log-t
-  884 root      571m R    ./genie-client
-  893 root         0 DW   [RTW_XMIT_THREAD]
-  894 root         0 DW   [RTW_CMD_THREAD]
-  895 root         0 DW   [RTWHALXT]
-  902 root      3252 S    wpa_supplicant -Dnl80211 -i wlan0 -s -c /data/wifi/wpa_supplicant.conf
-  904 root         0 SW   [kworker/1:2]
-  922 root      2928 S    udhcpc -i wlan0 -x hostname:Xiaodu-AudioSpeaker
- 1234 root      2796 S    sleep 1
- 1237 root      2796 S    sleep 1
- 1242 root      2928 S    /bin/sh -c ps w
- 1244 root      3052 R    ps w
+    1 0         2928 S    /sbin/init
+    2 0            0 SW   [kthreadd]
+    3 0            0 SW   [ksoftirqd/0]
+    4 0            0 SW   [kworker/0:0]
+    5 0            0 SW<  [kworker/0:0H]
+    6 0            0 SW   [kworker/u4:0]
+    7 0            0 SW   [rcu_sched]
+    8 0            0 SW   [rcu_bh]
+    9 0            0 SW   [migration/0]
+   10 0            0 SW<  [lru-add-drain]
+   11 0            0 SW   [cpuhp/0]
+   12 0            0 SW   [cpuhp/1]
+   13 0            0 SW   [migration/1]
+   14 0            0 SW   [ksoftirqd/1]
+   16 0            0 SW<  [kworker/1:0H]
+   17 0            0 SW   [kdevtmpfs]
+  126 0            0 SW   [kworker/u4:2]
+  257 0            0 SW   [oom_reaper]
+  258 0            0 SW<  [writeback]
+  260 0            0 SW<  [crypto]
+  261 0            0 SW<  [bioset]
+  263 0            0 SW<  [kblockd]
+  306 0            0 SW   [kworker/0:1]
+  308 0            0 SW<  [cfg80211]
+  409 0            0 SW   [kswapd0]
+  410 0            0 SW<  [vmstat]
+  534 0            0 RW   [kworker/1:1]
+  544 0            0 SW<  [bioset]
+  545 0            0 SW   [nand]
+  546 0            0 SW   [nftld]
+  558 0            0 SW   [nand_rcd]
+  612 0            0 SW   [rc0]
+  619 0            0 SW<  [btfwwork]
+  620 0            0 SW   [cfinteractive]
+  621 0            0 SW   [autohotplug]
+  625 0            0 SW   [irq/165-sunxi-m]
+  659 0            0 SW<  [krfcommd]
+  676 0            0 SW<  [kworker/0:1H]
+  677 0            0 SW<  [kworker/1:1H]
+  699 0            0 SW   [jbd2/nand0p8-8]
+  700 0            0 SW<  [ext4-rsv-conver]
+  709 0            0 SW   [kworker/1:2]
+  712 0            0 SW   [jbd2/nand0p9-8]
+  713 0            0 SW<  [ext4-rsv-conver]
+  742 0            0 SW   [ksdioirqd/mmc0]
+  782 0        45120 R    /bin/adbd -D
+  789 0         2928 S    /sbin/syslogd -n -m 0 -s 256 -b 1
+  790 0         2928 S    /sbin/klogd -n
+  815 0         2928 S    sh /usr/bin/start_ntp.sh
+  847 0         3052 S    -/bin/sh
+  859 0            0 DW   [RTW_XMIT_THREAD]
+  860 0            0 DW   [RTW_CMD_THREAD]
+  861 0            0 DW   [RTWHALXT]
+  865 0         3252 S    wpa_supplicant -Dnl80211 -i wlan0 -s -c /data/wifi/wpa_supplicant.conf
+ 1748 0            0 SW   [kworker/1:0]
+ 2466 0         2796 S    sleep 1
+ 2470 0            0 SW   [kworker/u4:1]
+ 2472 0         2928 S    /bin/sh -c ps w
+ 2474 0         3052 R    ps w
 
 ### cat /opt/duer/dcslaunch.sh
-#!/bin/bash
-cd /opt/genie
-export TZ=UTC
-export HOME=/opt/genie
-if [ -z "$(pidof ntpd)" ]; then
-	/usr/bin/start_ntp.sh &
-fi
-amixer -D hw:audiocodec cset name='LINEOUT volume' 9
-amixer -D hw:audiocodec cset name='MIC1 gain volume' 6.5
-amixer -D hw:audiocodec cset name='MIC2 gain volume' 6.5
-
-export GIO_EXTRA_MODULES=/opt/genie/lib/gio/modules
-export LD_LIBRARY_PATH=/opt/genie/lib/pulseaudio:/opt/genie/lib/:/lib:/usr/lib
-export GST_REGISTRY_UPDATE=no
-export GST_PLUGIN_PATH=/opt/genie/lib/gstreamer-1.0
-export GST_PLUGIN_SCANNER=/opt/genie/lib/gstreamer-1.0/gst-plugin-scanner
-export XDG_CONFIG_HOME=/tmp/.config
-
-mkdir -p /tmp/.config
-if ! grep -qE '^backend=alsa' config.ini ; then
-	./pulseaudio --start -v -F /opt/genie/.system.pa -p /opt/genie/lib/pulseaudio --exit-idle-time=-1 --log-target=file:/tmp/pa.log
-fi
-
-RET=1
-while [ $RET -ne 0 ]; do
-	if test "$1" = "--gdb" ; then
-		exec /tmp/bin/gdbserver 0.0.0.0:${GDB_PORT:-1234} ./genie-client
-	elif test "$1" = "--no-daemon" ; then
-		exec ./genie-client
-	else
-		./genie-client >>/tmp/genie.log 2>&1
-	fi
-	RET=$?
-done
-
-exit $RET
+cat: can't open '/opt/duer/dcslaunch.sh': No such file or directory
 
 ### ls -lR /opt/duer | head -100
-/opt/duer:
--rwxr-xr-x    1 root     root          1081 Dec  3 07:52 dcslaunch.sh
+ls: /opt/duer: No such file or directory
 
 ### df
 Filesystem           1K-blocks      Used Available Use% Mounted on
 /dev/root                16384     16384         0 100% /
 devtmpfs                 60684         0     60684   0% /dev
-tmpfs                    92160       232     91928   0% /tmp
-/dev/by-name/app         45588     43084      1480  97% /opt
-/dev/by-name/UDISK        8991       154      8631   2% /data
+tmpfs                    92160        40     92120   0% /tmp
+/dev/by-name/app         45588        40     44524   0% /opt
+/dev/by-name/UDISK        8991       149      8636   2% /data
 /dev/by-name/private       123         5       119   4% /private
 
 ### free
              total       used       free     shared    buffers     cached
-Mem:        121644      69632      52012        780       6964      32360
--/+ buffers/cache:      30308      91336
+Mem:        121644      32920      88724         40       6632      11552
+-/+ buffers/cache:      14736     106908
 Swap:            0          0          0
 
 ### ls /etc/init.d /etc/rc.d
@@ -181,7 +136,7 @@ numid=9,iface=MIXER,name='External Speaker Switch'
   : values=on
 numid=6,iface=MIXER,name='LINEOUT volume'
   ; type=INTEGER,access=rw---R--,values=1,min=0,max=31,step=0
-  : values=9
+  : values=27
   | dBrange-
     rangemin=0,,rangemax=0
       | dBscale-min=0.00dB,step=0.00dB,mute=1
@@ -207,7 +162,7 @@ numid=23,iface=MIXER,name='Left LINEOUT Mux'
   : values=0
 numid=3,iface=MIXER,name='MIC1 gain volume'
   ; type=INTEGER,access=rw---R--,values=1,min=0,max=7,step=0
-  : values=6
+  : values=1
   | dBrange-
     rangemin=0,,rangemax=0
       | dBscale-min=0.00dB,step=0.00dB,mute=0
@@ -216,7 +171,7 @@ numid=3,iface=MIXER,name='MIC1 gain volume'
 
 numid=4,iface=MIXER,name='MIC2 gain volume'
   ; type=INTEGER,access=rw---R--,values=1,min=0,max=7,step=0
-  : values=6
+  : values=1
   | dBrange-
     rangemin=0,,rangemax=0
       | dBscale-min=0.00dB,step=0.00dB,mute=0
@@ -251,7 +206,7 @@ numid=24,iface=MIXER,name='Right LINEOUT Mux'
   : values=1
 numid=8,iface=MIXER,name='Spk PA Switch'
   ; type=BOOLEAN,access=rw------,values=1
-  : values=on
+  : values=off
 numid=22,iface=MIXER,name='Xadc Input Mixer DACL Switch'
   ; type=BOOLEAN,access=rw------,values=1
   : values=off
@@ -284,7 +239,7 @@ numid=26,iface=MIXER,name='default'
   | dBscale-min=-62.00dB,step=0.19dB,mute=0
 numid=2,iface=MIXER,name='digital volume'
   ; type=INTEGER,access=rw---R--,values=1,min=0,max=63,step=0
-  : values=63
+  : values=0
   | dBscale-min=-74.24dB,step=1.16dB,mute=0
 numid=25,iface=MIXER,name='hd'
   ; type=INTEGER,access=rw---RW-,values=2,min=0,max=255,step=0
@@ -422,13 +377,31 @@ cat: can't open '/etc/crontabs/*': No such file or directory
 [0;0meffect[0m             [0;0mset_all_led_color[0m  [0;0mtrigger[0m
 
 ### ls -l /dev/input/
-crw-rw----    1 root     root       13,  64 Jan  1  1970 [1;35mevent0[0m
-crw-rw----    1 root     root       13,  65 Jan  1  1970 [1;35mevent1[0m
-crw-rw----    1 root     root       13,  66 Jan  1  1970 [1;35mevent2[0m
-crw-rw----    1 root     root       13,  67 Jan  1  1970 [1;35mevent3[0m
+crw-rw----    1 0        0          13,  64 Jan  1 08:00 [1;35mevent0[0m
+crw-rw----    1 0        0          13,  65 Jan  1 08:00 [1;35mevent1[0m
+crw-rw----    1 0        0          13,  66 Jan  1 08:00 [1;35mevent2[0m
+crw-rw----    1 0        0          13,  67 Jan  1 08:00 [1;35mevent3[0m
 
 ### arecord -D hw:audiocodec --dump-hw-params -d 1 -f S16_LE -r 48000 /dev/null 2>&1
-arecord: main:722: audio open error: Device or resource busy
+Recording WAVE '/dev/null' : Signed 16 bit Little Endian, Rate 48000 Hz, Mono
+HW Params of device "hw:audiocodec":
+--------------------
+ACCESS:  MMAP_INTERLEAVED RW_INTERLEAVED
+FORMAT:  S16_LE S24_LE
+SUBFORMAT:  STD
+SAMPLE_BITS: [16 32]
+FRAME_BITS: [16 96]
+CHANNELS: [1 3]
+RATE: (0 4294967295]
+PERIOD_TIME: (0 4294967295]
+PERIOD_SIZE: [22 65536]
+PERIOD_BYTES: [256 131072]
+PERIODS: [1 8]
+BUFFER_TIME: (0 4294967295]
+BUFFER_SIZE: [22 131072]
+BUFFER_BYTES: [256 262144]
+TICK_TIME: ALL
+--------------------
 
 ### aplay -L 2>&1; arecord -L 2>&1
 null
@@ -693,20 +666,20 @@ pcm.plugequal_bt {
 
 ### df -h /opt /data /tmp
 Filesystem                Size      Used Available Use% Mounted on
-/dev/by-name/app         44.5M     42.1M      1.4M  97% /opt
-/dev/by-name/UDISK        8.8M    154.0K      8.4M   2% /data
-tmpfs                    90.0M    236.0K     89.8M   0% /tmp
+/dev/by-name/app         44.5M     40.0K     43.5M   0% /opt
+/dev/by-name/UDISK        8.8M    149.0K      8.4M   2% /data
+tmpfs                    90.0M     40.0K     90.0M   0% /tmp
 
 ### ls -l /dev/by-name/; cat /proc/partitions
-lrwxrwxrwx    1 root     root            12 Jan  1  1970 [1;36mUDISK[0m -> [1;35m/dev/nand0p9[0m
-lrwxrwxrwx    1 root     root            12 Jan  1  1970 [1;36mapp[0m -> [1;35m/dev/nand0p8[0m
-lrwxrwxrwx    1 root     root            12 Jan  1  1970 [1;36mbootA[0m -> [1;35m/dev/nand0p4[0m
-lrwxrwxrwx    1 root     root            12 Jan  1  1970 [1;36mbootB[0m -> [1;35m/dev/nand0p6[0m
-lrwxrwxrwx    1 root     root            12 Jan  1  1970 [1;36menv[0m -> [1;35m/dev/nand0p1[0m
-lrwxrwxrwx    1 root     root            12 Jan  1  1970 [1;36mprivate[0m -> [1;35m/dev/nand0p2[0m
-lrwxrwxrwx    1 root     root            12 Jan  1  1970 [1;36mpstore[0m -> [1;35m/dev/nand0p3[0m
-lrwxrwxrwx    1 root     root            12 Jan  1  1970 [1;36mrootfsA[0m -> [1;35m/dev/nand0p5[0m
-lrwxrwxrwx    1 root     root            12 Jan  1  1970 [1;36mrootfsB[0m -> [1;35m/dev/nand0p7[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mUDISK[0m -> [1;35m/dev/nand0p9[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mapp[0m -> [1;35m/dev/nand0p8[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mbootA[0m -> [1;35m/dev/nand0p4[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mbootB[0m -> [1;35m/dev/nand0p6[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36menv[0m -> [1;35m/dev/nand0p1[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mprivate[0m -> [1;35m/dev/nand0p2[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mpstore[0m -> [1;35m/dev/nand0p3[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mrootfsA[0m -> [1;35m/dev/nand0p5[0m
+lrwxrwxrwx    1 0        0               12 Jan  1 08:00 [1;36mrootfsB[0m -> [1;35m/dev/nand0p7[0m
 major minor  #blocks  name
 
   93        0     114688 nand0
@@ -724,94 +697,8 @@ major minor  #blocks  name
 ctrl_interface=/var/run/wpa_supplicant
 update_config=1
 network={
-    ssid="slidingdoor"
+    scan_ssid=1
+    key_mgmt=WPA-PSK
+    ssid="Home"
     psk=<redacted>
 }
-
-########################################################################
-# Follow-up reads (2026-11-11, same unit)
-########################################################################
-/etc/init.d/rcS: rc_ota() runs /sbin/aw_upgrade_log.sh if present -> not present.
-/etc/init.d/rc.final (last boot step):
-    sh /etc/spkbox_check          # links /data/awequal.conf by serial (EQ config)
-    /usr/sbin/sshd &
-    fw_setenv silent_update 0
-    /usr/bin/watch_duer_ota.sh &  # -> file does NOT exist on this rootfs
-    [ -f /opt/duer/dcslaunch.sh ] && /opt/duer/dcslaunch.sh
-/usr/bin/ota_verify.sh: 0 bytes.  /usr/bin/ota-burnboot0, ota-burnuboot: Tina A/B tools, only run by an updater.
-/etc/rc.local: amixer playback/capture defaults (LINEOUT volume 27, MIC1/2 gain 1, ADC gain 4, Right LINEOUT Mux=DACL).
-/opt: duer (8K: only dcslaunch.sh), etc (20K), genie (43016K), lost+found.
-/data: audio_config.json awequal.conf duer etc hostap lib local log oases wifi
-
-########################################################################
-# Findings
-########################################################################
-- THIS UNIT IS RUNNING GENIE, NOT DUEROS: ps shows pulseaudio + genie-client from
-  /opt/genie, launched by /opt/duer/dcslaunch.sh. The DuerOS payload is gone
-  from /opt (DuerOS data remains in /data/duer).
-- Launch chain: inittab -> /etc/init.d/rcS boot -> rc.final -> /opt/duer/dcslaunch.sh.
-- OTA/watchdog: none active. No /dev/watchdog, no crontabs, watch_duer_ota.sh
-  and aw_upgrade_log.sh are absent; ota_verify.sh is empty. => OTA_DISABLE="".
-  (A real DuerOS unit may still have a DuerOS-side updater under /opt/duer.)
-- LEDs: /sys/class/leds/isled01 only (no aw21036_led). Has set_all_led_color,
-  set_one_led_color, effect, user_space (user_space read returned nothing).
-- Keys: /dev/input/event0 "sunxi-keyboard": KEY bitmap = 113 MUTE, 114 VOLUMEDOWN,
-  115 VOLUMEUP, 164 PLAYPAUSE. event2/event3 are IR receiver, event1 gpadc.
-- Playback: card 0 hw:audiocodec, one PCM. Both LINEOUT muxes take DACL and the
-  system dmix uses channels=1 -> output is effectively mono.
-- Capture: 3 ADC channels: Left=MIC1, Right=MIC2, Xadc=MIC3 (per asound.conf
-  CaptureAec / rc.local). Each ADC mixer also has a "DACL Switch", so a hardware
-  playback reference is possible: Xadc Input Mixer DACL Switch=1, MIC3 Boost=0
-  -> channel 3 = DAC output. Not yet verified: capture was busy (pulseaudio).
-- Libraries in /usr/lib: libasound.so.2, libglib/libgio 2.50.1, libcurl.so.4,
-  libspeexdsp.so.1, libssl 1.0.0 + 1.1. No libstdc++ in /usr/lib (we link it statically).
-- Space: /opt 44.5M, 42.1M used, 1.4M free (97%) because of /opt/genie (42M).
-  /tmp is 90M tmpfs; RAM 121M total, ~91M available with Genie running.
-- WiFi: /data/wifi/wpa_supplicant.conf, same as Genie units (wpa_supplicant -c that path).
-- Default TZ in rcS is CST-8; hostname via udhcpc is Xiaodu-AudioSpeaker.
-
-########################################################################
-# AEC reference / loopback test (2026-11-11, Genie + pulseaudio stopped)
-########################################################################
-Capture hw:audiocodec: S16/S24, 1-3 ch.  Playback hw:audiocodec: 1-2 ch.
-Capture hw:snddaudio2: 1-8 ch, but every open fails with -EIO in both
-directions (dmesg: "codec_dai set sysclk failed"), also with "codec hub mode",
-"sunxi daudio audio hub mode" and "sunxi daudio loopback debug" set. Unusable.
-
-Played broadband noise + chirp at -20 dBFS to hw:audiocodec (mono), recorded 3 ch:
-                       ch0 MIC1   ch1 MIC2   ch2 Xadc
-  silence (AC)          -55 dBFS   -55 dBFS   -94 dBFS   <- ch2 is not a microphone
-  DC offset             +1.3%      +3.1%      0          <- need DC high-pass on mics
-  startup click         97% peak in first ~1 ms on mics (ADC power-up); drop first 200 ms
-  ch2 = MIC3 (default)  ref -41 dBFS, mics lag ref by 19-39 samples (0.4-0.8 ms)
-  ch2 = DACL loopback   ref -15 dBFS (clips at 100%), mics lag ref by 39 samples
-  512-tap LS echo filter, held-out chirp ERLE:  MIC3 ref 15.7/16.8 dB, DACL ref 14.3/15.2 dB
-
-Conclusion: the "MIC3" input on the Xadc channel is a hardware tap of the
-speaker/amp signal (the board's AEC reference; asound.conf calls the capture
-PCM "CaptureAec"). Capture 3 ch from hw:audiocodec and use ch2 as the speex
-AEC reference: it's sample-synchronous with the mics, so no delay estimation
-is needed. Keep rc.local mixer settings (Xadc MIC3 Boost on, DACL off).
-MIC3 gain is 0 (ref at -41 dBFS for a -20 dBFS signal); can be raised if needed.
-
-########################################################################
-# Cross-check against Genie source (~/Code2/genie-client @ a267201)
-########################################################################
-- config.ini: "[ec] loopback=true  # use playback signal reference from 3rd channel"
-  and src/audio/alsa/input.cpp captures 3 ch (stereo2mono + loopback), averages
-  ch0/ch1 to mono and feeds ch2 as the speex AEC reference (300 ms tail, then
-  speex preprocess denoise+dereverb). Confirms ch3 = hardware speaker reference.
-- Genie captures straight from hw at the wake-word rate (16 kHz) -> the codec
-  ADC can run at 16k directly (RATE range is open); no 48k->16k resample needed.
-  (Our loopback test was at 48k; ref alignment at 16k not yet measured.)
-- This unit's /opt/genie/config.ini has an empty [audio] -> backend=pulse ->
-  scripts/pulse-system.pa: 2-ch capture + module-echo-cancel (webrtc, software
-  reference from the sink). So Genie as deployed here did NOT use the hw reference.
-- Keys: evinput.cpp handles KEY_VOLUMEUP/VOLUMEDOWN/MUTE/PLAYPAUSE on release
-  (value 0), default /dev/input/event0 -> matches the probe.
-- LEDs: leds.cpp writes "1"/"0" to user_space (O_WRONLY), which is why reading it
-  returned nothing. This unit's config uses isled01; the Genie config copied
-  earlier into genie/opt/genie/config.ini uses aw21036_led -> two LED chip
-  variants across units, as the plan's risk list assumed.
-- Genie launcher overrides rc.local mixer defaults: LINEOUT volume 9 (rc.local 27),
-  MIC1/MIC2 gain 6.5 -> 6 (rc.local 1).
