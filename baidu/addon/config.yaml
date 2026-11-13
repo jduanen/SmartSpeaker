@@ -1,0 +1,37 @@
+---
+# The official ESPHome add-on's config.yaml (2026.10.2), built locally from
+# Dockerfile instead of pulling ghcr.io/esphome/esphome-hassio, so baidu's
+# armhf cross compiler and libraries are in the image. Same config dir
+# (/config/esphome), ports, ingress and discovery as the official add-on;
+# run one or the other.
+name: ESPHome Device Builder (baidu)
+version: 2026.10.2-baidu1
+slug: esphome_baidu
+description: The official ESPHome Device Builder, plus the cross compiler for the Xiaodu (baidu) speakers
+url: https://esphome.io/
+arch:
+- aarch64
+- amd64
+hassio_api: true
+auth_api: true
+host_network: true
+ingress: true
+ingress_port: 0
+panel_icon: mdi:esphome
+panel_title: ESPHome Builder
+uart: true
+ports:
+  6052/tcp: null
+map:
+- config:rw
+discovery:
+- esphome
+- mcp
+schema:
+  home_assistant_dashboard_integration: bool?
+  default_compile_process_limit: int(1,)?
+  leave_front_door_open: bool?
+backup_exclude:
+- '*/*/'
+init: false
+startup: services
