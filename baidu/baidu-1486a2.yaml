@@ -1,0 +1,7 @@
+# Unit 1486a2 (WiFi MAC 48:F3:F3:14:86:A2).
+substitutions:
+  mac: "4A:F3:F3:14:86:A2"
+  mac_suffix: "1486a2"
+
+packages:
+  baidu: !include baidu-xdh-1d-a1.yaml
