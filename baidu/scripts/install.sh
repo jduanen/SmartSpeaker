@@ -33,6 +33,9 @@ sh_ "chmod +x /opt/baidu/bin/baidu.new && mv /opt/baidu/bin/baidu.new /opt/baidu
 adb push scripts/dcslaunch.sh /opt/baidu/bin/dcslaunch.sh
 adb push scripts/wifi_watchdog.sh /opt/baidu/bin/wifi_watchdog.sh
 sh_ "chmod +x /opt/baidu/bin/dcslaunch.sh /opt/baidu/bin/wifi_watchdog.sh"
+# the YAML plays these as file:///opt/baidu/share/sounds/<name>.flac
+sh_ "mkdir -p /opt/baidu/share/sounds"
+adb push share/sounds/. /opt/baidu/share/sounds/
 if [ "$(sh_ '[ -f /opt/baidu/etc/launcher.conf ] && echo y')" != y ]; then
 	adb push scripts/launcher.conf /opt/baidu/etc/launcher.conf
 fi
