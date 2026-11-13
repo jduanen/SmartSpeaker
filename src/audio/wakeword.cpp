@@ -8,6 +8,7 @@
  */
 
 #include "wakeword.hpp"
+#include "neon_kernels.hpp"
 
 #include <algorithm>
 #include <glib.h>
@@ -129,7 +130,8 @@ static std::vector<std::string> json_strings(const std::string &json,
 
 // ── model ────────────────────────────────────────────────────────────────────
 
-// streaming_model.cpp register_streaming_ops_()
+// streaming_model.cpp register_streaming_ops_(), with the NEON conv kernels
+// (neon_kernels.cpp) in place of TFLM's reference ones
 static void register_ops(tflite::MicroMutableOpResolver<20> &r) {
   r.AddCallOnce();
   r.AddVarHandle();
@@ -138,14 +140,22 @@ static void register_ops(tflite::MicroMutableOpResolver<20> &r) {
   r.AddStridedSlice();
   r.AddConcatenation();
   r.AddAssignVariable();
+#ifdef __ARM_NEON
+  r.AddConv2D(register_conv_2d_neon());
+#else
   r.AddConv2D();
+#endif
   r.AddMul();
   r.AddAdd();
   r.AddMean();
   r.AddFullyConnected();
   r.AddLogistic();
   r.AddQuantize();
+#ifdef __ARM_NEON
+  r.AddDepthwiseConv2D(register_depthwise_conv_2d_neon());
+#else
   r.AddDepthwiseConv2D();
+#endif
   r.AddAveragePool2D();
   r.AddMaxPool2D();
   r.AddPad();

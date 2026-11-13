@@ -67,6 +67,7 @@ _sources = [
   'audio/audioplayer.cpp',
   'audio/audiovolume.cpp',
   'audio/wakeword.cpp',
+  'audio/neon_kernels.cpp',
 
   # ALSA backend
   'audio/alsa/input.cpp',
