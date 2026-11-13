@@ -7,14 +7,16 @@ This is an ESPHome (host platform) firmware for the Baidu Xiaodu XDH-1D-A1, conf
 docker build --network host -f baidu/Dockerfile -t baidu-esphome baidu   # once
 cd baidu
 echo "ota_password: \"$(openssl rand -hex 16)\"" > secrets.yaml         # once; gitignored
-scripts/esphome.sh compile baidu-xdh-1d-a1.yaml
-scripts/esphome.sh upload baidu-xdh-1d-a1.yaml --device <ip>             # OTA
+echo "baidu_143a00_api_key: \"$(openssl rand -base64 32)\"" >> secrets.yaml  # once per speaker
+scripts/esphome.sh compile baidu-143a00.yaml
+scripts/esphome.sh upload baidu-143a00.yaml --device <ip>                # OTA
 ```
 
-- `baidu/Dockerfile` is `smartspeaker-cross` plus ESPHome 2026.10.2 (Python 3.12 via uv) and Debian stretch's OpenSSL 1.1.0 armhf headers and library in `/sysroot`.
-- `scripts/esphome.sh` runs `esphome` in that image with `CC`/`CXX` set to the armhf cross compiler and the sysroot flags from `../scripts/cross_file.txt`, plus `-pthread` (glibc 2.23 keeps pthreads in libpthread) and `-O2` (the host build adds no optimisation flag; at `-O0` the microphone alone used 24% of a core).
-- The program is `.esphome/build/<name>/.pioenvs/<name>/program`.
-- `components/baidu_host` carries `glibc_compat.c` (copied from `../src`, plus `pthread_cond_clockwait`, which GCC 11's libstdc++ uses for `condition_variable::wait_for` and glibc 2.23 lacks) and `host_shim.h` (FreeRTOS tick types and `esp_err_t` for host).
+- Each speaker has a small file, `baidu-<MAC suffix>.yaml` (`baidu-143a00.yaml`, `baidu-1486a2.yaml`), that sets its `mac`, `mac_suffix` and `api_key` (`!secret baidu_<MAC suffix>_api_key`) and includes the shared `baidu-xdh-1d-a1.yaml` as a package. For a new speaker, copy one, change all three and add its key to `secrets.yaml`. The key is in the YAML, not only provisioned by HA, so that the ESPHome Device Builder's Logs can connect; HA asks for it when it adds the speaker.
+- `baidu/Dockerfile` is `smartspeaker-cross` plus ESPHome 2026.10.2 (Python 3.12 via uv), Debian stretch's OpenSSL 1.1.0 armhf headers and library in `/sysroot`, and TFLite Micro and the wake word frontend in `/opt/baidu-tp`.
+- `scripts/esphome.sh` runs `esphome` in that image. The cross compiler is chosen by `components/baidu_host` itself: its code generation sets `CC`, `CXX`, `AR`, `OBJDUMP` and `READELF` (which ESPHome's host build reads when it starts) to the armhf cross tools with the sysroot flags from `../scripts/cross_file.txt`, plus `-pthread` (glibc 2.23 keeps pthreads in libpthread) and `-O2` (the host build adds no optimisation flag; at `-O0` the microphone alone used 24% of a core). So only configs with `baidu_host:` are cross-compiled, which is what lets the HA add-on below build ESP32 devices as well (that add-on isn't in use; see "Managing the speakers from HA's ESPHome Device Builder").
+- The program is `.esphome/build/<name>/.pioenvs/<name>/program`. After switching compilers or images, run `scripts/esphome.sh clean <file>` first: ninja keeps object files whose command line hasn't changed.
+- `components/baidu_host` also carries `glibc_compat.c` (copied from `../src`, plus `pthread_cond_clockwait`, which GCC 11's libstdc++ uses for `condition_variable::wait_for` and glibc 2.23 lacks) and `host_shim.h` (FreeRTOS tick types and `esp_err_t` for host).
 - `components/audio` and `components/ring_buffer` override ESPHome 2026.10.2's components of the same name so `voice_assistant` builds on host. Changes from upstream:
   - `audio/__init__.py`: allowed on `host` as well as `esp32`; `to_code` skips the ESP-IDF libraries on host.
   - `audio/audio_transfer_buffer.{h,cpp}`: compiled under `USE_HOST` too, with `host_shim.h` in place of the FreeRTOS/ESP-IDF headers, and `Speaker::play()` without the ESP32-only ticks argument. The decoder, reader and resampler stay ESP32-only.
@@ -40,7 +42,7 @@ Differences from Voice PE: no dial, jack, voice kit, Sendspin, improv or factory
 Run from `baidu/`, with the unit on adb, its WiFi set up and a backup made (`scripts/setwifi.sh` and `scripts/backup.sh` from the repo root; see the top-level README's install guide):
 
 ```bash
-scripts/esphome.sh compile baidu-xdh-1d-a1.yaml
+scripts/esphome.sh compile baidu-<unit>.yaml
 scripts/install.sh .esphome/build/<name>/.pioenvs/<name>/program
 # then power-cycle the unit
 ```
@@ -48,9 +50,41 @@ scripts/install.sh .esphome/build/<name>/.pioenvs/<name>/program
 - `install.sh` puts the program, `scripts/dcslaunch.sh` and `scripts/wifi_watchdog.sh` in `/opt/baidu/bin`, and `scripts/launcher.conf` in `/opt/baidu/etc` (an existing one is kept). The program's preferences, including the API key HA provisions, are in `/opt/baidu/prefs` and survive reinstalls and OTA.
 - The stock `/etc/init.d/rc.final` runs `/opt/duer/dcslaunch.sh` at boot. `install.sh` saves the launcher that is there (DuerOS's, Genie's or the C++ app's) as `/opt/baidu/etc/dcslaunch.sh.prev`, once, and replaces it with a hook that runs `/opt/baidu/bin/dcslaunch.sh`. `OTA_DISABLE` in `install.sh` works as in the C++ app's.
 - The launcher does what the C++ app's does: with `legacy_rates=true` in `launcher.conf` (the default) it reloads the WiFi driver as an 802.11b-only client and restarts `wpa_supplicant` and DHCP; it waits up to 60 s for an address, starts NTP, sets the mic preamps (`MIC1/MIC2 gain volume` 3), starts the WiFi watchdog, and runs the program in a respawn loop with `ESPHOME_PREFDIR=/opt/baidu/prefs`. The log is `/tmp/baidu.log`; it is copied to `/tmp/baidu.log.1` and truncated when it passes 1 MB.
-- After that, update over WiFi: `scripts/esphome.sh upload baidu-xdh-1d-a1.yaml --device <ip>` (after a `compile`; `upload` sends the last build). The program replaces `/opt/baidu/bin/baidu` and re-execs itself.
+- After that, update over WiFi from this machine: `scripts/esphome.sh compile baidu-<unit>.yaml`, then `scripts/esphome.sh upload baidu-<unit>.yaml --device baidu-<unit>.local` (`upload` sends the last build; it doesn't compile). The program replaces `/opt/baidu/bin/baidu` and re-execs itself.
 - `scripts/uninstall.sh [--purge]` puts the saved launcher back (or removes the hook if there was none) and restores anything `OTA_DISABLE` renamed; `--purge` also removes `/opt/baidu`. To go back to the C++ app, run `uninstall.sh` rather than the C++ app's `install.sh`, which doesn't know baidu's hook.
 - HA sees the two apps as different devices (`baidu-…` and `xiaodu-…`); the one not running shows as unavailable.
+
+## Managing the speakers from HA's ESPHome Device Builder
+
+HA's standard ESPHome Device Builder add-on stays as it is. The speakers are built and installed from this machine (above), and their configs are also copied to HA so the builder lists them, shows them online, streams their Logs and lets the YAML be viewed. The builder can't compile them, so don't use its Install, or HA's Firmware update for a speaker: both fail with the cross compiler missing.
+
+Its remote build server (pairing a build machine under Settings → Send builds) doesn't help here: Device Builder 1.25.0 to 1.28.1 only packs and installs ESP32, ESP8266, RP2040, nRF52 and LibreTiny builds, not host-platform ones.
+
+The configs here are the ones to edit; copy them to HA after a change:
+1. `addon/prepare.sh` (from `baidu/`) writes the configs to `.esphome/addon/esphome` (a `baidu/` folder with the shared package and the components, and `baidu-<unit>.yaml` for each speaker, pointing at `baidu/`).
+2. On the HA host (Samba share or the SSH add-on), copy the contents of that folder into `/config/esphome`.
+3. Add `ota_password` and each `baidu_<unit>_api_key` from `baidu/secrets.yaml` to `/config/esphome/secrets.yaml`.
+
+Tested (2026-11-13): those configs validate in the stock builder image (`ghcr.io/esphome/esphome-hassio:2026.10.2`), and its `esphome logs` streams 143a00's log with the key from the secrets. 143a00 then got a build from this machine over WiFi (3.5 s) and HA reconnected.
+
+## Home Assistant add-on (not in use)
+
+An alternative to the section above, kept for reference: an add-on that replaces the standard one so that HA's Firmware update can build the speakers too.
+
+HA's ESPHome firmware update entity builds and installs through the ESPHome Device Builder, and HA learns where that is only by Supervisor discovery from an add-on (its ESPHome config flow's `async_step_hassio`; there is no manual URL). The official add-on can't build baidu, so `addon/` is a local add-on that replaces it: the official image (`ghcr.io/esphome/esphome-hassio:2026.10.2`, Debian trixie, Device Builder 1.25.0) plus
+- GCC 11, Ubuntu 22.04's armhf cross compiler, as in `smartspeaker-cross`. Debian trixie's GCC 14 doesn't do: its static libstdc++ needs GLIBC 2.34–2.38 symbols (the time64 functions, `getentropy`, `arc4random`, C23 `strtol`). The files of Ubuntu's packages are copied in; the image build checks that their runtime libraries resolve.
+- `/sysroot` (Ubuntu xenial armhf, as `Dockerfile.dockcross`, plus stretch's OpenSSL 1.1.0) and `/opt/baidu-tp` (`third_party/build.sh`).
+
+Everything else is the official add-on, and only configs with `baidu_host:` see the cross compiler, so ESP32 and other devices build as before. Its `config.yaml` is the official one with a different name, slug (`esphome_baidu`) and version, and no `image:` (HA builds it locally on the Pi; arm64 and amd64).
+
+To install:
+1. `addon/prepare.sh` (from `baidu/`) writes `.esphome/addon/addons/esphome_baidu` (the add-on) and `.esphome/addon/esphome` (the speakers' configs).
+2. On the HA host (Samba share or the SSH add-on), copy `addons/esphome_baidu` to `/addons/esphome_baidu`, and the contents of `esphome/` into `/config/esphome` (a `baidu/` folder with the shared package and the components, and `baidu-<unit>.yaml` for each speaker). Add `ota_password` (the one in `baidu/secrets.yaml`) to `/config/esphome/secrets.yaml`.
+3. In HA: Settings → Add-ons → Add-on Store → ⋮ → Check for updates; "ESPHome Device Builder (baidu)" appears under Local add-ons. Install it (it builds the image on the Pi).
+4. Stop the official ESPHome add-on and turn off its start on boot, then start this one. Both use `/config/esphome`, so the existing devices stay listed.
+5. HA then shows a Firmware update entity for each speaker whose config is in `/config/esphome`; Install compiles it in the add-on and uploads it over WiFi (the device must already run baidu with the same `ota_password`).
+
+Tested here (2026-11-12), not yet on the HA host: the image builds for amd64 and, under emulation, for arm64. In the amd64 image baidu compiled (after a clean) against GLIBC ≤ 2.17 only, was uploaded to 143a00 over WiFi, and runs. In the arm64 image a threaded C++ test program cross-compiled with the same flags and `glibc_compat.c` needs only GLIBC 2.4/2.17 and runs on the speaker (a full baidu build under emulation would take very long). `baidu-143a00.yaml` validates in the `/config/esphome` layout.
 
 ## Components
 

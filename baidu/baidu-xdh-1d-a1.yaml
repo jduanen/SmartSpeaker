@@ -10,6 +10,7 @@
 # (48:… → 4A:…), so HA keeps baidu and the C++ app (xiaodu-…) as separate devices.
 # baidu_dir is this folder, relative to the speaker's file: "." here, "baidu"
 # in the HA add-on's /config/esphome (see README, "Home Assistant add-on").
+# api_key is the unit's API encryption key, a !secret in its own file.
 substitutions:
   baidu_dir: "."
   name: baidu-${mac_suffix}
@@ -59,7 +60,8 @@ logger:
 
 api:
   id: api_id
-  encryption: {}
+  encryption:
+    key: ${api_key}
   on_client_connected:
     - script.execute: control_leds
   on_client_disconnected:

@@ -2,6 +2,7 @@
 substitutions:
   mac: "4A:F3:F3:14:86:A2"
   mac_suffix: "1486a2"
+  api_key: !secret baidu_1486a2_api_key
 
 packages:
   baidu: !include baidu-xdh-1d-a1.yaml
