@@ -10,6 +10,7 @@
 #include "esphome/core/log.h"
 
 #include <algorithm>
+#include <cerrno>
 #include <pthread.h>
 #include <cmath>
 
@@ -122,6 +123,8 @@ void BaiduSpeaker::run_() {
 
     snd_pcm_sframes_t w = snd_pcm_writei(this->pcm_, out.data(), PERIOD);
     if (w < 0) {
+      if (w == -EPIPE)  // ALSA ran dry: this thread was late
+        ESP_LOGW(TAG, "ALSA underrun: the mixer was late");
       w = snd_pcm_recover(this->pcm_, (int) w, 1);
       if (w < 0) {
         ESP_LOGW(TAG, "ALSA write failed: %s", snd_strerror((int) w));
