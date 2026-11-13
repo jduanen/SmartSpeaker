@@ -1,6 +1,6 @@
 #include "model_data.h"
 
-#ifdef USE_ESP32
+#if defined(USE_ESP32) || defined(USE_HOST)  // baidu: also host
 
 #include <cstring>
 #include "esphome/core/log.h"
@@ -98,4 +98,4 @@ bool ModelData::validate_and_mark_ready() {
 
 }  // namespace esphome::micro_wake_word
 
-#endif  // USE_ESP32
+#endif  // USE_ESP32 || USE_HOST

@@ -1,6 +1,6 @@
 #include "micro_wake_word.h"
 
-#ifdef USE_ESP32
+#if defined(USE_ESP32) || defined(USE_HOST)  // baidu: also host
 
 #include "esphome/core/application.h"
 #include "esphome/core/hal.h"
@@ -642,4 +642,4 @@ bool MicroWakeWord::update_model_probabilities_(const int8_t audio_features[PREP
 
 }  // namespace esphome::micro_wake_word
 
-#endif  // USE_ESP32
+#endif  // USE_ESP32 || USE_HOST

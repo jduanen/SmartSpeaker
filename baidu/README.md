@@ -76,6 +76,14 @@ Tested on the unit (2026-11-12) with `tests/baidu_media_player.yaml` driven by a
 - `STOP` with `announcement` ends an announcement mid-way; a refused URL ends its announcement at once
 - recorded on the codec's reference channel (MIC3), the music sat at about -33 dBFS, dropped about 20 dB for a 3 s announcement, and ramped back over about 1 s
 
+### `micro_wake_word` (host port)
+
+`components/micro_wake_word` overrides ESPHome 2026.10.2's component of the same name, so Voice PE's `micro_wake_word:` YAML (models from the manifests, `on_wake_word_detected`, `voice_assistant: micro_wake_word:`, the `start`/`stop`/`enable_model` actions) works unchanged. Changes from upstream:
+- `__init__.py`: allowed on `host`. On host, instead of the ESP-IDF components, it adds the include paths and `-ltflm -lmicro_speech_features` from `/opt/baidu-tp` in the image.
+- The C++ files are upstream's with `USE_ESP32` guards widened to `USE_HOST`. `freertos_host.h` supplies what the inference task uses (event group, queue, `StaticTask`, `vTaskSuspend`/`vTaskResume`) on std::thread, so the task logic is unchanged. Suspending the task for an OTA is a no-op on host.
+
+The libraries are built into the `baidu-esphome` image by `third_party/build.sh` (run from the Dockerfile): TFLite Micro from `third_party/tflite-micro`, the esp-tflite-micro version ESPHome pins (copied from the C++ app's `third_party`, reference kernels instead of ESP-NN), and the spectrogram frontend from `third_party/micro_speech_features`, v1.2.3, the version ESPHome now pins (the C++ app has v1.1.0). Re-check both when changing the pinned ESPHome version.
+
 ### `baidu_mdns`
 
 ```yaml

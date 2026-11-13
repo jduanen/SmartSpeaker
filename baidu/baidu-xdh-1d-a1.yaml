@@ -67,6 +67,30 @@ media_player:
                 decibel_reduction: 0
                 duration: 1s
 
+micro_wake_word:
+  id: mww
+  microphone: mic
+  models:
+    - model: okay_nabu
+    - model: hey_jarvis
+    - model: hey_mycroft
+  on_wake_word_detected:
+    - voice_assistant.start:
+        wake_word: !lambda return wake_word;
+
 voice_assistant:
+  id: va
   microphone: mic
   media_player: player
+  # lists the models in HA, which picks the active one
+  micro_wake_word: mww
+  on_client_connected:
+    - micro_wake_word.start:
+  on_client_disconnected:
+    - micro_wake_word.stop:
+  # listen for the wake word again once the session is over
+  on_end:
+    - wait_until:
+        not:
+          voice_assistant.is_running:
+    - micro_wake_word.start:

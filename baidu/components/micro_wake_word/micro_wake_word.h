@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef USE_ESP32
+#if defined(USE_ESP32) || defined(USE_HOST)  // baidu: also host
 
 #include "preprocessor_settings.h"
 #include "streaming_model.h"
@@ -11,13 +11,19 @@
 #include "esphome/core/automation.h"
 #include "esphome/core/component.h"
 #include "esphome/core/defines.h"
+#ifndef USE_HOST
 #include "esphome/core/static_task.h"
+#endif
 
 #ifdef USE_OTA_STATE_LISTENER
 #include "esphome/components/ota/ota_backend.h"
 #endif
 
+#ifdef USE_HOST
+#include "freertos_host.h"  // baidu: FreeRTOS primitives on std::thread
+#else
 #include <freertos/event_groups.h>
+#endif
 
 #include <frontend.h>
 #include <frontend_util.h>
@@ -181,4 +187,4 @@ class MicroWakeWord final : public Component
 
 }  // namespace esphome::micro_wake_word
 
-#endif  // USE_ESP32
+#endif  // USE_ESP32 || USE_HOST

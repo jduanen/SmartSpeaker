@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef USE_ESP32
+#if defined(USE_ESP32) || defined(USE_HOST)  // baidu: also host
 
 #include <cstddef>
 #include <cstdint>
@@ -57,4 +57,4 @@ class ModelData {
 
 }  // namespace esphome::micro_wake_word
 
-#endif  // USE_ESP32
+#endif  // USE_ESP32 || USE_HOST

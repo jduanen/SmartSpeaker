@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef USE_ESP32
+#if defined(USE_ESP32) || defined(USE_HOST)  // baidu: also host
 
 #include "preprocessor_settings.h"
 #include "model_data.h"

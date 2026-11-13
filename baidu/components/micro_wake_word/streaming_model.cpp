@@ -1,6 +1,6 @@
 #include "streaming_model.h"
 
-#ifdef USE_ESP32
+#if defined(USE_ESP32) || defined(USE_HOST)  // baidu: also host
 
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"

@@ -23,6 +23,12 @@ RUN cd /tmp && \
     ln -sf /sysroot/usr/include/arm-linux-gnueabihf/openssl/opensslconf.h /sysroot/usr/include/openssl/opensslconf.h 2>/dev/null; \
     ls /sysroot/usr/lib/arm-linux-gnueabihf/libcrypto.so* /sysroot/usr/include/openssl/evp.h
 
+# micro_wake_word on host: TFLite Micro (the esp-tflite-micro version ESPHome
+# pins, reference kernels) and the microWakeWord frontend, as armhf static
+# libraries in /opt/baidu-tp (see third_party/build.sh)
+COPY third_party /tmp/tp-src
+RUN /tmp/tp-src/build.sh /tmp/tp-src /opt/baidu-tp && rm -rf /tmp/tp-src
+
 ENV PATH=/opt/esphome/bin:$PATH
 WORKDIR /config
 ENTRYPOINT ["esphome"]

@@ -32,6 +32,9 @@ from esphome.const import (
 from esphome.core import CORE, HexInt
 from esphome.types import ConfigType
 
+# baidu: where baidu/Dockerfile installs TFLite Micro and the frontend
+TP_PREFIX = "/opt/baidu-tp"
+
 _LOGGER = logging.getLogger(__name__)
 
 AUTO_LOAD = ["ring_buffer"]
@@ -438,7 +441,8 @@ CONFIG_SCHEMA = cv.All(
             ),
         }
     ).extend(cv.COMPONENT_SCHEMA),
-    cv.only_on_esp32,
+    # baidu: also on host, with TFLite Micro and the frontend from the image
+    cv.only_on(["esp32", "host"]),
     _download_http_models,
 )
 
@@ -525,15 +529,32 @@ async def to_code(config):
         cg.add(var.set_task_stack_in_psram(True))
         psram.request_external_task_stack()
 
-    esp32.add_idf_component(name="espressif/esp-tflite-micro", ref="1.3.3~1")
-    # Pin esp-nn for stable future builds (esp-tflite-micro depends on esp-nn)
-    esp32.add_idf_component(name="espressif/esp-nn", ref="1.1.2")
+    if CORE.is_host:
+        # baidu: the same library versions, built for armhf into the
+        # baidu-esphome image by third_party/build.sh (reference kernels)
+        for inc in (
+            "tflm",
+            "tflm/third_party/gemmlowp",
+            "tflm/third_party/flatbuffers/include",
+            "tflm/third_party/ruy",
+            "msf/include",
+        ):
+            cg.add_build_flag(f"-I{TP_PREFIX}/include/{inc}")
+        cg.add_build_flag(f"-L{TP_PREFIX}/lib")
+        cg.add_build_flag("-ltflm")
+        cg.add_build_flag("-lmicro_speech_features")
+        cg.add_build_flag("-DTF_LITE_STATIC_MEMORY")
+        cg.add_build_flag("-DTF_LITE_DISABLE_X86_NEON")
+    else:
+        esp32.add_idf_component(name="espressif/esp-tflite-micro", ref="1.3.3~1")
+        # Pin esp-nn for stable future builds (esp-tflite-micro depends on esp-nn)
+        esp32.add_idf_component(name="espressif/esp-nn", ref="1.1.2")
 
-    esp32.add_idf_component(name="esphome/esp-micro-speech-features", ref="1.2.3")
+        esp32.add_idf_component(name="esphome/esp-micro-speech-features", ref="1.2.3")
 
-    cg.add_build_flag("-DTF_LITE_STATIC_MEMORY")
-    cg.add_build_flag("-DTF_LITE_DISABLE_X86_NEON")
-    cg.add_build_flag("-DESP_NN")
+        cg.add_build_flag("-DTF_LITE_STATIC_MEMORY")
+        cg.add_build_flag("-DTF_LITE_DISABLE_X86_NEON")
+        cg.add_build_flag("-DESP_NN")
 
     if vad_model := config.get(CONF_VAD):
         cg.add_define("USE_MICRO_WAKE_WORD_VAD")
