@@ -21,6 +21,18 @@ scripts/esphome.sh upload baidu-xdh-1d-a1.yaml --device <ip>             # OTA
   - `ring_buffer/__init__.py`: no `esp32` dependency. `ring_buffer.h` gains a `USE_HOST` class with the same interface, implemented in `ring_buffer_host.cpp` (byte ring, std::mutex/condition_variable, ticks are ms).
   Re-check these against upstream when changing the pinned ESPHome version.
 
+## The device YAML
+
+`baidu-xdh-1d-a1.yaml` behaves like the Home Assistant Voice PE: its automations follow Voice PE's `packages/home-assistant-voice.yaml` (ESPHome 2026.10), with our components in place of the ESP32 ones:
+- **Wake word and stop word:** `micro_wake_word` runs all the time (`stop_after_detection: false`), so a wake word also stops a running session, a reply or a ringing timer; "stop" is enabled while a reply plays and while a timer rings. Wake word sensitivity is a select, as on Voice PE.
+- **LED phases:** Voice PE's effects and `control_leds` priority, on two `partition` lights over the `baidu_leds` ring (also 12 LEDs): `voice_assistant_leds` (internal, the animations) and `led_ring` ("LED Ring" in HA, whose colour and brightness are the accent; shown when idle and on). Startup twinkles blue until HA connects, red while HA is disconnected.
+- **Keys:** Play/Pause is Voice PE's centre button (single: stop the timer ring, else Assist, else the announcement, else pause the music, else start Assist; double, triple and long fire the "Button press" event with their sounds). Mute toggles the Mute switch (with the mute sounds). Volume Up/Down step the media player by 5% (repeating every 300 ms while held) and show the volume on the ring for a second.
+- **Timers:** the ring counts down while a timer runs; when it finishes, the timer sound repeats until Play/Pause, the wake word or "stop", or 15 minutes.
+- **Ducking:** the music drops 20 dB for announcements, Assist and a ringing timer, and comes back over 1 s.
+- **Sounds:** Voice PE's, from `share/sounds` (installed to `/opt/baidu/share/sounds`), played as `file://` announcements.
+
+Differences from Voice PE: no dial, jack, voice kit, Sendspin, improv or factory reset; LED updates on volume and mute changes come from the media player's `on_state` (Voice PE's `on_volume`/`on_mute` are speaker-media-player-only); the timer sound repeats from a script loop (no `repeat_one`); the Mute switch's restore at boot plays no sound.
+
 ## Install on a unit
 
 Run from `baidu/`, with the unit on adb, its WiFi set up and a backup made (`scripts/setwifi.sh` and `scripts/backup.sh` from the repo root; see the top-level README's install guide):
