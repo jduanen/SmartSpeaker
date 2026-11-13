@@ -257,10 +257,10 @@ Run everything from the repo root on the host. The details of each script are in
    ```
    This gives `builddir/src/smartspeaker.stripped` (~620 KB).
 2. **Connect:** plug the speaker into the host with a micro-USB cable, power it from its 12 V supply, and check that `adb devices` lists it.
-3. **WiFi:** run `scripts/setwifi.sh <ssid> <password>` to write `/data/wifi/wpa_supplicant.conf`, the same path on Genie and DuerOS units. Then `adb shell ifconfig wlan0` should show an `inet addr`.
+3. **WiFi:** run `scripts/setwifi.sh <ssid> <password>` to write `/data/wifi/wpa_supplicant.conf`, the same path on Genie and DuerOS units. Then `adb shell ifconfig wlan0` should show an `inet addr`. If it doesn't, `adb reboot`: on a unit with a blank `/opt`, only the stock `/etc/init.d/S42wifi` starts the DHCP client (`udhcpc`), at boot, and only if WiFi associates within 20 s.
 4. **Probe and back up** while the original software is still on the unit:
    - `scripts/probe.sh` writes an inventory to `notes/stock.txt`.
-   - `scripts/backup.sh` writes to `backups/<serial>/`. `install.sh` refuses to run without it.
+   - `scripts/backup.sh` writes to `backups/<serial>/`. `install.sh` refuses to run without it (it checks for `app.img`).
 5. **Prepare, depending on what the unit runs** (`adb shell ps` tells you which):
    - **Genie** (`genie-client` is running and `/opt/genie` exists):
      - `/opt` has only ~1.4 MB free, and the binary plus models and sounds need ~1.3 MB, so remove Genie first: `adb shell rm -rf /opt/genie`.
@@ -268,6 +268,9 @@ Run everything from the repo root on the host. The details of each script are in
    - **DuerOS** (no `/opt/genie`; DuerOS processes in `ps`):
      - Set `OTA_DISABLE` in `scripts/install.sh` to the updater and watchdog paths that the probe found in `notes/stock.txt`.
      - Not yet tested on a real DuerOS unit (see DEVELOPMENT.md, Phases 0 and 8).
+   - **Blank `/opt`** (`/opt` holds only `lost+found`; no `/opt/duer`, no `/opt/genie`, and `ps` shows only init, adbd, syslog, `start_ntp.sh` and `wpa_supplicant`): a stock rootfs whose app partition has been wiped. `/data/duer` may still hold DuerOS settings and its OTA log.
+     - Nothing to prepare. `backup.sh` skips `/opt/duer`, and `install.sh` creates `/opt/duer/dcslaunch.sh`, which the stock `/etc/init.d/rc.final` runs at boot if it exists.
+     - There is no DuerOS updater (`rc.final` starts `/usr/bin/watch_duer_ota.sh`, which doesn't exist), so leave `OTA_DISABLE` empty.
 6. **Install:** run `scripts/install.sh builddir/src/smartspeaker.stripped`, then `adb reboot`. Busybox `reboot` from an adb shell can silently do nothing, so use `adb reboot`.
 7. **Check that it runs:**
    - The LEDs twinkle blue until Home Assistant connects.
@@ -280,6 +283,7 @@ Run everything from the repo root on the host. The details of each script are in
 9. **Updating later:** rebuild and strip, run `scripts/install.sh builddir/src/smartspeaker.stripped` (the config is kept), then `adb shell 'kill $(pidof smartspeaker)'`. The launcher restarts it.
 10. **Removing:**
     - DuerOS: `scripts/uninstall.sh [--purge]`, then `adb reboot`.
+    - Blank `/opt`: `scripts/uninstall.sh --purge`, which removes the launcher it installed and `/opt/ss`, then `adb reboot`.
     - Genie with `/opt/genie` deleted: restore `app.img` from the backup.
 
 ### Stock (DuerOS) units: probe, back up, install, uninstall
@@ -287,13 +291,13 @@ Run everything from the repo root on the host. The details of each script are in
 Run these from the repo root on the host, with the unit connected over adb:
 
 1. `scripts/probe.sh` is read-only on the device. It writes an inventory to `notes/stock.txt`.
-2. `scripts/backup.sh` saves `/opt/duer`, `/data/wifi`, `fw_printenv` and md5-checked images of the `env` and `app` partitions into `backups/<serial>/`. That directory is gitignored because it holds the WiFi PSK.
+2. `scripts/backup.sh` saves `/opt/duer` (skipped on a unit with a blank `/opt`), `/data/wifi`, `fw_printenv` and md5-checked images of the `env` and `app` partitions into `backups/<serial>/`. That directory is gitignored because it holds the WiFi PSK.
 3. Set `OTA_DISABLE` in `scripts/install.sh` to the DuerOS updater and watchdog paths that the probe found.
 4. `scripts/install.sh [binary]` refuses to run without a backup. It then:
    - pushes the binary to `/opt/ss/bin`
    - pushes `config.ini` to `/opt/ss/etc`, keeping any config already on the device
    - pushes models and sounds to `/opt/ss/share`
-   - renames `/opt/duer/dcslaunch.sh` to `.orig` and installs `scripts/dcslaunch.sh` in its place
+   - renames `/opt/duer/dcslaunch.sh` to `.orig` and installs `scripts/dcslaunch.sh` in its place (on a blank-`/opt` unit there is nothing to rename; it creates `/opt/duer`)
    - renames the `OTA_DISABLE` paths to `.orig`
 
    Then `adb reboot`. The log is in `/tmp/smartspeaker.log`.
@@ -303,7 +307,7 @@ Run these from the repo root on the host, with the unit connected over adb:
    The launcher also starts `scripts/wifi_watchdog.sh`. On this unit the RTL8723DS sometimes stays associated but stops receiving broadcast frames (most likely a failed WPA group-key rekey). Peers then can't ARP it, and TCP from HA stalls for 7–15 s per connect, so streams stall too. Every 60 s the watchdog makes a TCP connect to HA (the peer of the ESPHome API connection), or to the gateway until HA has connected. Any answer counts as reachable, even "refused"; only a timeout counts as a failure. After 3 timeouts in a row it runs `wpa_cli reassociate`. Tunables: `WD_INTERVAL`, `WD_FAILS`, `WD_PORT`.
 
    Long delays before speech (HTTP fetches that connect but then stall for 30–40 s, while the same fetch from a wired host takes 6 ms) were RF, not software: the unit sat between two APs sharing channel 11, and they kept deauthenticating it (`dmesg`: `OnDeAuth reason=34`, frames not acknowledged) every 10–40 s. Moving one AP to channel 1 and keeping the unit in the open fixed it (fetches 7–30 ms, no deauths). Driver power save (`rtw_power_mgnt=0`), RX A-MPDU and pinning a BSSID made no difference. To diagnose: `dmesg | grep -E "OnDeAuth|new candidate"` and `cat /proc/net/rtl8723ds/wlan0/rx_signal`. For one-off stalls, the announce source (TTS replies, announcements and chimes) restarts a fetch that receives nothing for 5 s, up to 2 times, skipping the bytes it already has. Music keeps a 30 s stall limit and no retry.
-5. `scripts/uninstall.sh [--purge]` restores the original launcher and the disabled paths. `--purge` also removes `/opt/ss`.
+5. `scripts/uninstall.sh [--purge]` restores the original launcher and the disabled paths; when there is no `.orig` (a blank-`/opt` unit) it removes `/opt/duer/dcslaunch.sh` instead. `--purge` also removes `/opt/ss`.
 
 WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant.conf` (see "set up device" above). The probe records that file with the PSK redacted, to confirm that stock units use the same path.
 

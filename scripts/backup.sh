@@ -1,6 +1,6 @@
 #!/bin/sh
-# Back up a stock unit before takeover: /opt/duer, /data/wifi, the U-Boot env
-# and raw images of the env and app (/opt) partitions.
+# Back up a stock unit before takeover: /opt/duer (if the unit has one), /data/wifi,
+# the U-Boot env and raw images of the env and app (/opt) partitions.
 # Usage: scripts/backup.sh [dir]   (default backups/<serial>)
 #
 # Partition images are copied in 8 MB chunks through /tmp so the device's
@@ -15,7 +15,11 @@ mkdir -p "$DIR"
 sh_() { adb shell "$1" | tr -d '\r'; }
 
 echo "== files"
-adb pull /opt/duer "$DIR/duer"
+if [ "$(sh_ '[ -d /opt/duer ] && echo y')" = y ]; then
+  adb pull /opt/duer "$DIR/duer"
+else
+  echo "no /opt/duer on this unit (blank /opt); skipped"
+fi
 adb pull /data/wifi "$DIR/wifi"
 sh_ fw_printenv >"$DIR/fw_printenv.txt"
 

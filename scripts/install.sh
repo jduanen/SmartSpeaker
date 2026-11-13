@@ -11,14 +11,21 @@ BIN=${1:-builddir/src/smartspeaker}
 OTA_DISABLE=""
 
 SERIAL=$(adb get-serialno)
-[ -d "backups/$SERIAL/duer" ] && [ -f "backups/$SERIAL/app.img" ] || {
+[ -f "backups/$SERIAL/app.img" ] || {
   echo "no backup for $SERIAL; run scripts/backup.sh first"
   exit 1
 }
 [ -f "$BIN" ] || { echo "missing $BIN"; exit 1; }
-[ -n "$OTA_DISABLE" ] || echo "warning: OTA_DISABLE is empty; DuerOS updates may still run"
 
 sh_() { adb shell "$1" | tr -d '\r'; }
+
+# A unit with a blank /opt has no DuerOS launcher; rc.final still runs
+# /opt/duer/dcslaunch.sh if it exists, so ours goes there without a .orig.
+if [ "$(sh_ '[ -f /opt/duer/dcslaunch.sh ] || [ -f /opt/duer/dcslaunch.sh.orig ] && echo y')" = y ]; then
+  [ -n "$OTA_DISABLE" ] || echo "warning: OTA_DISABLE is empty; DuerOS updates may still run"
+else
+  echo "no DuerOS launcher on this unit (blank /opt); installing ours as /opt/duer/dcslaunch.sh"
+fi
 
 sh_ "mkdir -p /opt/ss/bin /opt/ss/share/models /opt/ss/share/sounds /opt/ss/etc"
 adb push "$BIN" /opt/ss/bin/smartspeaker
@@ -33,7 +40,8 @@ fi
 [ -d share/sounds ] && adb push share/sounds/. /opt/ss/share/sounds/
 
 # launcher: keep the first .orig, never overwrite it
-sh_ "[ -f /opt/duer/dcslaunch.sh.orig ] || mv /opt/duer/dcslaunch.sh /opt/duer/dcslaunch.sh.orig"
+sh_ "mkdir -p /opt/duer"
+sh_ "[ -f /opt/duer/dcslaunch.sh.orig ] || [ ! -f /opt/duer/dcslaunch.sh ] || mv /opt/duer/dcslaunch.sh /opt/duer/dcslaunch.sh.orig"
 adb push scripts/dcslaunch.sh /opt/duer/dcslaunch.sh
 sh_ "chmod +x /opt/duer/dcslaunch.sh"
 
