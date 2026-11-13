@@ -67,6 +67,18 @@ media_player:
                 decibel_reduction: 0
                 duration: 1s
 
+light:
+  - platform: baidu_leds
+    id: led_ring
+    name: LED Ring
+    default_transition_length: 0s
+    effects:
+      - addressable_rainbow:
+      - addressable_twinkle:
+      - addressable_scan:
+          move_interval: 80ms
+      - pulse:
+
 micro_wake_word:
   id: mww
   microphone: mic

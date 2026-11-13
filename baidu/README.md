@@ -76,6 +76,23 @@ Tested on the unit (2026-11-12) with `tests/baidu_media_player.yaml` driven by a
 - `STOP` with `announcement` ends an announcement mid-way; a refused URL ends its announcement at once
 - recorded on the codec's reference channel (MIC3), the music sat at about -33 dBFS, dropped about 20 dB for a 3 s announcement, and ramped back over about 1 s
 
+### `baidu_leds` (light)
+
+```yaml
+light:
+  - platform: baidu_leds
+    id: led_ring
+    name: LED Ring
+    path: /sys/class/leds/isled01   # default
+    num_leds: 12                    # default
+    effects:
+      - addressable_rainbow:
+```
+
+The 12-LED ring as an addressable light, so ESPHome's light effects and per-LED lambdas work, and Voice PE-style LED phases can be written in YAML. At setup it writes `1` to `user_space` (taking the ring from the kernel's effects) and `255` to `brightness`; each frame goes to `set_all_led_color` as twelve decimal 0xRRGGBB values, and unchanged frames are skipped. On shutdown it writes `user_space` 0, handing the ring back. Ported from the C++ app's `src/leds.cpp`.
+
+Tested on 143a00 (2026-11-12) over the API: solid red, green and blue, the rainbow and twinkle effects, and off. With the rainbow running at ESPHome's default rate the process used about 2% more of a core than with the ring idle, and the writes added nothing to the kernel log.
+
 ### `micro_wake_word` (host port)
 
 `components/micro_wake_word` overrides ESPHome 2026.10.2's component of the same name, so Voice PE's `micro_wake_word:` YAML (models from the manifests, `on_wake_word_detected`, `voice_assistant: micro_wake_word:`, the `start`/`stop`/`enable_model` actions) works unchanged. Changes from upstream:
@@ -104,6 +121,7 @@ Checked on 143a00 (2026-11-12): `avahi-browse -rt _esphomelib._tcp` on the LAN l
 - On the unit (run from `/tmp/baidu` with `ESPHOME_PREFDIR`, the C++ app stopped), it starts cleanly: API on 6053 (encryption supported, provisionable), OTA on 8082. VSZ is about 5 MB.
 - **mDNS is a stub on host.** `mdns_host.cpp` builds the records but sends nothing, so HA can't discover the device. `baidu_mdns` (above) fills the gap.
 - **OTA works.** Over WiFi both attempts stalled (at 97% and 15%) because the unit's WiFi was failing at the time: deauths from both "Home" APs every ~30 s, 50–95% loss on traffic *to* the unit, while its own outgoing traffic got through. Through USB instead (`adb forward tcp:8082 tcp:8082`, then `scripts/esphome.sh upload … --device 127.0.0.1`), the update took 0.95 s: 2.0 MB sent deflated as 0.78 MB, staged as `<binary>.ota.new`, renamed over the running binary, then `execv` (same PID) into the new build. The `adb forward` route is also a fallback for updating a unit with bad WiFi.
+- **OTA over WiFi works** with the unit in 802.11b-only mode (the C++ app's `[wifi] legacy_rates`, applied by its launcher): `scripts/esphome.sh upload … --device 192.168.166.210` sent 2.36 MB in 2.6 s on 2026-11-12, and the process restarted in place (same PID).
 - The OTA handler blocks ESPHome's main loop while it receives (`took a long time for an operation (277322 ms)`), so audio must run on its own threads, as planned.
 - **`voice_assistant` builds on host with the overrides above.** As shipped it doesn't: `voice_assistant` auto-loads `audio` (ESP32-only, ESP-IDF libraries) and `ring_buffer` (FreeRTOS `xRingbuffer`), and `audio_transfer_buffer.h` is wrapped in `USE_ESP32`. The `voice_assistant` code itself is portable (API, sockets, no FreeRTOS). A test config with `voice_assistant` and a do-nothing microphone compiled and linked (2.3 MB, GLIBC ≤ 2.17). It has not been run against HA yet.
 - The spike YAML uses MAC `4A:F3:F3:14:86:A2` (the real one with the locally administered bit), so HA treats it as a new device and leaves the C++ app's `xiaodu-1486a2` entry alone.
