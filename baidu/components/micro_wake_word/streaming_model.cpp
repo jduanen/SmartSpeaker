@@ -4,6 +4,7 @@
 
 #include "esphome/core/helpers.h"
 #include "esphome/core/log.h"
+#include "neon_kernels.h"  // baidu
 
 static const char *const TAG = "micro_wake_word";
 
@@ -403,8 +404,13 @@ bool StreamingModel::register_streaming_ops_(tflite::MicroMutableOpResolver<20> 
     return false;
   if (op_resolver.AddAssignVariable() != kTfLiteOk)
     return false;
+#if defined(USE_HOST) && defined(__ARM_NEON)  // baidu: NEON kernels (neon_kernels.cpp)
+  if (op_resolver.AddConv2D(register_conv_2d_neon()) != kTfLiteOk)
+    return false;
+#else
   if (op_resolver.AddConv2D() != kTfLiteOk)
     return false;
+#endif
   if (op_resolver.AddMul() != kTfLiteOk)
     return false;
   if (op_resolver.AddAdd() != kTfLiteOk)
@@ -417,8 +423,13 @@ bool StreamingModel::register_streaming_ops_(tflite::MicroMutableOpResolver<20> 
     return false;
   if (op_resolver.AddQuantize() != kTfLiteOk)
     return false;
+#if defined(USE_HOST) && defined(__ARM_NEON)  // baidu: NEON kernels (neon_kernels.cpp)
+  if (op_resolver.AddDepthwiseConv2D(register_depthwise_conv_2d_neon()) != kTfLiteOk)
+    return false;
+#else
   if (op_resolver.AddDepthwiseConv2D() != kTfLiteOk)
     return false;
+#endif
   if (op_resolver.AddAveragePool2D() != kTfLiteOk)
     return false;
   if (op_resolver.AddMaxPool2D() != kTfLiteOk)

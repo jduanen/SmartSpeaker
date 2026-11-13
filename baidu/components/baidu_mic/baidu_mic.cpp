@@ -10,6 +10,7 @@
 #include "esphome/core/log.h"
 
 #include <algorithm>
+#include <pthread.h>
 
 namespace esphome::baidu_mic {
 
@@ -60,6 +61,7 @@ void BaiduMicrophone::loop() {
         this->stop_requested_ = false;
         this->thread_started_ = true;
         this->thread_ = std::thread(&BaiduMicrophone::capture_loop_, this);
+        pthread_setname_np(this->thread_.native_handle(), "baidu_mic");  // for top -H
       }
       break;
     case microphone::STATE_STARTING:

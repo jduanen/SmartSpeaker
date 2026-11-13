@@ -10,6 +10,7 @@
 #include "esphome/core/log.h"
 
 #include <algorithm>
+#include <pthread.h>
 #include <cmath>
 
 namespace esphome::baidu_speaker {
@@ -61,6 +62,7 @@ void BaiduSpeaker::setup() {
   }
   this->running_ = true;
   this->thread_ = std::thread(&BaiduSpeaker::run_, this);
+  pthread_setname_np(this->thread_.native_handle(), "baidu_speaker");  // for top -H
 }
 
 void BaiduSpeaker::dump_config() {

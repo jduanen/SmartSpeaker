@@ -14,6 +14,7 @@
 #include <cstring>
 #include <deque>
 #include <mutex>
+#include <pthread.h>
 #include <thread>
 #include <vector>
 
@@ -138,6 +139,7 @@ class StaticTask {
     if (this->thread_ != nullptr)
       return false;
     this->thread_ = new std::thread(fn, param);
+    pthread_setname_np(this->thread_->native_handle(), name);  // for top -H
     return true;
   }
 
