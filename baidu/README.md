@@ -93,6 +93,20 @@ The 12-LED ring as an addressable light, so ESPHome's light effects and per-LED 
 
 Tested on 143a00 (2026-11-12) over the API: solid red, green and blue, the rainbow and twinkle effects, and off. With the rainbow running at ESPHome's default rate the process used about 2% more of a core than with the ring idle, and the writes added nothing to the kernel log.
 
+### `evdev` (binary_sensor)
+
+```yaml
+binary_sensor:
+  - platform: evdev
+    name: Play/Pause Key
+    key: KEY_PLAYPAUSE          # or KEY_MUTE, KEY_VOLUMEDOWN, KEY_VOLUMEUP, or a code
+    device: /dev/input/event0   # default (sunxi-keyboard)
+```
+
+A key of a Linux input device as a binary sensor that is on while the key is held, so `on_press`, `on_click` and `on_multi_click` work as with a GPIO button. Autorepeat events are ignored. Each sensor opens the device itself (evdev gives every reader every event), reads it non-blocking in `loop()`, and takes its initial state from `EVIOCGKEY`. Every down and up is logged at DEBUG, as ESPHome 2026.10 doesn't log binary sensor changes. Ported from the C++ app's `src/evinput.cpp`.
+
+Tested on 143a00 (2026-11-12): pressing Mute once, Volume Down twice, Volume Up three times and Play/Pause four times gave exactly those counts on `KEY_MUTE`, `KEY_VOLUMEDOWN`, `KEY_VOLUMEUP` and `KEY_PLAYPAUSE`, each with a matching up, and an `on_multi_click` single click on Play/Pause fired. The double-click and long-press timings were not exercised on Play/Pause.
+
 ### `micro_wake_word` (host port)
 
 `components/micro_wake_word` overrides ESPHome 2026.10.2's component of the same name, so Voice PE's `micro_wake_word:` YAML (models from the manifests, `on_wake_word_detected`, `voice_assistant: micro_wake_word:`, the `start`/`stop`/`enable_model` actions) works unchanged. Changes from upstream:

@@ -67,6 +67,43 @@ media_player:
                 decibel_reduction: 0
                 duration: 1s
 
+binary_sensor:
+  - platform: evdev
+    id: key_mute
+    name: Mute Key
+    key: KEY_MUTE
+  - platform: evdev
+    id: key_volume_down
+    name: Volume Down Key
+    key: KEY_VOLUMEDOWN
+  - platform: evdev
+    id: key_volume_up
+    name: Volume Up Key
+    key: KEY_VOLUMEUP
+  - platform: evdev
+    id: key_play_pause
+    name: Play/Pause Key
+    key: KEY_PLAYPAUSE
+    # TEST: check ESPHome's click timing on the keypad (replaced in step 3)
+    on_multi_click:
+      - timing:
+          - ON for at most 1s
+          - OFF for at most 0.4s
+          - ON for at most 1s
+          - OFF for at least 0.4s
+        then:
+          - logger.log: "Play/Pause: double click"
+      - timing:
+          - ON for 1s to 5s
+          - OFF for at least 0.1s
+        then:
+          - logger.log: "Play/Pause: long press"
+      - timing:
+          - ON for at most 1s
+          - OFF for at least 0.4s
+        then:
+          - logger.log: "Play/Pause: single click"
+
 light:
   - platform: baidu_leds
     id: led_ring
