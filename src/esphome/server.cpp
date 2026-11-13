@@ -89,15 +89,16 @@ Server::Server(App *app) : entities(app), app(app) {
   if (psk.empty() && *app->config->esphome_encryption_key)
     g_warning("[esphome] encryption_key isn't a base64 32-byte key; "
               "running without encryption");
+  // <last 3 MAC bytes> on both names, like ESPHome's name_add_mac_suffix,
+  // so several units are told apart in HA and Music Assistant
+  std::string suffix;
+  for (char ch : mac.substr(9))
+    if (ch != ':')
+      suffix += g_ascii_tolower(ch);
   name = app->config->esphome_name;
-  if (name.empty()) {
-    // xiaodu-<last 3 MAC bytes>, like ESPHome's name_add_mac_suffix
-    std::string suffix;
-    for (char ch : mac.substr(9))
-      if (ch != ':')
-        suffix += g_ascii_tolower(ch);
+  if (name.empty())
     name = "xiaodu-" + suffix;
-  }
+  friendly_name = "Xiaodu Speaker " + suffix;
 
   entities.broadcast = [this](uint32_t type, const pb_msgdesc_t *fields,
                               const void *msg) {
@@ -449,7 +450,7 @@ void Server::handle(Connection *c, uint32_t type, const uint8_t *payload,
     case MSG_DEVICE_INFO_REQUEST: {
       DeviceInfoResponse resp = DeviceInfoResponse_init_zero;
       resp.name = s(name.c_str());
-      resp.friendly_name = s("Xiaodu Speaker");
+      resp.friendly_name = s(friendly_name.c_str());
       resp.mac_address = s(mac.c_str());
       resp.esphome_version = s(ESPHOME_VERSION);
       resp.compilation_time = s(__DATE__ ", " __TIME__);

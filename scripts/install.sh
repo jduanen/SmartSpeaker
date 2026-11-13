@@ -21,7 +21,7 @@ sh_() { adb shell "$1" | tr -d '\r'; }
 
 # A unit with a blank /opt has no DuerOS launcher; rc.final still runs
 # /opt/duer/dcslaunch.sh if it exists, so ours goes there without a .orig.
-if [ "$(sh_ '[ -f /opt/duer/dcslaunch.sh ] || [ -f /opt/duer/dcslaunch.sh.orig ] && echo y')" = y ]; then
+if [ "$(sh_ '[ -f /opt/duer/dcslaunch.sh.orig ] || { [ -f /opt/duer/dcslaunch.sh ] && ! grep -q /opt/ss/bin/smartspeaker /opt/duer/dcslaunch.sh; } && echo y')" = y ]; then
   [ -n "$OTA_DISABLE" ] || echo "warning: OTA_DISABLE is empty; DuerOS updates may still run"
 else
   echo "no DuerOS launcher on this unit (blank /opt); installing ours as /opt/duer/dcslaunch.sh"
@@ -41,7 +41,8 @@ fi
 
 # launcher: keep the first .orig, never overwrite it
 sh_ "mkdir -p /opt/duer"
-sh_ "[ -f /opt/duer/dcslaunch.sh.orig ] || [ ! -f /opt/duer/dcslaunch.sh ] || mv /opt/duer/dcslaunch.sh /opt/duer/dcslaunch.sh.orig"
+# (nothing to keep on a blank-/opt unit, nor when the current launcher is already ours)
+sh_ "[ -f /opt/duer/dcslaunch.sh.orig ] || [ ! -f /opt/duer/dcslaunch.sh ] || grep -q /opt/ss/bin/smartspeaker /opt/duer/dcslaunch.sh || mv /opt/duer/dcslaunch.sh /opt/duer/dcslaunch.sh.orig"
 adb push scripts/dcslaunch.sh /opt/duer/dcslaunch.sh
 sh_ "chmod +x /opt/duer/dcslaunch.sh"
 

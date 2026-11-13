@@ -316,7 +316,7 @@ std::vector<uint8_t> Mdns::response(bool ptr, bool srv, bool txt, bool a,
       if (ch != ':')
         mac += g_ascii_tolower(ch);
     std::vector<std::string> entries = {
-        "friendly_name=Xiaodu Speaker",
+        "friendly_name=" + server->display_name(),
         std::string("version=") + VERSION,
         "mac=" + mac,
         "platform=linux",

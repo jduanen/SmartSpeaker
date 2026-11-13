@@ -31,6 +31,7 @@ public:
   bool encrypted() const { return !psk.empty(); }
   const std::string &node_name() const { return name; }
   const std::string &mac_address() const { return mac; }
+  const std::string &display_name() const { return friendly_name; }
 
   Entities entities;
 
@@ -55,6 +56,7 @@ private:
   std::list<Connection *> connections;
   Connection *voice_client = nullptr; // subscribed to the voice assistant
   std::string name;
+  std::string friendly_name;
   std::string mac;
   // the API encryption key; empty means none: plaintext, or Noise with the
   // all-zeros key so HA can provision one (api_encryption_provisionable)

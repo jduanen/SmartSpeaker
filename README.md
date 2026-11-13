@@ -276,7 +276,7 @@ Run everything from the repo root on the host. The details of each script are in
    - The LEDs twinkle blue until Home Assistant connects.
    - `adb shell tail /tmp/smartspeaker.log` should show `ESPHome API 'xiaodu-<MAC suffix>' … listening on port 6053` and the mDNS line.
 8. **Home Assistant:**
-   - HA discovers `xiaodu-<last 6 MAC hex digits>` in the ESPHome integration; click **Configure**.
+   - HA discovers `xiaodu-<last 6 MAC hex digits>` in the ESPHome integration; click **Configure**. Its display name is `Xiaodu Speaker <same 6 digits>`, so the entities of several units (e.g. `Xiaodu Speaker 143a00 Media Player`) can be told apart in HA and Music Assistant.
    - HA provisions an encryption key on its own. The speaker saves it in `/opt/ss/etc/config.ini`, and later installs keep that file.
    - On the device page, pick the Assist pipeline and the wake word.
    - **Music Assistant:** add the player explicitly in MA's Home Assistant MediaPlayers provider.
@@ -311,7 +311,7 @@ Run these from the repo root on the host, with the unit connected over adb:
 
 WiFi is configured the same way as on Genie units, in `/data/wifi/wpa_supplicant.conf` (see "set up device" above). The probe records that file with the PSK redacted, to confirm that stock units use the same path.
 
-`config.ini` sections: `[audio]` (output, input, volume, stereo2mono), `[ec]` (enabled, loopback), `[sound]` (wake, alarm_clock_elapsed, mute_on, mute_off, button_double, button_triple, button_long: WAV/FLAC/MP3 files in sound_dir, defaulting to the Voice PE sounds), `[esphome]` (name — empty means `xiaodu-<MAC suffix>`, port, encryption_key — base64 Noise key, empty until HA provisions one, model_dir, sound_dir), `[wakeword]` (active — a model id in model_dir; sensitivity — Slightly/Moderately/Very sensitive; both written back when changed from HA), `[buttons]`, `[leds]` (enabled, type, path; ring, ring_color, ring_brightness — the HA "LED ring" light, written back when changed there).
+`config.ini` sections: `[audio]` (output, input, volume, stereo2mono), `[ec]` (enabled, loopback), `[sound]` (wake, alarm_clock_elapsed, mute_on, mute_off, button_double, button_triple, button_long: WAV/FLAC/MP3 files in sound_dir, defaulting to the Voice PE sounds), `[esphome]` (name — empty means `xiaodu-<MAC suffix>`; the friendly name is always `Xiaodu Speaker <MAC suffix>`, port, encryption_key — base64 Noise key, empty until HA provisions one, model_dir, sound_dir), `[wakeword]` (active — a model id in model_dir; sensitivity — Slightly/Moderately/Very sensitive; both written back when changed from HA), `[buttons]`, `[leds]` (enabled, type, path; ring, ring_color, ring_brightness — the HA "LED ring" light, written back when changed there).
 
 ## Home Assistant Voice Remote Local Assistant Notes
 
