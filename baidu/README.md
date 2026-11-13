@@ -21,6 +21,23 @@ scripts/esphome.sh upload baidu-xdh-1d-a1.yaml --device <ip>             # OTA
   - `ring_buffer/__init__.py`: no `esp32` dependency. `ring_buffer.h` gains a `USE_HOST` class with the same interface, implemented in `ring_buffer_host.cpp` (byte ring, std::mutex/condition_variable, ticks are ms).
   Re-check these against upstream when changing the pinned ESPHome version.
 
+## Install on a unit
+
+Run from `baidu/`, with the unit on adb, its WiFi set up and a backup made (`scripts/setwifi.sh` and `scripts/backup.sh` from the repo root; see the top-level README's install guide):
+
+```bash
+scripts/esphome.sh compile baidu-xdh-1d-a1.yaml
+scripts/install.sh .esphome/build/<name>/.pioenvs/<name>/program
+# then power-cycle the unit
+```
+
+- `install.sh` puts the program, `scripts/dcslaunch.sh` and `scripts/wifi_watchdog.sh` in `/opt/baidu/bin`, and `scripts/launcher.conf` in `/opt/baidu/etc` (an existing one is kept). The program's preferences, including the API key HA provisions, are in `/opt/baidu/prefs` and survive reinstalls and OTA.
+- The stock `/etc/init.d/rc.final` runs `/opt/duer/dcslaunch.sh` at boot. `install.sh` saves the launcher that is there (DuerOS's, Genie's or the C++ app's) as `/opt/baidu/etc/dcslaunch.sh.prev`, once, and replaces it with a hook that runs `/opt/baidu/bin/dcslaunch.sh`. `OTA_DISABLE` in `install.sh` works as in the C++ app's.
+- The launcher does what the C++ app's does: with `legacy_rates=true` in `launcher.conf` (the default) it reloads the WiFi driver as an 802.11b-only client and restarts `wpa_supplicant` and DHCP; it waits up to 60 s for an address, starts NTP, sets the mic preamps (`MIC1/MIC2 gain volume` 3), starts the WiFi watchdog, and runs the program in a respawn loop with `ESPHOME_PREFDIR=/opt/baidu/prefs`. The log is `/tmp/baidu.log`; it is copied to `/tmp/baidu.log.1` and truncated when it passes 1 MB.
+- After that, update over WiFi: `scripts/esphome.sh upload baidu-xdh-1d-a1.yaml --device <ip>` (after a `compile`; `upload` sends the last build). The program replaces `/opt/baidu/bin/baidu` and re-execs itself.
+- `scripts/uninstall.sh [--purge]` puts the saved launcher back (or removes the hook if there was none) and restores anything `OTA_DISABLE` renamed; `--purge` also removes `/opt/baidu`. To go back to the C++ app, run `uninstall.sh` rather than the C++ app's `install.sh`, which doesn't know baidu's hook.
+- HA sees the two apps as different devices (`baidu-…` and `xiaodu-…`); the one not running shows as unavailable.
+
 ## Components
 
 ### `baidu_mic` (microphone)
