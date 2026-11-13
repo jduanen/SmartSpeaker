@@ -4,13 +4,14 @@
 # Voice PE's packages/home-assistant-voice.yaml (ESPHome 2026.10); ESP32-only
 # parts (dial, jack, voice kit, Sendspin, improv, factory reset) are left out.
 #
-# One build per speaker: set mac and mac_suffix to the unit's WiFi MAC
-# (adb shell ifconfig wlan0) with the locally administered bit set (48:… → 4A:…),
-# so HA keeps baidu and the C++ app (xiaodu-…) as separate devices, e.g.
-#   scripts/esphome.sh -s mac 4A:F3:F3:14:3A:00 -s mac_suffix 143a00 compile baidu-xdh-1d-a1.yaml
+# This is a package: each speaker has a small file (e.g. baidu-143a00.yaml)
+# that sets its mac and mac_suffix and includes this one. mac is the unit's
+# WiFi MAC (adb shell ifconfig wlan0) with the locally administered bit set
+# (48:… → 4A:…), so HA keeps baidu and the C++ app (xiaodu-…) as separate devices.
+# baidu_dir is this folder, relative to the speaker's file: "." here, "baidu"
+# in the HA add-on's /config/esphome (see README, "Home Assistant add-on").
 substitutions:
-  mac: "4A:F3:F3:14:86:A2"
-  mac_suffix: "1486a2"
+  baidu_dir: "."
   name: baidu-${mac_suffix}
   friendly_name: Baidu ${mac_suffix}
   # installed by scripts/install.sh (copied from share/sounds)
@@ -49,7 +50,7 @@ host:
 external_components:
   - source:
       type: local
-      path: components
+      path: ${baidu_dir}/components
 
 baidu_host:
 

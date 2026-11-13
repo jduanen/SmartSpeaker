@@ -1,0 +1,7 @@
+# Unit 143a00 (WiFi MAC 48:F3:F3:14:3A:00), as installed on the bench.
+substitutions:
+  mac: "4A:F3:F3:14:3A:00"
+  mac_suffix: "143a00"
+
+packages:
+  baidu: !include baidu-xdh-1d-a1.yaml
