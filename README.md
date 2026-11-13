@@ -127,16 +127,14 @@ Entities exposed to HA:
 See [DEVELOPMENT.md](DEVELOPMENT.md)
 
 ## Issues
-- **`/opt` free space is tight.** The new footprint is about 3–5 MB (binary, models, sounds). If space is tight, the DuerOS payload can be moved off-device only after a host backup. Already moved Genie off.
 - **speexdsp AEC is weaker than webrtc or XMOS AEC**, and there is no beamforming across the 3 mics. Expect lower wake-word accuracy during loud music. Need to explore alternatives.
-- **ESPHome API drift:** pin the proto version and ignore unknown messages. Try to fix by making it a proper ESPHome device.
+- **ESPHome API drift:** pin the proto version and ignore unknown messages. I have code that replaces ESPHome Builder on the HA server, but I'm not going forward with this approach and doing builds and installs from the Ubuntu server instead.
 - **Stock and Genie units may fit different LED chips:** make the path configurable, with auto-detect between the two sysfs nodes.
 
 ## TBD
-- **Change from Mono to Stereo:** assumed that there is only one speaker, but there are two, so need to change the audio pipeline to do stereo
 - **Improve AEC:** look into using webrtc or XMOS AEC to improve performance
-- **Make it a Proper ESPHome Device:** programmable by way of yaml config file -- keep up with HA API changes, allow modifications without reprogramming, HA-based OTA updates, etc.
 - **Look at improving STT/TTS performance:** look at the end-to-end flow and see where the time is being spent to see if we can reduce latency between speech input and responses
+- **Compare the C++ and ESPHome apps:** run them concurrently and see if there's any noticable performance or functional difference
 
 ## End-to-End Verification
 1. Host x86 build: HA adds the device and push-to-talk works with the laptop mic and speaker. Run `meson test -C builddir`.
@@ -257,6 +255,13 @@ Run everything from the repo root on the host. The details of each script are in
    ```
    This gives `builddir/src/smartspeaker.stripped` (~620 KB).
 2. **Connect:** plug the speaker into the host with a micro-USB cable, power it from its 12 V supply, and check that `adb devices` lists it.
+   **More than one unit on adb:** the scripts (`setwifi.sh`, `probe.sh`, `backup.sh`, `install.sh`, `uninstall.sh`, and baidu's `install.sh` and `uninstall.sh`) act on the unit whose serial is in `ANDROID_SERIAL`, which adb itself reads. With one unit attached it's used without that. With more than one and `ANDROID_SERIAL` unset, they stop and list each unit's serial and WiFi MAC (the last six digits of the MAC name the unit), e.g.
+   ```
+   more than one unit on adb; choose one with ANDROID_SERIAL=<serial>:
+     XDHM1P1GG0324M1C7O0366783  48:f3:f3:14:3a:00
+     XDHM1P1GG0324M1C7R0369971  48:f3:f3:14:86:a2
+   ```
+   Then e.g. `ANDROID_SERIAL=XDHM1P1GG0324M1C7R0369971 scripts/install.sh builddir/src/smartspeaker.stripped`; for plain `adb` commands, `adb -s <serial> …` or `export ANDROID_SERIAL=<serial>`. The check is `scripts/adb_unit.sh`, which the scripts source.
 3. **WiFi:** run `scripts/setwifi.sh <ssid> <password>` to write `/data/wifi/wpa_supplicant.conf`, the same path on Genie and DuerOS units. Then `adb shell ifconfig wlan0` should show an `inet addr`. If it doesn't, `adb reboot`: on a unit with a blank `/opt`, only the stock `/etc/init.d/S42wifi` starts the DHCP client (`udhcpc`), at boot, and only if WiFi associates within 20 s.
 4. **Probe and back up** while the original software is still on the unit:
    - `scripts/probe.sh` writes an inventory to `notes/stock.txt`.
@@ -271,7 +276,7 @@ Run everything from the repo root on the host. The details of each script are in
    - **Blank `/opt`** (`/opt` holds only `lost+found`; no `/opt/duer`, no `/opt/genie`, and `ps` shows only init, adbd, syslog, `start_ntp.sh` and `wpa_supplicant`): a stock rootfs whose app partition has been wiped. `/data/duer` may still hold DuerOS settings and its OTA log.
      - Nothing to prepare. `backup.sh` skips `/opt/duer`, and `install.sh` creates `/opt/duer/dcslaunch.sh`, which the stock `/etc/init.d/rc.final` runs at boot if it exists.
      - There is no DuerOS updater (`rc.final` starts `/usr/bin/watch_duer_ota.sh`, which doesn't exist), so leave `OTA_DISABLE` empty.
-6. **Install:** run `scripts/install.sh builddir/src/smartspeaker.stripped`, then `adb reboot`. Busybox `reboot` from an adb shell can silently do nothing, so use `adb reboot`. On unit 143a00, `adb reboot` restarts the speaker but its USB doesn't come back (it is missing from `lsusb`) until the 12 V supply is unplugged and replugged; this happens with or without the launcher's driver reload. If adb doesn't return, power-cycle the unit.
+6. **Install:** run `scripts/install.sh builddir/src/smartspeaker.stripped`, then `adb reboot`. Busybox `reboot` from an adb shell can silently do nothing, so use `adb reboot`. On units 143a00 and 1486a2, `adb reboot` often drops USB (the unit is missing from `adb devices`) until the 12 V supply is unplugged and replugged, with or without the launcher's driver reload. On 1486a2 (2026-11-13) it didn't restart the unit either: the old app kept running and kept its old name until the power-cycle. So if adb doesn't return, power-cycle the unit, and don't take a dropped USB as a sign that it restarted.
 7. **Check that it runs:**
    - The LEDs twinkle blue until Home Assistant connects.
    - `adb shell tail /tmp/smartspeaker.log` should show `ESPHome API 'xiaodu-<MAC suffix>' … listening on port 6053` and the mDNS line.
