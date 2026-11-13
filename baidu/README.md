@@ -31,6 +31,8 @@ scripts/esphome.sh upload baidu-xdh-1d-a1.yaml --device <ip>             # OTA
 - **Ducking:** the music drops 20 dB for announcements, Assist and a ringing timer, and comes back over 1 s.
 - **Sounds:** Voice PE's, from `share/sounds` (installed to `/opt/baidu/share/sounds`), played as `file://` announcements.
 
+Tested on 143a00 (2026-11-12): idle ring, wake word with the wake sound and LED phases, "stop" during a reply, the Mute key (sounds and red marks), the volume keys (ring bar, repeat while held), Play/Pause single/double/triple/long, and ducking of Music Assistant music under Assist all work. A 5 s timer from HA arrived as a timer event, rang when it finished, and "stop" ended it 3 s later (the repeat loop wasn't reached). HA only uses the satellite's timers when its built-in intents handle the request: with an LLM conversation agent and "Prefer handling commands locally" off, the agent replied "Timer set" without starting one, and no timer event reached the device.
+
 Differences from Voice PE: no dial, jack, voice kit, Sendspin, improv or factory reset; LED updates on volume and mute changes come from the media player's `on_state` (Voice PE's `on_volume`/`on_mute` are speaker-media-player-only); the timer sound repeats from a script loop (no `repeat_one`); the Mute switch's restore at boot plays no sound.
 
 ## Install on a unit
