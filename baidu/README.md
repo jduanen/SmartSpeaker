@@ -84,6 +84,8 @@ Tested on the unit (2026-11-12) with `tests/baidu_media_player.yaml` driven by a
 
 The libraries are built into the `baidu-esphome` image by `third_party/build.sh` (run from the Dockerfile): TFLite Micro from `third_party/tflite-micro`, the esp-tflite-micro version ESPHome pins (copied from the C++ app's `third_party`, reference kernels instead of ESP-NN), and the spectrogram frontend from `third_party/micro_speech_features`, v1.2.3, the version ESPHome now pins (the C++ app has v1.1.0). Re-check both when changing the pinned ESPHome version.
 
+Tested on 143a00 (2026-11-12, 802.11b-only WiFi) with `baidu-xdh-1d-a1.yaml` (Okay Nabu, Hey Jarvis, Hey Mycroft; the first enabled): "Okay Nabu" detected at a sliding-average probability of 0.97 to 0.99, `voice_assistant` ran the session (including HA's follow-up question, "What day is it?" → "It's Thursday, November 12 2026."), and detection restarted when it ended. While detecting, the whole process used 17% of one core and 6.8 MB RSS (4 threads); the C++ app used 16% in total. The reference kernels are the likely cost; ESP-NN is ESP32-only.
+
 ### `baidu_mdns`
 
 ```yaml
