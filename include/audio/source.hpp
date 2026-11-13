@@ -52,6 +52,10 @@ private:
   std::atomic<bool> cancel;
   std::atomic<bool> eof;
   std::atomic<State> st;
+  // underrun tracking (see read()): play() clears `started`; `gap` is the
+  // mixer thread's count of samples missing in the current gap
+  std::atomic<bool> started;
+  size_t gap = 0;
 
   PaUtilRingBuffer ring;
   std::vector<int16_t> ring_data;

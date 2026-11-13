@@ -49,6 +49,10 @@ class Source : public baidu_speaker::MixerInput {
   std::atomic<bool> failed_{false};
   std::atomic<bool> flush_{false};  // set by stop(); the reader flushes
   std::atomic<State> state_{State::IDLE};
+  // underrun tracking (see read()): play() clears started_; gap_ is the
+  // mixer thread's count of samples missing in the current gap
+  std::atomic<bool> started_{false};
+  size_t gap_{0};
 
   PaUtilRingBuffer ring_;
   std::vector<int16_t> ring_data_;

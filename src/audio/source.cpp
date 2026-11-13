@@ -24,7 +24,7 @@ Source::Source(const char *name, unsigned rate, long stall_seconds,
                unsigned retries, std::function<void()> on_change)
     : name(name), rate(rate), stall_seconds(stall_seconds), retries(retries),
       on_change(std::move(on_change)), cancel(false),
-      eof(false), st(State::IDLE), ring_data(RING_SAMPLES) {
+      eof(false), st(State::IDLE), started(false), ring_data(RING_SAMPLES) {
   PaUtil_InitializeRingBuffer(&ring, sizeof(int16_t), RING_SAMPLES,
                               ring_data.data());
 }
@@ -54,6 +54,7 @@ void Source::play(const std::string &location) {
   stop();
   cancel = false;
   eof = false;
+  started = false;
   g_message("[%s] play %s", name, location.c_str());
   set_state(State::PLAYING);
   worker = std::thread(&Source::run, this, location);
@@ -83,6 +84,21 @@ size_t Source::read(int16_t *out, size_t n) {
   size_t got = PaUtil_ReadRingBuffer(&ring, out, n);
   if (got == 0 && eof)
     set_state(State::FINISHED);
+  // underrun: the ring ran dry mid-stream, i.e. the audio arrived too slowly
+  // (not while waiting for the first audio, nor at the end); reported when
+  // the audio resumes, with the length of the silence it caused
+  if (!started) {
+    started = got > 0;
+    gap = 0;
+    return got;
+  }
+  if (got > 0 && gap > 0) {
+    g_warning("[%s] underrun: %u ms of silence (the audio arrived too slowly)",
+              name, (unsigned)(gap * 1000 / rate));
+    gap = 0;
+  }
+  if (got < n && !eof)
+    gap += n - got;
   return got;
 }
 

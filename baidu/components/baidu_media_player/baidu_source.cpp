@@ -36,6 +36,7 @@ void Source::play(const std::string &location) {
   this->cancel_ = false;
   this->eof_ = false;
   this->failed_ = false;
+  this->started_ = false;
   ESP_LOGD(TAG, "[%s] play %s", this->name_, location.c_str());
   this->state_ = State::PLAYING;
   this->worker_ = std::thread(&Source::run_, this, location);
@@ -69,6 +70,21 @@ size_t Source::read(int16_t *out, size_t n) {
     State expected = State::PLAYING;
     this->state_.compare_exchange_strong(expected, State::FINISHED);
   }
+  // underrun: the ring ran dry mid-stream, i.e. the audio arrived too slowly
+  // (not while waiting for the first audio, nor at the end); reported when
+  // the audio resumes, with the length of the silence it caused
+  if (!this->started_) {
+    this->started_ = got > 0;
+    this->gap_ = 0;
+    return got;
+  }
+  if (got > 0 && this->gap_ > 0) {
+    ESP_LOGW(TAG, "[%s] underrun: %u ms of silence (the audio arrived too slowly)", this->name_,
+             (unsigned) (this->gap_ * 1000 / RATE));
+    this->gap_ = 0;
+  }
+  if (got < n && !this->eof_)
+    this->gap_ += n - got;
   return got;
 }
 

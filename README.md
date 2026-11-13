@@ -280,6 +280,7 @@ Run everything from the repo root on the host. The details of each script are in
 7. **Check that it runs:**
    - The LEDs twinkle blue until Home Assistant connects.
    - `adb shell tail /tmp/smartspeaker.log` should show `ESPHome API 'xiaodu-<MAC suffix>' … listening on port 6053` and the mDNS line.
+   - If playback breaks up, the log says why. `[media] underrun: <n> ms of silence` (or `[announce]`) means the audio arrived too slowly, from the network or from HA producing it (streamed TTS of a long reply): the source's buffer (about 1.4 s) ran dry mid-stream. It's logged when the audio resumes. `ALSA underrun: the mixer was late` means the mixer thread missed a period. Tested (2026-11-13) with a WAV served with a 4 s pause after its first 3 s: `underrun: 1084 ms of silence`.
 8. **Home Assistant:**
    - HA discovers `xiaodu-<last 6 MAC hex digits>` in the ESPHome integration; click **Configure**. Its display name is `Xiaodu Speaker <same 6 digits>`, so the entities of several units (e.g. `Xiaodu Speaker 143a00 Media Player`) can be told apart in HA and Music Assistant.
    - HA provisions an encryption key on its own. The speaker saves it in `/opt/ss/etc/config.ini`, and later installs keep that file.

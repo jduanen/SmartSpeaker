@@ -133,6 +133,8 @@ The state is ANNOUNCING while an announcement plays; the API reports that to HA 
 - the reader thread, not the main loop, flushes a source's ring buffer on stop, and a new item waits for that flush, so its start isn't dropped
 - the stream keeps its first 64 KB for backward seeks: dr_mp3 reads 10 bytes to probe for an ID3 tag and then seeks back to 0, which failed for every MP3 read from the start
 
+Breakups are logged as warnings, as in the C++ app. `[media] underrun: <n> ms of silence` (or `[announcement]`) means a source's ring buffer (about 1.4 s) ran dry mid-stream because the audio arrived too slowly, from the network or from HA producing it (streamed TTS). It's logged when the audio resumes; waiting for the first audio and the end of a stream don't count. `ALSA underrun: the mixer was late` means the mixer thread missed a period. Tested (2026-11-13) with a WAV served with a 4 s pause after its first 3 s: `underrun: 1360 ms of silence`.
+
 Tested on the unit (2026-11-12) with `tests/baidu_media_player.yaml` driven by aioesphomeapi through `adb forward tcp:6053 tcp:6053` (the unit's WiFi was failing, so media came from `file://`; HTTP was only exercised by a refused connection):
 - supported formats as above
 - volume set and step map to LINEOUT 9 and 11, and the volume is restored after a restart

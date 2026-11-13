@@ -5,6 +5,7 @@
 #include "audio/mixer.hpp"
 
 #include <algorithm>
+#include <cerrno>
 #include <cmath>
 #include <glib.h>
 #include <vector>
@@ -103,6 +104,8 @@ void Mixer::run() {
 
     snd_pcm_sframes_t w = snd_pcm_writei(pcm, out.data(), PERIOD);
     if (w < 0) {
+      if (w == -EPIPE) // ALSA ran dry: this thread was late
+        g_warning("ALSA underrun: the mixer was late");
       w = snd_pcm_recover(pcm, w, 1);
       if (w < 0) {
         g_warning("ALSA write failed: %s", snd_strerror(w));
