@@ -8,6 +8,7 @@
 # if DuerOS writes to it mid-copy the md5 check fails; stop DuerOS and rerun.
 set -eu
 
+. "$(dirname "$0")/adb_unit.sh"
 SERIAL=$(adb get-serialno)
 DIR=${1:-backups/$SERIAL}
 mkdir -p "$DIR"

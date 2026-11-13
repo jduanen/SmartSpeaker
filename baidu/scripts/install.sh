@@ -11,6 +11,7 @@
 # that runs /opt/baidu/bin/dcslaunch.sh. scripts/uninstall.sh puts it back.
 set -eu
 
+. "$(dirname "$0")/adb_unit.sh"
 BIN=${1:?usage: scripts/install.sh <program>}
 
 # DuerOS OTA updater / watchdog binaries to disable (renamed to <path>.orig),

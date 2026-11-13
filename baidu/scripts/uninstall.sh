@@ -6,6 +6,7 @@
 #        including the preferences and the API key HA provisioned)
 set -eu
 
+. "$(dirname "$0")/adb_unit.sh"
 sh_() { adb shell "$1" </dev/null | tr -d '\r'; }
 
 if [ "$(sh_ '[ -f /opt/baidu/etc/dcslaunch.sh.prev ] && echo y')" = y ]; then

@@ -4,6 +4,7 @@
 # Usage: scripts/install.sh [binary]   (default builddir/src/smartspeaker)
 set -eu
 
+. "$(dirname "$0")/adb_unit.sh"
 BIN=${1:-builddir/src/smartspeaker}
 
 # DuerOS OTA updater / watchdog binaries to disable (renamed to <path>.orig).

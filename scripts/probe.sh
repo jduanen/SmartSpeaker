@@ -4,7 +4,7 @@
 set -eu
 
 OUT=${1:-notes/stock.txt}
-adb get-state >/dev/null
+. "$(dirname "$0")/adb_unit.sh"
 
 run() {
   printf '\n### %s\n' "$1" >>"$OUT"

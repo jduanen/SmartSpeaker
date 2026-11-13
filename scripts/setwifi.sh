@@ -4,6 +4,7 @@
 #
 # Usage: setwifi.sh <ssid> <passwd>
 
+. "$(dirname "$0")/adb_unit.sh"
 SSID=$1
 PASSWD=$2
 

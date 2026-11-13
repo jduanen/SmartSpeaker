@@ -3,6 +3,7 @@
 # Usage: scripts/uninstall.sh [--purge]   (--purge also removes /opt/ss)
 set -eu
 
+. "$(dirname "$0")/adb_unit.sh"
 sh_() { adb shell "$1" | tr -d '\r'; }
 
 if [ "$(sh_ '[ -f /opt/duer/dcslaunch.sh.orig ] && echo y')" = y ]; then
