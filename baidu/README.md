@@ -1,4 +1,4 @@
-# baidu: the Xiaodu speaker as an ESPHome device
+# baidu: Using the Xiaodu Smart Speaker as an ESPHome Device
 
 This is an ESPHome (host platform) firmware for the Baidu Xiaodu XDH-1D-A1, configured by YAML and updated by ESPHome OTA. It is separate from the C++ app in the parent directory, which stays as it is; that one names itself `xiaodu-…`, this one `baidu-…`.
 ## Build
@@ -76,19 +76,36 @@ Tested on the unit (2026-11-12) with `tests/baidu_media_player.yaml` driven by a
 - `STOP` with `announcement` ends an announcement mid-way; a refused URL ends its announcement at once
 - recorded on the codec's reference channel (MIC3), the music sat at about -33 dBFS, dropped about 20 dB for a 3 s announcement, and ramped back over about 1 s
 
+### `baidu_mdns`
+
+```yaml
+mdns:
+baidu_mdns:
+```
+
+ESPHome's `mdns` builds its service records on host but sends nothing (`mdns_host.cpp`). `baidu_mdns` answers queries for those records (PTR, SRV and TXT for each service, A for `<name>.local`; IPv4, UDP 5353) and announces them three times at startup, so HA discovers the device as it does an ESP32. It calls `mdns.enable_mdns_storage()`, ESPHome's hook for external components, to read the records through `MDNSComponent::get_services()`. ESPHome fixes the encryption TXT at boot; `baidu_mdns` instead follows the live key state (`api_encryption` once HA has provisioned a key, else `api_encryption_supported` plus `api_provisioning=zero-psk`) and announces again when it changes. Ported from the C++ app's `src/esphome/mdns.cpp`.
+
+Checked on 143a00 (2026-11-12): `avahi-browse -rt _esphomelib._tcp` on the LAN lists `baidu-143a00` with ESPHome's TXT records, and `baidu-143a00.local` resolves.
+
 ## Spike results (2026-11-12)
 
 - The build works: the program (2.0 MB, 1.1 MB stripped) needs GLIBC ≤ 2.17 and only `libcrypto.so.1.1`, `libm`, `libpthread` and `libc`, all on the device.
   - ESPHome's host `md5`/`sha256` use OpenSSL's 1.1 EVP API. The device has OpenSSL 1.1.0i with `OPENSSL_1_1_0` symbol versions, which stretch's 1.1.0l matches.
 - On the unit (run from `/tmp/baidu` with `ESPHOME_PREFDIR`, the C++ app stopped), it starts cleanly: API on 6053 (encryption supported, provisionable), OTA on 8082. VSZ is about 5 MB.
-- **mDNS is a stub on host.** `mdns_host.cpp` builds the records but sends nothing, so HA can't discover the device. A `baidu_mdns` component that answers with those records is needed; the C++ app's `src/esphome/mdns.cpp` can be the base.
+- **mDNS is a stub on host.** `mdns_host.cpp` builds the records but sends nothing, so HA can't discover the device. `baidu_mdns` (above) fills the gap.
 - **OTA works.** Over WiFi both attempts stalled (at 97% and 15%) because the unit's WiFi was failing at the time: deauths from both "Home" APs every ~30 s, 50–95% loss on traffic *to* the unit, while its own outgoing traffic got through. Through USB instead (`adb forward tcp:8082 tcp:8082`, then `scripts/esphome.sh upload … --device 127.0.0.1`), the update took 0.95 s: 2.0 MB sent deflated as 0.78 MB, staged as `<binary>.ota.new`, renamed over the running binary, then `execv` (same PID) into the new build. The `adb forward` route is also a fallback for updating a unit with bad WiFi.
 - The OTA handler blocks ESPHome's main loop while it receives (`took a long time for an operation (277322 ms)`), so audio must run on its own threads, as planned.
 - **`voice_assistant` builds on host with the overrides above.** As shipped it doesn't: `voice_assistant` auto-loads `audio` (ESP32-only, ESP-IDF libraries) and `ring_buffer` (FreeRTOS `xRingbuffer`), and `audio_transfer_buffer.h` is wrapped in `USE_ESP32`. The `voice_assistant` code itself is portable (API, sockets, no FreeRTOS). A test config with `voice_assistant` and a do-nothing microphone compiled and linked (2.3 MB, GLIBC ≤ 2.17). It has not been run against HA yet.
 - The spike YAML uses MAC `4A:F3:F3:14:86:A2` (the real one with the locally administered bit), so HA treats it as a new device and leaves the C++ app's `xiaodu-1486a2` entry alone.
 
+## Verified against HA (2026-11-12, unit 143a00 on the Home-Router-2X SSID)
+
+- HA discovers `baidu-143a00` through `baidu_mdns`, and **Configure** provisions the key without asking (`Noise PSK saved`); the TXT then switches to `api_encryption`.
+- `assist_satellite.announce`: HA sends the pre-announce chime (ffmpeg proxy) and the TTS (`tts_proxy`), both as FLAC 48 kHz mono; both play in full on the announcement source, and `voice_assistant` reports the announcement finished. Volume changes from HA reach the codec.
+- `assist_satellite.start_conversation`: chime and prompt, then `voice_assistant` starts `baidu_mic` and streams to HA as the prompt ends. HA's VAD found the speech, STT gave "What time is it?", and the reply ("5:39 PM") played about 2 s after the speech ended; then back to IDLE.
+
+- Music Assistant: the player streams MA's flow URL over HTTP, FLAC 48 kHz stereo (MA's per-player codec choice; downmixed, no resampling), with no stalls. The whole process used 2.1% of one core and 6.1 MB RSS while playing.
+
 ## Still to verify in the spike
 
-- HA adopts it (by IP, until `baidu_mdns` exists) and provisions encryption.
-- A `voice_assistant` session against HA on the unit, including TTS replies through `baidu_media_player` (needs working WiFi).
-- `baidu_media_player` streaming over HTTP from HA and Music Assistant (needs working WiFi).
+- Ducking of MA music under a voice session.

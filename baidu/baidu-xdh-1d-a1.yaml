@@ -35,6 +35,9 @@ ota:
 
 mdns:
 
+# answers mDNS with the records mdns: builds (host mdns sends nothing)
+baidu_mdns:
+
 microphone:
   - platform: baidu_mic
     id: mic
