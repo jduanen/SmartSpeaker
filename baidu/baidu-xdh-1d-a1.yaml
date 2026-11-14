@@ -69,7 +69,7 @@ api:
 
 ota:
   - platform: esphome
-    password: !secret ota_password
+    encryption: {}  # uses the api encryption key
 
 mdns:
 

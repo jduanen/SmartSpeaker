@@ -7,7 +7,8 @@
 #                                baidu/ (the shared package and the components)
 #                                and one baidu-<unit>.yaml per speaker
 #                                -> copy into the HA host's /config/esphome
-#                                   (add ota_password to its secrets.yaml)
+#                                   (add each baidu_<unit>_api_key to its
+#                                   secrets.yaml)
 # Run from baidu/. Usage: addon/prepare.sh [out]   (default .esphome/addon)
 set -eu
 OUT=${1:-.esphome/addon}
