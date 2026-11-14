@@ -60,10 +60,18 @@ HA's standard ESPHome Device Builder add-on stays as it is. The speakers are bui
 
 Its remote build server (pairing a build machine under Settings → Send builds) doesn't help here: Device Builder 1.25.0 to 1.28.1 only packs and installs ESP32, ESP8266, RP2040, nRF52 and LibreTiny builds, not host-platform ones.
 
-The configs here are the ones to edit; copy them to HA after a change:
-1. `addon/prepare.sh` (from `baidu/`) writes the configs to `.esphome/addon/esphome` (a `baidu/` folder with the shared package and the components, and `baidu-<unit>.yaml` for each speaker, pointing at `baidu/`).
-2. On the HA host (Samba share or the SSH add-on), copy the contents of that folder into `/config/esphome`.
-3. Add `ota_password` and each `baidu_<unit>_api_key` from `baidu/secrets.yaml` to `/config/esphome/secrets.yaml`.
+The configs here are the ones to edit. `scripts/installBaidu.sh <unit>...` (in the repo root's `scripts/`, from any directory) builds each named speaker (`baidu-<unit>.yaml`), installs it over WiFi, and then copies the configs to HA: `addon/prepare.sh` writes them to `.esphome/addon/esphome` (a `baidu/` folder with the shared package and the components, and `baidu-<unit>.yaml` for each speaker, pointing at `baidu/`), and rsync over SSH puts them in the HA server's `/config/esphome`. It writes only `/config/esphome/baidu/` (removing files there that are gone here) and `/config/esphome/baidu-*.yaml`, comparing contents so unchanged files aren't copied; other devices' configs and `secrets.yaml` are left alone. `HA_SSH` is the login (default `homeassistant.local`, so the user and key come from `~/.ssh/config`); `HA_SSH=` skips the copy.
+
+Once, on the HA server:
+1. In the SSH add-on's configuration, add this machine's public key (`~/.ssh/id_ed25519.pub`) to `authorized_keys`; it applies to the add-on's `username`. The add-on also needs rsync: in "Advanced SSH & Web Terminal", add `rsync` to `packages`. In `~/.ssh/config`, add a host entry with that user and key (`IdentitiesOnly` keeps ssh from offering other keys first, which the add-on cuts off with "Too many authentication failures"):
+   ```
+   Host homeassistant.local
+       User <the add-on's username>
+       IdentityFile ~/.ssh/id_ed25519
+       IdentitiesOnly yes
+   ```
+   Check with `ssh homeassistant.local sudo -n rsync --version`, which must not ask for a password. The files in `/config/esphome` belong to root, so the copy runs rsync with sudo on HA (the add-on gives its non-root user passwordless sudo); it leaves the builder's `__pycache__` folders alone.
+2. Add `ota_password` and each `baidu_<unit>_api_key` from `baidu/secrets.yaml` to `/config/esphome/secrets.yaml`, and again for each new speaker.
 
 Tested (2026-11-13): those configs validate in the stock builder image (`ghcr.io/esphome/esphome-hassio:2026.10.2`), and its `esphome logs` streams 143a00's log with the key from the secrets. 143a00 then got a build from this machine over WiFi (3.5 s) and HA reconnected.
 
@@ -187,6 +195,8 @@ The libraries are built into the `baidu-esphome` image by `third_party/build.sh`
 Tested on 143a00 (2026-11-12, 802.11b-only WiFi) with `baidu-xdh-1d-a1.yaml` (Okay Nabu, Hey Jarvis, Hey Mycroft; the first enabled): "Okay Nabu" detected at a sliding-average probability of 0.97 to 0.99, `voice_assistant` ran the session (including HA's follow-up question, "What day is it?" → "It's Thursday, November 12 2026."), and detection restarted when it ended. While detecting, the whole process used 17% of one core and 6.8 MB RSS (4 threads); the C++ app used 16% in total. The reference kernels are the likely cost; ESP-NN is ESP32-only.
 
 With the NEON kernels (2026-11-13): a test program running each model with both kernel sets on the same random input for 3,000 inferences found no output difference, and one inference took 161 µs instead of 1,659 (Okay Nabu), 138 instead of 1,477 (Hey Jarvis), 143 instead of 1,640 (Hey Mycroft) and 112 instead of 1,240 (Stop). A model runs every 30 ms. In the app the `mww` thread went from 7.0% to 1.9% of a core and the process from 17.4% to 12.3%; the rest is mostly `baidu_mic` (Speex echo cancellation and noise suppression, 9.5%). Before, the wake word logged `Not enough free bytes in ring buffer` about ten times in a day, several during CPU-heavy WiFi tests.
+
+Over music (2026-11-13, 143a00, Music Assistant streaming FLAC): "Okay Nabu" was detected 6 times out of 6, three from about 1 m and three from across the room (sliding average 0.86–0.91, max 1.00 each time), and STT got each following "Cancel" or "Stop". No `underrun` in the music. While it played, the process used 14.5% of one core and 6.9 MB RSS: `baidu_mic` 10.1%, `mww` 2.0%, the media source's fetch and decode 1.3%, the main loop 0.6%, `baidu_speaker` 0.5%.
 
 ### `baidu_mdns`
 
