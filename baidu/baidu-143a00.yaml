@@ -1,7 +1,10 @@
 # Unit 143a00 (WiFi MAC 48:F3:F3:14:3A:00), as installed on the bench.
 substitutions:
+  friendly_name: "Baidu Smartspeaker in MBR"
+  comment: "Home Assistant Baidu-based Voice Assistant"
   mac: "4A:F3:F3:14:3A:00"
   mac_suffix: "143a00"
+  log_level: WARN
 
 packages:
   baidu: !include baidu-xdh-1d-a1.yaml

@@ -1,7 +1,10 @@
 # Unit 1486a2 (WiFi MAC 48:F3:F3:14:86:A2).
 substitutions:
+  friendly_name: "Baidu Smartspeaker in DWR"
+  comment: "Home Assistant Baidu-based Voice Assistant"
   mac: "4A:F3:F3:14:86:A2"
   mac_suffix: "1486a2"
+  log_level: WARN
 
 packages:
   baidu: !include baidu-xdh-1d-a1.yaml

@@ -31,6 +31,7 @@ scripts/esphome.sh upload baidu-143a00.yaml --device <ip>                # OTA
 - **Timers:** the ring counts down while a timer runs; when it finishes, the timer sound repeats until Play/Pause, the wake word or "stop", or 15 minutes.
 - **Ducking:** the music drops 20 dB for announcements, Assist and a ringing timer, and comes back over 1 s.
 - **Sounds:** Voice PE's, from `share/sounds` (installed to `/opt/baidu/share/sounds`), played as `file://` announcements.
+- **WiFi Signal:** a diagnostic sensor (dBm), read every 60 s from `wpa_cli -i wlan0 signal_poll`; ESPHome's `wifi_signal` needs `wifi:`, which the host platform lacks, and the unit's kernel has no wireless extensions. It is unknown while WiFi is down.
 
 Tested on 143a00 (2026-11-12): idle ring, wake word with the wake sound and LED phases, "stop" during a reply, the Mute key (sounds and red marks), the volume keys (ring bar, repeat while held), Play/Pause single/double/triple/long, and ducking of Music Assistant music under Assist all work. A 5 s timer from HA arrived as a timer event, rang when it finished, and "stop" ended it 3 s later (the repeat loop wasn't reached). HA only uses the satellite's timers when its built-in intents handle the request: with an LLM conversation agent and "Prefer handling commands locally" off, the agent replied "Timer set" without starting one, and no timer event reached the device.
 

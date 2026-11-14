@@ -29,6 +29,7 @@ substitutions:
 esphome:
   name: ${name}
   friendly_name: ${friendly_name}
+  comment: ${comment}
   on_boot:
     - priority: 375
       then:
@@ -57,7 +58,7 @@ external_components:
 baidu_host:
 
 logger:
-  level: DEBUG
+  level: ${log_level}
 
 api:
   id: api_id
@@ -220,6 +221,30 @@ switch:
       - script.execute: control_leds
       - delay: 15min
       - switch.turn_off: timer_ringing
+
+sensor:
+  # wifi_signal needs wifi:, which host doesn't have, and the unit's kernel has
+  # no wireless extensions (/proc/net/wireless), so ask wpa_supplicant
+  - platform: template
+    name: WiFi Signal
+    device_class: signal_strength
+    unit_of_measurement: dBm
+    state_class: measurement
+    entity_category: diagnostic
+    accuracy_decimals: 0
+    update_interval: 60s
+    lambda: |-
+      float rssi = NAN;  // unknown while WiFi is down
+      FILE *f = popen("wpa_cli -i wlan0 signal_poll 2>/dev/null", "r");
+      if (f == nullptr)
+        return rssi;
+      char line[64];
+      while (fgets(line, sizeof(line), f) != nullptr) {
+        if (sscanf(line, "RSSI=%f", &rssi) == 1)
+          break;
+      }
+      pclose(f);
+      return rssi;
 
 binary_sensor:
   - platform: evdev
