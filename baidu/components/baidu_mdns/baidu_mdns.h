@@ -28,7 +28,7 @@ class BaiduMdns : public Component {
   float get_setup_priority() const override { return setup_priority::AFTER_CONNECTION - 1.0f; }
 
  protected:
-  bool try_join_();
+  void check_join_();
   void announce_();
   void answer_(const uint8_t *p, size_t len, const struct sockaddr_in &from);
   /// Records for the questions matched; service bits are indexes into get_services().
@@ -39,6 +39,7 @@ class BaiduMdns : public Component {
   mdns::MDNSComponent *mdns_{nullptr};
   int fd_{-1};
   bool joined_{false};
+  uint32_t joined_ip_{0};
   uint32_t last_join_try_{0};
   int announcements_left_{0};
   uint32_t last_announce_{0};

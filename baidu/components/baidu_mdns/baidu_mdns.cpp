@@ -37,7 +37,7 @@ static const uint32_t ANNOUNCE_INTERVAL_MS = 1000;
 static const char *str(const mdns::MDNSString *s) { return reinterpret_cast<const char *>(s); }
 
 /** IPv4 of wlan0, else the first non-loopback interface; 0 if none. */
-static uint32_t local_ipv4() {
+static uint32_t local_ipv4(int *ifindex = nullptr) {
   struct ifaddrs *list = nullptr;
   uint32_t found = 0;
   if (getifaddrs(&list) != 0)
@@ -46,12 +46,13 @@ static uint32_t local_ipv4() {
     if (!it->ifa_addr || it->ifa_addr->sa_family != AF_INET || (it->ifa_flags & IFF_LOOPBACK))
       continue;
     uint32_t ip = reinterpret_cast<struct sockaddr_in *>(it->ifa_addr)->sin_addr.s_addr;
-    if (strcmp(it->ifa_name, "wlan0") == 0) {
+    if (strcmp(it->ifa_name, "wlan0") == 0 || !found) {
       found = ip;
-      break;
+      if (ifindex)
+        *ifindex = if_nametoindex(it->ifa_name);
     }
-    if (!found)
-      found = ip;
+    if (strcmp(it->ifa_name, "wlan0") == 0)
+      break;
   }
   freeifaddrs(list);
   return found;
@@ -177,21 +178,34 @@ void BaiduMdns::setup() {
   setsockopt(this->fd_, IPPROTO_IP, IP_MULTICAST_LOOP, &loop, sizeof(loop));
   this->announced_psk_ = this->has_psk_();
   this->last_join_try_ = millis();
-  if (!this->try_join_())
+  this->check_join_();
+  if (!this->joined_)
     ESP_LOGI(TAG, "Waiting for the network to join %s", GROUP);
 }
 
-/** Join the group once the network is up (WiFi may still be connecting). */
-bool BaiduMdns::try_join_() {
-  struct ip_mreq mreq {};
+/** Join the group on the current interface, once the network is up (WiFi may
+ * still be connecting) and again whenever the membership was lost: the kernel
+ * drops it when the interface goes away (a WiFi driver reload). Called every few
+ * seconds; joining where already joined fails with EADDRINUSE. */
+void BaiduMdns::check_join_() {
+  int ifindex = 0;
+  uint32_t ip = local_ipv4(&ifindex);
+  if (ip == 0)
+    return;
+  struct ip_mreqn mreq {};
   mreq.imr_multiaddr.s_addr = inet_addr(GROUP);
-  mreq.imr_interface.s_addr = htonl(INADDR_ANY);
-  if (setsockopt(this->fd_, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) != 0)
-    return false;
+  mreq.imr_ifindex = ifindex;
+  bool joined = setsockopt(this->fd_, IPPROTO_IP, IP_ADD_MEMBERSHIP, &mreq, sizeof(mreq)) == 0;
+  if (!joined && errno != EADDRINUSE)
+    return;
+  if (!joined && ip == this->joined_ip_)
+    return;  // still joined, same address
+  setsockopt(this->fd_, IPPROTO_IP, IP_MULTICAST_IF, &mreq, sizeof(mreq));
+  ESP_LOGI(TAG, "%s %s.local", this->joined_ ? "Rejoined; responding for" : "Responding for",
+           App.get_name().c_str());
   this->joined_ = true;
-  ESP_LOGI(TAG, "Responding for %s.local", App.get_name().c_str());
+  this->joined_ip_ = ip;
   this->announce_();
-  return true;
 }
 
 void BaiduMdns::announce_() {
@@ -204,13 +218,12 @@ void BaiduMdns::loop() {
   if (this->fd_ < 0)
     return;
   uint32_t now = millis();
-  if (!this->joined_) {
-    if (now - this->last_join_try_ >= JOIN_RETRY_MS) {
-      this->last_join_try_ = now;
-      this->try_join_();
-    }
-    return;
+  if (now - this->last_join_try_ >= JOIN_RETRY_MS) {
+    this->last_join_try_ = now;
+    this->check_join_();
   }
+  if (!this->joined_)
+    return;
 
   // the TXT advertises whether HA has provisioned a key; re-announce when that changes
   bool psk = this->has_psk_();

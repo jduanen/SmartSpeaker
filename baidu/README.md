@@ -12,7 +12,7 @@ scripts/esphome.sh compile baidu-143a00.yaml
 scripts/esphome.sh upload baidu-143a00.yaml --device <ip>                # OTA
 ```
 
-- Each speaker has a small file, `baidu-<MAC suffix>.yaml` (`baidu-143a00.yaml`, `baidu-1486a2.yaml`), that sets its `mac`, `mac_suffix` and `api_key` (`!secret baidu_<MAC suffix>_api_key`) and includes the shared `baidu-xdh-1d-a1.yaml` as a package. For a new speaker, copy one, change all three and add its key to `secrets.yaml`. The key is in the YAML, not only provisioned by HA, so that the ESPHome Device Builder's Logs can connect; HA asks for it when it adds the speaker.
+- Each speaker has a small file, `baidu-<MAC suffix>.yaml` (`baidu-143a00.yaml`, `baidu-1486a2.yaml`), that sets its `mac` and `mac_suffix`, includes the shared `baidu-xdh-1d-a1.yaml` as a package, and sets its API encryption key (`api: encryption: key: !secret baidu_<MAC suffix>_api_key`). For a new speaker, copy one, change all three and add its key to `secrets.yaml`. The key is in the YAML, not only provisioned by HA, so that the ESPHome Device Builder's Logs can connect; it is in the speaker's own file because the builder looks for it there (with the key only in the package, the builder appended its own `api:` block to the file); HA asks for it when it adds the speaker.
 - `baidu/Dockerfile` is `smartspeaker-cross` plus ESPHome 2026.10.2 (Python 3.12 via uv), Debian stretch's OpenSSL 1.1.0 armhf headers and library in `/sysroot`, and TFLite Micro and the wake word frontend in `/opt/baidu-tp`.
 - `scripts/esphome.sh` runs `esphome` in that image. The cross compiler is chosen by `components/baidu_host` itself: its code generation sets `CC`, `CXX`, `AR`, `OBJDUMP` and `READELF` (which ESPHome's host build reads when it starts) to the armhf cross tools with the sysroot flags from `../scripts/cross_file.txt`, plus `-pthread` (glibc 2.23 keeps pthreads in libpthread) and `-O2` (the host build adds no optimisation flag; at `-O0` the microphone alone used 24% of a core). So only configs with `baidu_host:` are cross-compiled, which is what lets the HA add-on below build ESP32 devices as well (that add-on isn't in use; see "Managing the speakers from HA's ESPHome Device Builder").
 - The program is `.esphome/build/<name>/.pioenvs/<name>/program`. After switching compilers or images, run `scripts/esphome.sh clean <file>` first: ninja keeps object files whose command line hasn't changed.
@@ -205,7 +205,7 @@ mdns:
 baidu_mdns:
 ```
 
-ESPHome's `mdns` builds its service records on host but sends nothing (`mdns_host.cpp`). `baidu_mdns` answers queries for those records (PTR, SRV and TXT for each service, A for `<name>.local`; IPv4, UDP 5353) and announces them three times at startup, so HA discovers the device as it does an ESP32. It calls `mdns.enable_mdns_storage()`, ESPHome's hook for external components, to read the records through `MDNSComponent::get_services()`. ESPHome fixes the encryption TXT at boot; `baidu_mdns` instead follows the live key state (`api_encryption` once HA has provisioned a key, else `api_encryption_supported` plus `api_provisioning=zero-psk`) and announces again when it changes. Ported from the C++ app's `src/esphome/mdns.cpp`.
+ESPHome's `mdns` builds its service records on host but sends nothing (`mdns_host.cpp`). `baidu_mdns` answers queries for those records (PTR, SRV and TXT for each service, A for `<name>.local`; IPv4, UDP 5353) and announces them three times at startup, so HA discovers the device as it does an ESP32. It calls `mdns.enable_mdns_storage()`, ESPHome's hook for external components, to read the records through `MDNSComponent::get_services()`. ESPHome fixes the encryption TXT at boot; `baidu_mdns` instead follows the live key state (`api_encryption` once HA has provisioned a key, else `api_encryption_supported` plus `api_provisioning=zero-psk`) and announces again when it changes. It checks its multicast membership every 5 s and joins again (and re-announces) when the kernel has dropped it, as it does when the WiFi driver is reloaded, or when the address changes. Ported from the C++ app's `src/esphome/mdns.cpp`.
 
 Checked on 143a00 (2026-11-12): `avahi-browse -rt _esphomelib._tcp` on the LAN lists `baidu-143a00` with ESPHome's TXT records, and `baidu-143a00.local` resolves.
 
@@ -228,7 +228,3 @@ Checked on 143a00 (2026-11-12): `avahi-browse -rt _esphomelib._tcp` on the LAN l
 - `assist_satellite.start_conversation`: chime and prompt, then `voice_assistant` starts `baidu_mic` and streams to HA as the prompt ends. HA's VAD found the speech, STT gave "What time is it?", and the reply ("5:39 PM") played about 2 s after the speech ended; then back to IDLE.
 
 - Music Assistant: the player streams MA's flow URL over HTTP, FLAC 48 kHz stereo (MA's per-player codec choice; downmixed, no resampling), with no stalls. The whole process used 2.1% of one core and 6.1 MB RSS while playing.
-
-## Still to verify in the spike
-
-- Ducking of MA music under a voice session.
