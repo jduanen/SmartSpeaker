@@ -255,13 +255,13 @@ Run everything from the repo root on the host. The details of each script are in
    ```
    This gives `builddir/src/smartspeaker.stripped` (~620 KB).
 2. **Connect:** plug the speaker into the host with a micro-USB cable, power it from its 12 V supply, and check that `adb devices` lists it.
-   **More than one unit on adb:** the scripts (`setwifi.sh`, `probe.sh`, `backup.sh`, `install.sh`, `uninstall.sh`, and baidu's `install.sh` and `uninstall.sh`) act on the unit whose serial is in `ANDROID_SERIAL`, which adb itself reads. With one unit attached it's used without that. With more than one and `ANDROID_SERIAL` unset, they stop and list each unit's serial and WiFi MAC (the last six digits of the MAC name the unit), e.g.
+   **More than one unit on adb:** the scripts (`setwifi.sh`, `probe.sh`, `backup.sh`, `install.sh`, `uninstall.sh`, and baidu's `install.sh` and `uninstall.sh`) act on the unit whose serial is in `ANDROID_SERIAL`, which adb itself reads. With one unit attached it's used without that. `UNIT=<MAC suffix>` (the last six hex digits of the WiFi MAC, which name the unit, e.g. `UNIT=1486a2`) selects a unit without knowing its serial. With more than one and neither set, they stop and list each unit's serial and WiFi MAC, e.g.
    ```
-   more than one unit on adb; choose one with ANDROID_SERIAL=<serial>:
+   more than one unit on adb; choose one with UNIT=<MAC suffix> or ANDROID_SERIAL=<serial>:
      XDHM1P1GG0324M1C7O0366783  48:f3:f3:14:3a:00
      XDHM1P1GG0324M1C7R0369971  48:f3:f3:14:86:a2
    ```
-   Then e.g. `ANDROID_SERIAL=XDHM1P1GG0324M1C7R0369971 scripts/install.sh builddir/src/smartspeaker.stripped`; for plain `adb` commands, `adb -s <serial> …` or `export ANDROID_SERIAL=<serial>`. The check is `scripts/adb_unit.sh`, which the scripts source.
+   Then e.g. `UNIT=1486a2 scripts/install.sh builddir/src/smartspeaker.stripped`; for plain `adb` commands, `adb -s <serial> …` or `export ANDROID_SERIAL=<serial>`. The check is `scripts/adb_unit.sh`, which the scripts source.
 3. **WiFi:** run `scripts/setwifi.sh <ssid> <password>` to write `/data/wifi/wpa_supplicant.conf`, the same path on Genie and DuerOS units. Then `adb shell ifconfig wlan0` should show an `inet addr`. If it doesn't, `adb reboot`: on a unit with a blank `/opt`, only the stock `/etc/init.d/S42wifi` starts the DHCP client (`udhcpc`), at boot, and only if WiFi associates within 20 s.
 4. **Probe and back up** while the original software is still on the unit:
    - `scripts/probe.sh` writes an inventory to `notes/stock.txt`.
@@ -286,7 +286,7 @@ Run everything from the repo root on the host. The details of each script are in
    - HA provisions an encryption key on its own. The speaker saves it in `/opt/ss/etc/config.ini`, and later installs keep that file.
    - On the device page, pick the Assist pipeline and the wake word.
    - **Music Assistant:** add the player explicitly in MA's Home Assistant MediaPlayers provider.
-9. **Updating later:** rebuild and strip, run `scripts/install.sh builddir/src/smartspeaker.stripped` (the config is kept), then `adb shell 'kill $(pidof smartspeaker)'`. The launcher restarts it.
+9. **Updating later:** `scripts/installXiaodu.sh [unit]` (from any directory) builds and strips the app, runs `scripts/install.sh` (the config is kept) and restarts the app: it kills it, the launcher starts the new build, and the script waits for the new process. `unit` is the unit's MAC suffix (e.g. `1486a2`), needed only with more than one unit on adb. Ignore `install.sh`'s closing "reboot the unit"; that is for a first install.
 10. **Removing:**
     - DuerOS: `scripts/uninstall.sh [--purge]`, then `adb reboot`.
     - Blank `/opt`: `scripts/uninstall.sh --purge`, which removes the launcher it installed and `/opt/ss`, then `adb reboot`.
