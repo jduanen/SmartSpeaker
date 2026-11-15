@@ -8,8 +8,12 @@
 #   baidu/baidu-<unit>.yaml, e.g. scripts/installBaidu.sh 143a00 1486a2
 #
 # N.B. Edit the configs in baidu/, not in the builder: the copy on HA is
-# replaced. The speaker must already run baidu (first install: baidu/README.md,
-# "Install on a unit").
+# replaced.
+#
+# A speaker that doesn't run baidu yet must be on adb with its WiFi set up
+# (scripts/setwifi.sh). It is found there by its MAC, backed up if it has no
+# backup (scripts/backup.sh, to backups/<serial>), installed over adb
+# (baidu/scripts/install.sh) and rebooted.
 #
 # The configs go over SSH with rsync to $HA_SSH (default homeassistant.local,
 # with the user and key from ~/.ssh/config), the HA server's SSH add-on, which
@@ -33,6 +37,15 @@ done
 
 for u; do
 	scripts/esphome.sh compile "baidu-$u.yaml"
+	# a unit on adb without baidu: first install (the unit's adb serial, else empty)
+	s=$(UNIT=$u; . scripts/adb_unit.sh && echo "$ANDROID_SERIAL") 2>/dev/null || s=
+	if [ -n "$s" ] && [ "$(adb -s "$s" shell '[ -f /opt/baidu/bin/baidu ] || echo new' </dev/null | tr -d '\r')" = new ]; then
+		echo "$u doesn't run baidu yet: installing over adb ($s)"
+		[ -f "../backups/$s/app.img" ] || (cd .. && ANDROID_SERIAL=$s scripts/backup.sh)
+		ANDROID_SERIAL=$s scripts/install.sh ".esphome/build/baidu-$u/.pioenvs/baidu-$u/program"
+		adb -s "$s" reboot
+		continue
+	fi
 	# upload sends the last build; it doesn't compile
 	scripts/esphome.sh upload "baidu-$u.yaml" --device "baidu-$u.local"
 done
