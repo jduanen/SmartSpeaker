@@ -1,0 +1,14 @@
+# Unit 14856e (WiFi MAC 48:F3:F3:14:85:6E), as installed on the bench.
+substitutions:
+  friendly_name: "Baidu Smartspeaker in FR"
+  comment: "Home Assistant Baidu-based Voice Assistant"
+  mac: "4A:F3:F3:14:85:6E"
+  mac_suffix: "14856e"
+  log_level: WARN
+
+packages:
+  baidu: !include baidu-xdh-1d-a1.yaml
+
+api:
+  encryption:
+    key: !secret baidu_api_key
