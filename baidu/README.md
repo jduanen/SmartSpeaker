@@ -39,6 +39,8 @@ Differences from Voice PE: no dial, jack, voice kit, Sendspin, improv or factory
 
 ## Install on a unit
 
+`scripts/installBaidu.sh <unit>` (repo root) does all of this for a new unit, including the backup; the steps by hand:
+
 Run from `baidu/`, with the unit on adb, its WiFi set up and a backup made (`scripts/setwifi.sh` and `scripts/backup.sh` from the repo root; see the top-level README's install guide). With more than one unit on adb, choose one with `ANDROID_SERIAL=<serial>` (see the top-level README's install guide, step 2; `scripts/adb_unit.sh` is a copy of the repo root's):
 
 ```bash
@@ -60,7 +62,7 @@ HA's standard ESPHome Device Builder add-on stays as it is. The speakers are bui
 
 Its remote build server (pairing a build machine under Settings → Send builds) doesn't help here: Device Builder 1.25.0 to 1.28.1 only packs and installs ESP32, ESP8266, RP2040, nRF52 and LibreTiny builds, not host-platform ones.
 
-The configs here are the ones to edit. `scripts/installBaidu.sh <unit>...` (in the repo root's `scripts/`, from any directory) builds each named speaker (`baidu-<unit>.yaml`), installs it over WiFi, and then copies the configs to HA: `addon/prepare.sh` writes them to `.esphome/addon/esphome` (a `baidu/` folder with the shared package and the components, and `baidu-<unit>.yaml` for each speaker, pointing at `baidu/`), and rsync over SSH puts them in the HA server's `/config/esphome`. It writes only `/config/esphome/baidu/` (removing files there that are gone here) and `/config/esphome/baidu-*.yaml`, comparing contents so unchanged files aren't copied; other devices' configs and `secrets.yaml` are left alone. `HA_SSH` is the login (default `homeassistant.local`, so the user and key come from `~/.ssh/config`); `HA_SSH=` skips the copy.
+The configs here are the ones to edit. `scripts/installBaidu.sh <unit>...` (in the repo root's `scripts/`, from any directory) builds each named speaker (`baidu-<unit>.yaml`), installs it over WiFi, and then copies the configs to HA. A speaker that doesn't run baidu yet is installed over adb instead: with the unit on adb and its WiFi set up, the script finds it by its MAC, makes the backup if `backups/<serial>` has none, runs `scripts/install.sh` (see "Install on a unit") and reboots it. For the copy to HA, `addon/prepare.sh` writes them to `.esphome/addon/esphome` (a `baidu/` folder with the shared package and the components, and `baidu-<unit>.yaml` for each speaker, pointing at `baidu/`), and rsync over SSH puts them in the HA server's `/config/esphome`. It writes only `/config/esphome/baidu/` (removing files there that are gone here) and `/config/esphome/baidu-*.yaml`, comparing contents so unchanged files aren't copied; other devices' configs and `secrets.yaml` are left alone. `HA_SSH` is the login (default `homeassistant.local`, so the user and key come from `~/.ssh/config`); `HA_SSH=` skips the copy.
 
 Once, on the HA server:
 1. In the SSH add-on's configuration, add this machine's public key (`~/.ssh/id_ed25519.pub`) to `authorized_keys`; it applies to the add-on's `username`. The add-on also needs rsync: in "Advanced SSH & Web Terminal", add `rsync` to `packages`. In `~/.ssh/config`, add a host entry with that user and key (`IdentitiesOnly` keeps ssh from offering other keys first, which the add-on cuts off with "Too many authentication failures"):
