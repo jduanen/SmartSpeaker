@@ -77,6 +77,127 @@ Once, on the HA server:
 
 Tested (2026-11-13): those configs validate in the stock builder image (`ghcr.io/esphome/esphome-hassio:2026.10.2`), and its `esphome logs` streams 143a00's log with the key from the secrets. 143a00 then got a build from this machine over WiFi (3.5 s) and HA reconnected.
 
+## Music Assistant by voice
+
+Set up on the HA server (2026.11.1), not in this repo; the two pieces below are copies of what is there. Both worked from the speakers (2026-11-15).
+
+What works, and how:
+- **Keys:** Volume Up/Down and Play/Pause act on the speaker's own media player (see "The device YAML").
+- **"Pause", "resume", "next track", "set the volume to 40 percent":** HA's built-in intents. They need "Prefer handling commands locally" on in the Assist pipeline, and the players in the speaker's area. Not tested here.
+- **"Play Kind of Blue by Miles Davis":** the LLM conversation agent calls the Play Music script below, which calls `music_assistant.play_media`.
+- **"What's playing?":** the What's Playing automation below answers with the title, artist and album.
+
+Requirements in HA:
+1. Each speaker is a player in Music Assistant (its Home Assistant MediaPlayers provider), which gives it a second media player entity in HA, from the Music Assistant integration.
+2. **Set the area on each speaker's Music Assistant device** (Settings → Devices & services → Music Assistant → the device → pencil), not only on its ESPHome device. Both pieces below find players by area, and a player without one gives "No Music Assistant player is available in the area …". Every new speaker needs this.
+3. The pipeline's conversation agent has Assist ticked under "Control Home Assistant" (the Ollama agent's options); without it the agent has no tools and can't call the script.
+4. The pipeline has "Prefer handling commands locally" on, for the built-in intents and the What's Playing sentences.
+
+### Play Music script
+
+In `/config/scripts.yaml`; then reload Scripts (Developer tools → YAML) and expose "Play Music" to Assist (Settings → Voice assistants → Expose). The agent fills in the fields from the request; `area` is the area the user names, else the area of the speaker spoken to. The script plays on every available Music Assistant player in that area, so two players in one area both play. HA's script editor rewrites the formatting when the script is saved from the UI; the content is the same.
+
+```yaml
+play_music:
+  alias: Play Music
+  description: >-
+    Plays music from Music Assistant on the speaker in an area. Use this when
+    the user asks to play a song, album, artist, playlist or radio station.
+    Set area to the area the user names, or else the area of the device the
+    user is talking to.
+  mode: parallel
+  fields:
+    media_id:
+      name: Media
+      description: Name of the song, album, artist, playlist or radio station.
+      required: true
+      selector:
+        text:
+    media_type:
+      name: Media type
+      description: What media_id names. Leave out if unsure.
+      selector:
+        select:
+          options: [track, album, artist, playlist, radio]
+    artist:
+      name: Artist
+      description: The artist, when media_id is a song or album by a named artist.
+      selector:
+        text:
+    album:
+      name: Album
+      description: The album, when media_id is a song from a named album.
+      selector:
+        text:
+    area:
+      name: Area
+      description: Name of the area whose speaker plays the music.
+      required: true
+      selector:
+        text:
+  sequence:
+  - variables:
+      players: >-
+        {{ area_entities(area) | select('in', integration_entities('music_assistant'))
+           | reject('is_state', ['unavailable', 'unknown']) | list }}
+      request: >-
+        {% set d = {'media_id': media_id} %}
+        {% if media_type | default('') %}{% set d = dict(d, media_type=media_type) %}{% endif %}
+        {% if artist | default('') %}{% set d = dict(d, artist=artist) %}{% endif %}
+        {% if album | default('') %}{% set d = dict(d, album=album) %}{% endif %}
+        {{ d }}
+  - if: "{{ players | count == 0 }}"
+    then:
+    - variables:
+        result:
+          error: "No Music Assistant player is available in the area {{ area }}."
+    - stop: No player in the area
+      response_variable: result
+  - action: music_assistant.play_media
+    target:
+      entity_id: "{{ players }}"
+    data: "{{ request }}"
+  - variables:
+      result:
+        playing: "{{ media_id }}"
+        players: "{{ players }}"
+  - stop: Done
+    response_variable: result
+```
+
+### What's Playing automation
+
+In `/config/automations.yaml`; then reload Automations. It is a sentence trigger rather than an intent in `configuration.yaml` because the trigger knows which speaker was asked (`trigger.device_id`): it reports the Music Assistant player that is playing in that speaker's area, or any playing one when the request has no device (typed in the HA app).
+
+```yaml
+- id: whats_playing
+  alias: What's Playing
+  description: Answers "what's playing" with the Music Assistant player in the area
+    of the speaker that was asked (any area, if the request has none).
+  triggers:
+  - trigger: conversation
+    command:
+    - "what's playing [now]"
+    - "what is playing [now]"
+    - "what (song|music|track|album) is (this|playing)"
+    - "what am I listening to"
+  conditions: []
+  actions:
+  - variables:
+      area: "{{ area_id(trigger.device_id) if trigger.device_id else none }}"
+      playing: >-
+        {{ (area_entities(area) if area else integration_entities('music_assistant'))
+           | select('in', integration_entities('music_assistant'))
+           | select('match', 'media_player') | select('is_state', 'playing') | list }}
+  - set_conversation_response: >-
+      {% if playing | count == 0 %}Nothing is playing{{ ' here' if area else '' }}.
+      {% else %}{% set p = playing | first %}{{ state_attr(p, 'media_title') }}{% if state_attr(p, 'media_artist') %}
+      by {{ state_attr(p, 'media_artist') }}{% endif %}{% if state_attr(p, 'media_album_name') %},
+      from the album {{ state_attr(p, 'media_album_name') }}{% endif %}.{% endif %}
+  mode: single
+
+```
+
 ## Home Assistant add-on (not in use)
 
 An alternative to the section above, kept for reference: an add-on that replaces the standard one so that HA's Firmware update can build the speakers too.
